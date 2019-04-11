@@ -1,0 +1,3 @@
+[submodule "uwflow2.0_frontend"]
+	path = uwflow2.0_frontend
+	url = git@github.com:AyushK1/uwflow2.0_frontend.git
