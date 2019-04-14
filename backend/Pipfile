@@ -1,0 +1,9 @@
+[dev-packages]
+black = "==19.3b0"
+pre-commit = "*"
+
+[packages]
+# falcon = "==2.0.0rc1"
+fastapi = "*"
+psycopg2 = "*"
+sqlalchemy = "*"

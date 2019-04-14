@@ -1,0 +1,9 @@
+import os
+
+LOG_LEVEL = os.environ["LOG_LEVEL"]
+
+POSTGRES_SERVER = "{}:{}".format(os.environ["POSTGRES_SERVER"], os.environ["POSTGRES_PORT"])
+POSTGRES_USER = os.environ["POSTGRES_USER"]
+POSTGRES_PASSWORD = os.environ["POSTGRES_PASSWORD"]
+POSTGRES_DB = os.environ["POSTGRES_DB"]
+SQLALCHEMY_URI = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DB}"
