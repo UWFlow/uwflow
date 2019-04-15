@@ -3,7 +3,12 @@ black = "==19.3b0"
 pre-commit = "*"
 
 [packages]
-# falcon = "==2.0.0rc1"
 fastapi = "*"
+gunicorn = "*"
 psycopg2 = "*"
 sqlalchemy = "*"
+uvicorn = "*"
+
+[scripts]
+dev = "uvicorn flow.main:api --port $PORT"
+prod = "gunicorn flow.main:api --bind $HOST:$PORT -w $GUNICORN_WORKERS -k uvicorn.workers.UvicornWorker"
