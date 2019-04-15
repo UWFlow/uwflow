@@ -3,6 +3,7 @@ black = "==19.3b0"
 pre-commit = "*"
 
 [packages]
+email-validator = "*"
 fastapi = "*"
 gunicorn = "*"
 psycopg2 = "*"
@@ -10,5 +11,4 @@ sqlalchemy = "*"
 uvicorn = "*"
 
 [scripts]
-dev = "uvicorn flow.main:api --port $PORT"
-prod = "gunicorn flow.main:api --bind $HOST:$PORT -w $GUNICORN_WORKERS -k uvicorn.workers.UvicornWorker"
+server = "gunicorn flow.main:api --bind $API_HOST:$API_PORT -w $GUNICORN_WORKERS -k uvicorn.workers.UvicornWorker"
