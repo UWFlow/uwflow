@@ -1,10 +1,10 @@
 import typing as t
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.db import db_session
-from app.model import Course
+from flow.db import db_session
+from flow.model import Course
 
 router = APIRouter()
 
@@ -21,4 +21,7 @@ def list_courses(limit: int = 100):
 @router.get("/courses/{code}", tags=["courses"], response_model=CourseResponse)
 def course_by_code(code: str):
     """Get course by course code"""
-    return db_session.query(Course).filter(Course.code == code).one()
+    res = db_session.query(Course).filter(Course.code == code).one_or_none()
+    if res is None:
+        raise HTTPException(status_code=404)
+    return res

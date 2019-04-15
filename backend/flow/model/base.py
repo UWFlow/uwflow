@@ -4,7 +4,7 @@ from sqlalchemy import Column as _Column
 from sqlalchemy import DateTime, func
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
-from app.util.text import camel_to_snake_case
+from flow.util.text import camel_to_snake_case
 
 # Make columns non-nullable by default
 Column = partial(_Column, nullable=False)
