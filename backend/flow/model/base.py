@@ -1,19 +1,13 @@
 from functools import partial
 
-from sqlalchemy import Column as _Column
-from sqlalchemy import DateTime, func
+from sqlalchemy import Column, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 from flow.util.text import camel_to_snake_case
 
-# Make columns non-nullable by default
-Column = partial(_Column, nullable=False)
-NullColumn = partial(_Column, nullable=True)
-
-
 class AutorefBase:
-    created = Column(DateTime, default=func.now())
-    modified = Column(DateTime, default=func.now(), onupdate=func.now())
+    created = Column(DateTime, nullable=False, default=func.now())
+    modified = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     @declared_attr
     def __tablename__(cls):
