@@ -1,0 +1,13 @@
+- args:
+    name: prof_review_stats
+    table:
+      name: prof
+      schema: public
+    using:
+      manual_configuration:
+        column_mapping:
+          id: prof_id
+        remote_table:
+          name: prof_review_stats
+          schema: aggregate
+  type: create_object_relationship

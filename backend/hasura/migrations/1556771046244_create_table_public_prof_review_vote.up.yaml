@@ -1,0 +1,11 @@
+- args:
+    sql: CREATE TABLE "public"."prof_review_vote"("review_id" integer NOT NULL, "user_id"
+      integer NOT NULL, "vote" integer NOT NULL, PRIMARY KEY ("review_id","user_id")
+      , FOREIGN KEY ("review_id") REFERENCES "public"."prof_review"("id") ON UPDATE
+      cascade ON DELETE cascade, FOREIGN KEY ("user_id") REFERENCES "public"."user"("id")
+      ON UPDATE cascade ON DELETE cascade);
+  type: run_sql
+- args:
+    name: prof_review_vote
+    schema: public
+  type: add_existing_table_or_view

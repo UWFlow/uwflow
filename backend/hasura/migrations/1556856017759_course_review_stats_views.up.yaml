@@ -1,0 +1,20 @@
+- args:
+    cascade: false
+    sql: |-
+      CREATE SCHEMA aggregate;
+
+      CREATE VIEW aggregate.course_review_stats AS
+      SELECT
+          course_id,
+          SUM(CASE WHEN easy THEN 1 ELSE 0 END) AS easy,
+          SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS not_easy,
+          SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS liked,
+          SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS not_liked,
+          SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS useful,
+          SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS not_useful
+      FROM course_review GROUP BY course_id;
+  type: run_sql
+- args:
+    name: course_review_stats
+    schema: aggregate
+  type: add_existing_table_or_view

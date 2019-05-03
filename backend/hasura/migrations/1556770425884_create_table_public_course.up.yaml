@@ -1,0 +1,8 @@
+- args:
+    sql: CREATE TABLE "public"."course"("id" serial NOT NULL, "code" text NOT NULL
+      UNIQUE, "name" text NOT NULL, "description" text , PRIMARY KEY ("id") );
+  type: run_sql
+- args:
+    name: course
+    schema: public
+  type: add_existing_table_or_view
