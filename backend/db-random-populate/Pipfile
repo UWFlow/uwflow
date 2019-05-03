@@ -1,0 +1,3 @@
+[packages]
+psycopg2 = "*"
+faker = "*"
