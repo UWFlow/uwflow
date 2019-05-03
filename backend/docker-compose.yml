@@ -1,0 +1,32 @@
+version: '3.6'
+services:
+  postgres:
+    container_name: postgres
+    environment:
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_USER: $POSTGRES_USER
+    image: postgres:11.2-alpine
+    ports:
+      - $POSTGRES_PORT:$POSTGRES_PORT
+    restart: always
+    volumes:
+      - postgres:/var/lib/postgresql/data
+  hasura:
+    container_name: hasura
+    depends_on:
+      - postgres
+    environment:
+      HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_ADMIN_SECRET
+      HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_PORT/$POSTGRES_DB
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
+    image: hasura/graphql-engine:v1.0.0-alpha44.cli-migrations
+    ports:
+      - $API_PORT:$API_PORT
+    restart: always
+    volumes:
+      - ./migrations:/hasura-migrations
+volumes:
+  postgres:
