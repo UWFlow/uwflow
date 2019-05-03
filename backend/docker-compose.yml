@@ -27,6 +27,6 @@ services:
       - $API_PORT:$API_PORT
     restart: always
     volumes:
-      - ./migrations:/hasura-migrations
+      - ./hasura/migrations:/hasura-migrations
 volumes:
   postgres:
