@@ -1,0 +1,14 @@
+- args:
+    cascade: false
+    sql: "CREATE OR REPLACE VIEW \"aggregate\".\"course_review_stats\" AS \n SELECT
+      course_review.course_id,\n    sum(\n        CASE\n            WHEN course_review.easy
+      THEN 1\n            ELSE 0\n        END) AS easy,\n    sum(\n        CASE\n
+      \           WHEN (NOT course_review.easy) THEN 1\n            ELSE 0\n        END)
+      AS not_easy,\n    sum(\n        CASE\n            WHEN course_review.liked THEN
+      1\n            ELSE 0\n        END) AS liked,\n    sum(\n        CASE\n            WHEN
+      (NOT course_review.liked) THEN 1\n            ELSE 0\n        END) AS not_liked,\n
+      \   sum(\n        CASE\n            WHEN course_review.useful THEN 1\n            ELSE
+      0\n        END) AS useful,\n    sum(\n        CASE\n            WHEN (NOT course_review.useful)
+      THEN 1\n            ELSE 0\n        END) AS not_useful\n   FROM course_review\n
+      \ GROUP BY course_review.course_id;"
+  type: run_sql
