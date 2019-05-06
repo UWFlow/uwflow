@@ -22,7 +22,7 @@ services:
       HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_PORT/$POSTGRES_DB
       HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
-    image: hasura/graphql-engine:v1.0.0-alpha44.cli-migrations
+    image: hasura/graphql-engine:v1.0.0-alpha45.cli-migrations
     ports:
       - $API_PORT:$API_PORT
     restart: always
