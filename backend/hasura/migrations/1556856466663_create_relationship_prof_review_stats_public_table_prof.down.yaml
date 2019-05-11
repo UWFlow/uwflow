@@ -1,0 +1,6 @@
+- args:
+    relationship: prof_review_stats
+    table:
+      name: prof
+      schema: public
+  type: drop_relationship

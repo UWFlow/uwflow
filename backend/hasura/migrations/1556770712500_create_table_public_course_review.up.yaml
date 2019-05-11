@@ -1,0 +1,13 @@
+- args:
+    sql: CREATE TABLE "public"."course_review"("id" serial NOT NULL, "course_id" integer
+      , "prof_id" integer , "user_id" integer , "text" text , "easy" boolean , "liked"
+      boolean , "useful" boolean , PRIMARY KEY ("id") , FOREIGN KEY ("course_id")
+      REFERENCES "public"."course"("id") ON UPDATE cascade ON DELETE set null, FOREIGN
+      KEY ("prof_id") REFERENCES "public"."prof"("id") ON UPDATE cascade ON DELETE
+      set null, FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON UPDATE
+      cascade ON DELETE set null);
+  type: run_sql
+- args:
+    name: course_review
+    schema: public
+  type: add_existing_table_or_view

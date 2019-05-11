@@ -1,0 +1,120 @@
+- args:
+    relationship: course_reviews
+    table:
+      name: course
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_reviews
+    table:
+      name: course
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course
+    table:
+      name: course_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof
+    table:
+      name: course_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: user
+    table:
+      name: course_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course_review_votes
+    table:
+      name: course_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course_review
+    table:
+      name: course_review_vote
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: user
+    table:
+      name: course_review_vote
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course_reviews
+    table:
+      name: prof
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_reviews
+    table:
+      name: prof
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course
+    table:
+      name: prof_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof
+    table:
+      name: prof_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: user
+    table:
+      name: prof_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_review_votes
+    table:
+      name: prof_review
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_review
+    table:
+      name: prof_review_vote
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: user
+    table:
+      name: prof_review_vote
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course_reviews
+    table:
+      name: user
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: course_review_votes
+    table:
+      name: user
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_reviews
+    table:
+      name: user
+      schema: public
+  type: drop_relationship
+- args:
+    relationship: prof_review_votes
+    table:
+      name: user
+      schema: public
+  type: drop_relationship
