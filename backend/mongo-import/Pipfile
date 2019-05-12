@@ -1,0 +1,4 @@
+[packages]
+psycopg2 = "*"
+pymongo = "*"
+tqdm = "*"
