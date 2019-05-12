@@ -148,5 +148,3 @@ if __name__ == "__main__":
         run(sys.argv[1])
     else:
         print(f"Usage: {sys.argv[0]} MONGO_DUMP_PATH", file=sys.stderr)
-
-    run(sys.argv[1])
