@@ -39,13 +39,10 @@ def courses(conn, root_path, idmap):
         course = {"id": i, "code": mc["_id"], "name": mc["name"], "description": mc["description"]}
         idmap["course"][course["code"]] = i
 
-        cur.execute(
-            """
+        cur.execute("""
             INSERT INTO course(id, code, name, description)
             VALUES (%(id)s, %(code)s, %(name)s, %(description)s)
-        """,
-            course,
-        )
+        """, course)
 
     conn.commit()
 
@@ -96,13 +93,10 @@ def course_reviews(conn, root_path, idmap):
             "liked": trinary(mr["course_review"].get("interest")),
             "useful": trinary(mr["course_review"].get("usefulness")),
         }
-        cur.execute(
-            """
+        cur.execute("""
             INSERT INTO course_review(course_id, prof_id, user_id, text, easy, liked, useful)
             VALUES (%(course_id)s, %(prof_id)s, %(user_id)s, %(text)s, %(easy)s, %(liked)s, %(useful)s)
-        """,
-            review,
-        )
+        """, review)
 
     conn.commit()
 
@@ -123,13 +117,10 @@ def prof_reviews(conn, root_path, idmap):
             "clear": trinary(mr["professor_review"].get("clarity")),
             "engaging": trinary(mr["professor_review"].get("passion")),
         }
-        cur.execute(
-            """
+        cur.execute("""
             INSERT INTO prof_review(course_id, prof_id, user_id, text, clear, engaging)
             VALUES (%(course_id)s, %(prof_id)s, %(user_id)s, %(text)s, %(clear)s, %(engaging)s)
-        """,
-            review,
-        )
+        """, review)
 
     conn.commit()
 
@@ -157,3 +148,5 @@ if __name__ == "__main__":
         run(sys.argv[1])
     else:
         print(f"Usage: {sys.argv[0]} MONGO_DUMP_PATH", file=sys.stderr)
+
+    run(sys.argv[1])
