@@ -51,12 +51,6 @@ psql -h localhost -p 5432 -u flow
 ```
 will spawn a Postgres shell connected to the database container.
 
-More relevantly,
-```sh
-curl -H 'x-hasura-admin-secret:secretinprod' http://localhost:8080/v1/graphql -d @payload
-```
-will submit the contents of the file `payload` to Hasura and show the response.
-
 ## Cookbook
 
 Various recipes for getting commonly desired things done follow.
