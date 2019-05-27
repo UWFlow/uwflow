@@ -91,7 +91,7 @@ For this reason, it is disabled
 To bring up a graphical interface _with_ mutation support:
 ```sh
 cd uwflow2.0/backend/hasura
-source ../.env
+export $(cat ../.env | xargs)
 hasura console
 ```
 This should ideally happen automatically;
