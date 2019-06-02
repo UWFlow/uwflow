@@ -5,8 +5,8 @@ This is the Flow API server for handling non-CRUD tasks.
 ## Features
 
 - Authentication:
-  [v] email
-  [] OpenID
+  - [x] email
+  - [ ] OpenID
 
 ## How to run this
 
