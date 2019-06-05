@@ -1,5 +1,6 @@
 - type: replace_metadata
   args:
+    query_templates: []
     tables:
     - table: course
       array_relationships:
