@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. $PWD/env
+# Import environment variables (some systems do not support `source`)
+. $(dirname $0)/.env
 
 # Votes have an uniqueness constraint on (review_id, user_id)
 # so VOTES / (REVIEWS * USERS) should be small (< .01) as it is the chance of failure.
