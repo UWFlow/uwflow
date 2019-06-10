@@ -129,6 +129,6 @@ CREATE TABLE secret.user_email (
     ON DELETE CASCADE,
   email TEXT
     CONSTRAINT email_length CHECK (LENGTH(email) <= 256),
-  password TEXT
+  password_hash TEXT
     CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
 );
