@@ -118,3 +118,17 @@ SELECT
   SUM(CASE WHEN engaging THEN 1 ELSE 0 END) AS engaging,
   SUM(CASE WHEN NOT engaging THEN 1 ELSE 0 END) AS not_engaging
 FROM prof_review GROUP BY prof_id;
+
+-- Credentials
+CREATE SCHEMA secret;
+
+CREATE TABLE secret.user_email (
+  user_id INT
+    REFERENCES user(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  email TEXT
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256),
+  password TEXT
+    CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
+);
