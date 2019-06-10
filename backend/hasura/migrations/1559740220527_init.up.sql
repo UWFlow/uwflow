@@ -124,7 +124,7 @@ CREATE SCHEMA secret;
 
 CREATE TABLE secret.user_email (
   user_id INT
-    REFERENCES user(id)
+    REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   email TEXT
