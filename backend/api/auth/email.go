@@ -19,7 +19,7 @@ type EmailAuthRequest struct {
 type EmailAuthRecord struct {
 	Id       int    `db:"id"`
 	Email    string `db:"email"`
-	Password []byte `db:"password"`
+	PasswordHash []byte `db:"password_hash"`
 }
 
 // This is the string "password", hashed
@@ -28,12 +28,12 @@ type EmailAuthRecord struct {
 const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 
 func authenticate(email string, password []byte) (int, error) {
-	target := EmailAuthRecord{Password: []byte(fakeHash)}
+	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
 	dbErr := db.Handle.Get(&target,
-		"SELECT id, password FROM secret.user_email WHERE email = $1",
+		"SELECT id, password_hash FROM secret.user_email WHERE email = $1",
 		email)
 	// Always attempt auth to prevent enumeration of valid emails
-	authErr := bcrypt.CompareHashAndPassword(target.Password, password)
+	authErr := bcrypt.CompareHashAndPassword(target.PasswordHash, password)
 	if dbErr != nil {
 		return target.Id, dbErr
 	} else {
