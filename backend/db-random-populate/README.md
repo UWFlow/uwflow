@@ -1,5 +1,8 @@
 # Random data populate script
 
-This populates the Postgres database with (sensibly) random data for development purposes.
+This script populates the Postgres database with random data for development purposes.
 
-In order to run this, ensure `pipenv install` has been run and execute `pipenv run python main.py`.
+Simply execute
+```sh
+./populate.sh
+```
