@@ -55,10 +55,10 @@ CREATE TABLE prof (
     PRIMARY KEY,
   name TEXT NOT NULL
     CONSTRAINT prof_name_length CHECK (LENGTH(name) <= 256),
-  picture TEXT
+  picture_url TEXT
 );
 
-CREATE TABLE prof_course {
+CREATE TABLE prof_course (
   prof_id INT NOT NULL
     REFERENCES prof(id)
     ON UPDATE CASCADE ON DELETE CASCADE,
@@ -66,7 +66,7 @@ CREATE TABLE prof_course {
     REFERENCES course(id)
     ON UPDATE CASCADE ON DELETE CASCADE,
   PRIMARY KEY(prof_id, course_id)
-}
+);
 
 CREATE TABLE "user" (
   id INT
@@ -168,11 +168,6 @@ FROM course_review GROUP BY course_id, useful;
 CREATE VIEW aggregate.prof_review_buckets AS
 SELECT
   prof_id,
-  SUM(CASE WHEN clear THEN 1 ELSE 0 END) AS clear,
-  SUM(CASE WHEN NOT clear THEN 1 ELSE 0 END) AS not_clear,
-  SUM(CASE WHEN engaging THEN 1 ELSE 0 END) AS engaging,
-  SUM(CASE WHEN NOT engaging THEN 1 ELSE 0 END) AS not_engaging,
-
   SUM((clear < 0.2)::INT) AS clear_1q,
   SUM((0.2 <= clear AND clear < 0.4)::INT) AS clear_2q,
   SUM((0.4 <= clear AND clear < 0.6)::INT) AS clear_3q,

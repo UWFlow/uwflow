@@ -38,7 +38,7 @@
 <<<<<<< HEAD
 =======
       - comment: null
-        name: prof_courses
+        name: profs_teaching
         using:
           foreign_key_constraint_on:
             column: course_id
