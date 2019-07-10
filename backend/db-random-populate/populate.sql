@@ -16,16 +16,17 @@ SELECT
   CASE WHEN RANDOM() > 0.5 THEN pg_temp.randstr(256) ELSE NULL END
 FROM GENERATE_SERIES(1, COURSES);
 
-INSERT INTO course_antirequisite(course_id, prerequisite_id)
+INSERT INTO course_antirequisite(course_id, antirequisite_id)
 SELECT
   CEIL(RANDOM() * COURSES)::INT,
   CEIL(RANDOM() * COURSES)::INT
 FROM GENERATE_SERIES(1, 0.5 * COURSES);
 
-INSERT INTO course_prerequisite(course_id, prerequisite_id)
+INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
 SELECT
   CEIL(RANDOM() * COURSES)::INT,
-  CEIL(RANDOM() * COURSES)::INT
+  CEIL(RANDOM() * COURSES)::INT,
+  RANDOM() > 0.9
 FROM GENERATE_SERIES(1, 5 * COURSES);
 
 INSERT INTO prof(name)
@@ -45,9 +46,9 @@ SELECT
   CEIL(RANDOM() * PROFS)::INT,
   CEIL(RANDOM() * USERS)::INT,
   CASE WHEN RANDOM() > 0.9 THEN pg_temp.randstr(256) ELSE NULL END,
-  CASE WHEN RANDOM() > 0.5 THEN RANDOM() ELSE NULL END,
-  CASE WHEN RANDOM() > 0.5 THEN RANDOM() ELSE NULL END,
-  CASE WHEN RANDOM() > 0.5 THEN RANDOM() ELSE NULL END
+  CASE WHEN RANDOM() > 0.5 THEN FLOOR(RANDOM() * 6) ELSE NULL END,
+  CASE WHEN RANDOM() > 0.5 THEN FLOOR(RANDOM() * 6) ELSE NULL END,
+  CASE WHEN RANDOM() > 0.5 THEN FLOOR(RANDOM() * 6) ELSE NULL END
 FROM GENERATE_SERIES(1, COURSE_REVIEWS);
 
 INSERT INTO prof_review(course_id, prof_id, user_id, text, clear, engaging)

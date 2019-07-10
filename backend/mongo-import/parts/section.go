@@ -61,7 +61,10 @@ type PostgresSection struct {
 }
 
 func readMongoSections(rootPath string) []MongoSection {
-	data, _ := ioutil.ReadFile(path.Join(rootPath, "section.bson"))
+	data, err := ioutil.ReadFile(path.Join(rootPath, "section.bson"))
+  if err != nil {
+    panic(err)
+  }
 
 	var sections []MongoSection
 	for len(data) > 0 {
@@ -81,15 +84,11 @@ func ConvertMeeting(meeting MongoMeeting, idMap map[string]bson.M) PostgresClass
     IsCancelled: meeting.IsCancelled,
     IsClosed: meeting.IsClosed,
     IsTBA: meeting.IsTBA,
+    StartSeconds: meeting.StartSeconds
+    EndSeconds: meeting.EndSeconds
   }
-  if meeting.StartSeconds != 0 {
-    class.StartSeconds = meeting.StartSeconds
-    class.EndSeconds = meeting.EndSeconds
-  }
-  if meeting.ProfId != "" {
-    if profId, ok := idMap["prof"][meeting.ProfId]; ok {
-      class.ProfId = profId.(int)
-    }
+  if profId, ok := idMap["prof"][meeting.ProfId]; ok {
+    class.ProfId = profId.(int)
   }
   if meeting.Building != "" {
     class.Location = meeting.Building + " " + meeting.Room

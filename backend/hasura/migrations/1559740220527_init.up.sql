@@ -82,12 +82,12 @@ CREATE TABLE course_review (
     ON UPDATE CASCADE ON DELETE SET NULL,
   text TEXT
     CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
-  easy FLOAT
-    CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 1),
-  liked FLOAT,
-    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 1),
-  useful FLOAT
-    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 1)
+  easy SMALLINT
+    CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
+  liked SMALLINT,
+    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
+  useful SMALLINT
+    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5)
 );
 
 CREATE TABLE prof_review (
@@ -139,26 +139,6 @@ CREATE TABLE prof_review_vote (
 
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
-
-CREATE VIEW aggregate.course_review_buckets AS
-SELECT
-  course_id,
-  SUM((easy < 0.2)::INT) AS easy_1q,
-  SUM((0.2 <= easy AND easy < 0.4)::INT) AS easy_2q,
-  SUM((0.4 <= easy AND easy < 0.6)::INT) AS easy_3q,
-  SUM((0.6 <= easy AND easy < 0.8)::INT) AS easy_4q,
-  SUM((0.8 <= easy)::INT) AS easy_5q,
-  SUM((liked < 0.2)::INT) AS liked_1q,
-  SUM((0.2 <= liked AND liked < 0.4)::INT) AS liked_2q,
-  SUM((0.4 <= liked AND liked < 0.6)::INT) AS liked_3q,
-  SUM((0.6 <= liked AND liked < 0.8)::INT) AS liked_4q,
-  SUM((0.8 <= liked)::INT) AS liked_5q,
-  SUM((useful < 0.2)::INT) AS useful_1q,
-  SUM((0.2 <= useful AND useful < 0.4)::INT) AS useful_2q,
-  SUM((0.4 <= useful AND useful < 0.6)::INT) AS useful_3q,
-  SUM((0.6 <= useful AND useful < 0.8)::INT) AS useful_4q,
-  SUM((0.8 <= useful)::INT) AS useful_5q
-FROM course_review GROUP BY course_id;
 
 CREATE VIEW aggregate.prof_review_stats AS
 SELECT

@@ -23,7 +23,10 @@ type MongoCourse struct {
 }
 
 func readMongoCourses(rootPath string) []MongoCourse {
-	data, _ := ioutil.ReadFile(path.Join(rootPath, "course.bson"))
+	data, err := ioutil.ReadFile(path.Join(rootPath, "course.bson"))
+  if err != nil {
+    panic(err)
+  }
 
 	var courses []MongoCourse
 	for len(data) > 0 {

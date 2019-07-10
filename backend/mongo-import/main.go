@@ -46,16 +46,17 @@ func trinary(value interface{}) interface{} {
   }
 }
 
-func softenRating(value interface{}) interface{} {
+func convertRating(value interface{}) interface{} {
   if value == nil {
     return nil
   }
-  // Translate from binary to multi-bin
+  // Translate from binary to multi-bin (0 1 2 3 4 5)
+  // Make translation "soft": map to medium intensity ratings and not extremes
   switch value.(float64) {
   case 0.0:
-    return 0.3
+    return 1
   case 1.0:
-    return 0.7
+    return 4
   default:
     return -1  // unreachable
   }
@@ -135,9 +136,9 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 			ProfID,
 			idMap["user"][userId],
 			Text,
-			softenRating(mr["easiness"]),
-			softenRating(mr["interest"]),
-			softenRating(mr["usefulness"]),
+			convertRating(mr["easiness"]),
+			convertRating(mr["interest"]),
+			convertRating(mr["usefulness"]),
 		)
 	}
 	tx.Commit()
