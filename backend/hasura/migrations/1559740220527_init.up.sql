@@ -9,8 +9,14 @@ CREATE TABLE course (
     CONSTRAINT course_name_length CHECK (LENGTH(name) <= 256),
   description TEXT
     CONSTRAINT course_description_length CHECK (LENGTH(name) <= 1024),
-  textbooks JSONB,
-  timeslots JSONB
+  prereqs TEXT
+    CONSTRAINT course_prereqs_length CHECK (LENGTH(prereqs) <= 1024),
+  coreqs TEXT
+    CONSTRAINT course_coreqs_length CHECK (LENGTH(coreqs) <= 1024),
+  antireqs TEXT
+    CONSTRAINT course_antireqs_length CHECK (LENGTH(antireqs) <= 1024),
+  sections JSONB,
+  textbooks JSONB
 );
 
 CREATE TABLE course_antirequisite (
