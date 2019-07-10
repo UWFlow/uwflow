@@ -140,6 +140,18 @@ CREATE TABLE prof_review_vote (
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
 
+CREATE VIEW aggregate.course_easy_buckets AS
+SELECT course_id, easy, COUNT(*) AS count
+FROM course_review GROUP BY course_id, easy;
+
+CREATE VIEW aggregate.course_liked_buckets AS
+SELECT course_id, liked, COUNT(*) AS count
+FROM course_review GROUP BY course_id, liked;
+
+CREATE VIEW aggregate.course_useful_buckets AS
+SELECT course_id, useful, COUNT(*) AS count
+FROM course_review GROUP BY course_id, useful;
+
 CREATE VIEW aggregate.prof_review_stats AS
 SELECT
   prof_id,
