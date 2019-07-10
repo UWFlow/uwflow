@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/cheggaaa/pb.v1"
 
-  "github.com/AyushK1/uwflow2.0/backend/mongo-import/parts"
+	"github.com/AyushK1/uwflow2.0/backend/mongo-import/parts"
 )
 
 func readMongo(rootPath, collection string) []map[string]interface{} {
@@ -42,24 +42,24 @@ func trinary(value interface{}) interface{} {
 	if value == nil {
 		return nil
 	} else {
-    return int(value.(float64)) != 0
-  }
+		return int(value.(float64)) != 0
+	}
 }
 
 func convertRating(value interface{}) interface{} {
-  if value == nil {
-    return nil
-  }
-  // Translate from binary to multi-bin (0 1 2 3 4 5)
-  // Make translation "soft": map to medium intensity ratings and not extremes
-  switch value.(float64) {
-  case 0.0:
-    return 1
-  case 1.0:
-    return 4
-  default:
-    return -1  // unreachable
-  }
+	if value == nil {
+		return nil
+	}
+	// Translate from binary to multi-bin (0 1 2 3 4 5)
+	// Make translation "soft": map to medium intensity ratings and not extremes
+	switch value.(float64) {
+	case 0.0:
+		return 1
+	case 1.0:
+		return 4
+	default:
+		return -1 // unreachable
+	}
 }
 
 func Profs(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
@@ -204,7 +204,7 @@ func Run(rootPath string) {
 	parts.ImportCourses(db, rootPath, idMap)
 	parts.ImportCourseRequisites(db, rootPath, idMap)
 	Profs(db, rootPath, idMap)
-  parts.ImportSections(db, rootPath, idMap)
+	parts.ImportSections(db, rootPath, idMap)
 	Users(db, rootPath, idMap)
 	CourseReviews(db, rootPath, idMap)
 	ProfReviews(db, rootPath, idMap)
