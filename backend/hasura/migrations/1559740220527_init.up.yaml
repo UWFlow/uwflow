@@ -35,7 +35,6 @@
           foreign_key_constraint_on:
             column: course_id
             table: prof_review
-<<<<<<< HEAD
 =======
       - comment: null
         name: profs_teaching
