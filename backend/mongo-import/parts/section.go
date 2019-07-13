@@ -51,13 +51,13 @@ type PostgresClass struct {
 }
 
 type PostgresSection struct {
-	Campus             string `json:"campus"`
-	ClassNumber        int    `json:"class_number"`
-	SectionName        string `json:"section"`
-	EnrollmentCapacity int    `json:"enrollment_capacity"`
-	EnrollmentTotal    int    `json:"enrollment_total"`
-	TermId             int    `json:"term"`
-  Classes            []PostgresClass `json:"classes"`
+	Campus             string          `json:"campus"`
+	ClassNumber        int             `json:"class_number"`
+	SectionName        string          `json:"section"`
+	EnrollmentCapacity int             `json:"enrollment_capacity"`
+	EnrollmentTotal    int             `json:"enrollment_total"`
+	TermId             int             `json:"term"`
+	Classes            []PostgresClass `json:"classes"`
 }
 
 func readMongoSections(rootPath string) []MongoSection {
