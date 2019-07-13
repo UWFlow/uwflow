@@ -8,8 +8,46 @@ CREATE TABLE course (
   name TEXT NOT NULL
     CONSTRAINT course_name_length CHECK (LENGTH(name) <= 256),
   description TEXT
-    CONSTRAINT course_description_length CHECK (LENGTH(name) <= 1024)
+    CONSTRAINT course_description_length CHECK (LENGTH(name) <= 1024),
+  prereqs TEXT
+    CONSTRAINT course_prereqs_length CHECK (LENGTH(prereqs) <= 1024),
+  coreqs TEXT
+    CONSTRAINT course_coreqs_length CHECK (LENGTH(coreqs) <= 1024),
+  antireqs TEXT
+    CONSTRAINT course_antireqs_length CHECK (LENGTH(antireqs) <= 1024),
+  sections JSONB,
+  textbooks JSONB
 );
+
+CREATE TABLE course_antirequisite (
+  course_id INT
+    REFERENCES course(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  antirequisite_id INT
+    REFERENCES course(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+CREATE TABLE course_prerequisite (
+  course_id INT
+    REFERENCES course(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  prerequisite_id INT
+    REFERENCES course(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  is_corequisite BOOLEAN NOT NULL
+);
+
+CREATE VIEW course_postrequisite AS
+SELECT
+  prerequisite_id AS course_id,
+  course_id AS postrequisite_id,
+  is_corequisite
+FROM course_prerequisite;
 
 CREATE TABLE prof (
   id INT
@@ -44,9 +82,12 @@ CREATE TABLE course_review (
     ON UPDATE CASCADE ON DELETE SET NULL,
   text TEXT
     CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
-  easy BOOLEAN,
-  liked BOOLEAN,
-  useful BOOLEAN
+  easy SMALLINT
+    CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
+  liked SMALLINT,
+    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
+  useful SMALLINT
+    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5)
 );
 
 CREATE TABLE prof_review (
@@ -99,16 +140,17 @@ CREATE TABLE prof_review_vote (
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
 
-CREATE VIEW aggregate.course_review_stats AS
-SELECT
-  course_id,
-  SUM(CASE WHEN easy THEN 1 ELSE 0 END) AS easy,
-  SUM(CASE WHEN NOT easy THEN 1 ELSE 0 END) AS not_easy,
-  SUM(CASE WHEN liked THEN 1 ELSE 0 END) AS liked,
-  SUM(CASE WHEN NOT liked THEN 1 ELSE 0 END) AS not_liked,
-  SUM(CASE WHEN useful THEN 1 ELSE 0 END) AS useful,
-  SUM(CASE WHEN NOT useful THEN 1 ELSE 0 END) AS not_useful
-FROM course_review GROUP BY course_id;
+CREATE VIEW aggregate.course_easy_buckets AS
+SELECT course_id, easy, COUNT(*) AS count
+FROM course_review GROUP BY course_id, easy;
+
+CREATE VIEW aggregate.course_liked_buckets AS
+SELECT course_id, liked, COUNT(*) AS count
+FROM course_review GROUP BY course_id, liked;
+
+CREATE VIEW aggregate.course_useful_buckets AS
+SELECT course_id, useful, COUNT(*) AS count
+FROM course_review GROUP BY course_id, useful;
 
 CREATE VIEW aggregate.prof_review_stats AS
 SELECT

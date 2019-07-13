@@ -13,6 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/AyushK1/uwflow2.0/backend/mongo-import/parts"
 )
 
 func readMongo(rootPath, collection string) []map[string]interface{} {
@@ -44,26 +46,20 @@ func trinary(value interface{}) interface{} {
 	}
 }
 
-func Courses(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
-	tx := db.MustBegin()
-	idMap["course"] = bson.M{}
-	mCourses := readMongo(rootPath, "course")
-	tx.MustExec("TRUNCATE course CASCADE")
-
-	bar := pb.StartNew(len(mCourses))
-	for i := range mCourses {
-		bar.Increment()
-		idMap["course"][mCourses[i]["_id"].(string)] = i
-		tx.MustExec(
-			"INSERT INTO course(id, code, name, description) VALUES ($1, $2, $3, $4)",
-			i,
-			mCourses[i]["_id"].(string),
-			mCourses[i]["name"].(string),
-			mCourses[i]["description"].(string),
-		)
+func convertRating(value interface{}) interface{} {
+	if value == nil {
+		return nil
 	}
-	tx.Commit()
-	bar.FinishPrint("Import courses finished")
+	// Translate from binary to multi-bin (0 1 2 3 4 5)
+	// Make translation "soft": map to medium intensity ratings and not extremes
+	switch value.(float64) {
+	case 0.0:
+		return 1
+	case 1.0:
+		return 4
+	default:
+		return -1 // unreachable
+	}
 }
 
 func Profs(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
@@ -140,9 +136,9 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 			ProfID,
 			idMap["user"][userId],
 			Text,
-			trinary(mr["easiness"]),
-			trinary(mr["interest"]),
-			trinary(mr["usefulness"]),
+			convertRating(mr["easiness"]),
+			convertRating(mr["interest"]),
+			convertRating(mr["usefulness"]),
 		)
 	}
 	tx.Commit()
@@ -205,8 +201,10 @@ func Run(rootPath string) {
 	db := Connect()
 	idMap := map[string]bson.M{}
 
-	Courses(db, rootPath, idMap)
+	parts.ImportCourses(db, rootPath, idMap)
+	parts.ImportCourseRequisites(db, rootPath, idMap)
 	Profs(db, rootPath, idMap)
+	parts.ImportSections(db, rootPath, idMap)
 	Users(db, rootPath, idMap)
 	CourseReviews(db, rootPath, idMap)
 	ProfReviews(db, rootPath, idMap)
