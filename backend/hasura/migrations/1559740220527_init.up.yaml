@@ -35,7 +35,6 @@
           foreign_key_constraint_on:
             column: course_id
             table: prof_review
-=======
       - comment: null
         name: profs_teaching
         using:
@@ -43,7 +42,6 @@
             column: course_id
             table: prof_course
       object_relationships:
->>>>>>> Table changes to bring prof up to parity
       - comment: null
         name: course_easy_buckets
         using:
@@ -129,13 +127,22 @@
             table: prof_course
       object_relationships:
       - comment: null
-        name: prof_review_buckets
+        name: prof_clear_buckets
         using:
           manual_configuration:
             column_mapping:
               id: prof_id
             remote_table:
-              name: prof_review_buckets
+              name: prof_clear_buckets
+              schema: aggregate
+      - comment: null
+        name: prof_engaging_buckets
+        using:
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table:
+              name: prof_engaging_buckets
               schema: aggregate
     - table: prof_course
       object_relationships:
@@ -245,5 +252,8 @@
         name: course_useful_buckets
         schema: aggregate
     - table:
-        name: prof_review_stats
+        name: prof_clear_buckets
+        schema: aggregate
+    - table:
+        name: prof_engaging_buckets
         schema: aggregate

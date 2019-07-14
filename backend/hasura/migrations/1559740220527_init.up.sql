@@ -116,10 +116,10 @@ CREATE TABLE prof_review (
     ON UPDATE CASCADE ON DELETE SET NULL,
   text TEXT
     CONSTRAINT prof_review_length CHECK (LENGTH(text) <= 8192),
-  clear FLOAT
-    CONSTRAINT clear_range CHECK (0 <= clear AND clear <= 1),
-  engaging FLOAT
-    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 1)
+  clear SMALLINT
+    CONSTRAINT clear_range CHECK (0 <= clear AND clear <= 5),
+  engaging SMALLINT
+    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5)
 );
 
 CREATE TABLE course_review_vote (
@@ -165,20 +165,13 @@ CREATE VIEW aggregate.course_useful_buckets AS
 SELECT course_id, useful, COUNT(*) AS count
 FROM course_review GROUP BY course_id, useful;
 
-CREATE VIEW aggregate.prof_review_buckets AS
-SELECT
-  prof_id,
-  SUM((clear < 0.2)::INT) AS clear_1q,
-  SUM((0.2 <= clear AND clear < 0.4)::INT) AS clear_2q,
-  SUM((0.4 <= clear AND clear < 0.6)::INT) AS clear_3q,
-  SUM((0.6 <= clear AND clear < 0.8)::INT) AS clear_4q,
-  SUM((0.8 <= clear)::INT) AS clear_5q,
-  SUM((engaging < 0.2)::INT) AS engaging_1q,
-  SUM((0.2 <= engaging AND engaging < 0.4)::INT) AS engaging_2q,
-  SUM((0.4 <= engaging AND engaging < 0.6)::INT) AS engaging_3q,
-  SUM((0.6 <= engaging AND engaging < 0.8)::INT) AS engaging_4q,
-  SUM((0.8 <= engaging)::INT) AS engaging_5q
-FROM prof_review GROUP BY prof_id;
+CREATE VIEW aggregate.prof_clear_buckets AS
+SELECT prof_id, clear, COUNT(*) AS count
+FROM prof_review GROUP BY prof_id, clear;
+
+CREATE VIEW aggregate.prof_engaging_buckets AS
+SELECT prof_id, engaging, COUNT(*) AS count
+FROM prof_review GROUP BY prof_id, engaging;
 
 -- Credentials
 CREATE SCHEMA secret;

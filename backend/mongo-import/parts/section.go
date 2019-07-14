@@ -89,6 +89,8 @@ func ConvertMeeting(meeting MongoMeeting, idMap map[string]bson.M) PostgresClass
 	}
 	if profId, ok := idMap["prof"][meeting.ProfId]; ok {
 		class.ProfId = profId.(int)
+	} else {
+		class.ProfId = -1 // set default to -1 instead of 0
 	}
 	if meeting.Building != "" {
 		class.Location = meeting.Building + " " + meeting.Room
@@ -130,11 +132,28 @@ func ImportSections(db *sqlx.DB, rootPath string, idMap map[string]bson.M) error
 	tx := db.MustBegin()
 	sections := readMongoSections(rootPath)
 
+	// Used to prevent duplicate insertions to prof_course
+	duplicates := make(map[int]map[int]bool)
 	bar := pb.StartNew(len(sections))
 	for _, section := range sections {
 		bar.Increment()
 		courseId := idMap["course"][section.CourseId]
 		postgresSection := ConvertSection(section, idMap)
+
+		if courseId != nil {
+			if _, found := duplicates[courseId.(int)]; !found {
+				duplicates[courseId.(int)] = make(map[int]bool)
+			}
+			for _, class := range postgresSection.Classes {
+				if class.ProfId >= 0 {
+					if _, found := duplicates[courseId.(int)][class.ProfId]; !found {
+						duplicates[courseId.(int)][class.ProfId] = true
+						tx.MustExec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2)", class.ProfId, courseId)
+					}
+				}
+			}
+		}
+
 		sectionJson, err := json.Marshal(postgresSection)
 		if err != nil {
 			return err

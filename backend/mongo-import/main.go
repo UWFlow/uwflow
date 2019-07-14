@@ -38,14 +38,6 @@ func readMongo(rootPath, collection string) []map[string]interface{} {
 	return mcourses
 }
 
-func trinary(value interface{}) interface{} {
-	if value == nil {
-		return nil
-	} else {
-		return int(value.(float64)) != 0
-	}
-}
-
 func convertRating(value interface{}) interface{} {
 	if value == nil {
 		return nil
@@ -180,8 +172,8 @@ func ProfReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 			ProfID,
 			idMap["user"][userId],
 			Text,
-			trinary(mr["clarity"]),
-			trinary(mr["passion"]),
+			convertRating(mr["clarity"]),
+			convertRating(mr["passion"]),
 		)
 	}
 	tx.Commit()
