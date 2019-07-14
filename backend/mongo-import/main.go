@@ -63,10 +63,10 @@ func Profs(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 	bar := pb.StartNew(len(mProfs))
 	for i := range mProfs {
 		bar.Increment()
-		idMap["prof"][mProfs[i]["_id"].(string)] = i
+		idMap["prof"][mProfs[i]["_id"].(string)] = i + 1 // Start indexing at 1
 		tx.MustExec(
 			"INSERT INTO prof(id, name) VALUES ($1, $2)",
-			i, strings.TrimSpace(fmt.Sprintf("%s %s", mProfs[i]["first_name"].(string), mProfs[i]["last_name"].(string))),
+			i + 1, strings.TrimSpace(fmt.Sprintf("%s %s", mProfs[i]["first_name"].(string), mProfs[i]["last_name"].(string))),
 		)
 	}
 	tx.Commit()
