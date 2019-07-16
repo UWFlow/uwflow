@@ -135,6 +135,16 @@ func ImportSections(db *sqlx.DB, rootPath string, idMap map[string]bson.M) error
 		bar.Increment()
 		courseId := idMap["course"][section.CourseId]
 		postgresSection := ConvertSection(section, idMap)
+
+		if courseId != nil {
+			for _, class := range postgresSection.Classes {
+				if class.ProfId > 0 {
+					tx.MustExec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+					class.ProfId, courseId)
+				}
+			}
+		}
+
 		sectionJson, err := json.Marshal(postgresSection)
 		if err != nil {
 			return err

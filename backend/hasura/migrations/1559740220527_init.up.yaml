@@ -36,6 +36,13 @@
             column: course_id
             table: prof_review
       - comment: null
+        name: profs_teaching
+        using:
+          foreign_key_constraint_on:
+            column: course_id
+            table: prof_course
+      object_relationships:
+      - comment: null
         name: course_easy_buckets
         using:
           manual_configuration:
@@ -112,16 +119,41 @@
           foreign_key_constraint_on:
             column: prof_id
             table: prof_review
+      - comment: null
+        name: prof_courses
+        using:
+          foreign_key_constraint_on:
+            column: prof_id
+            table: prof_course
       object_relationships:
       - comment: null
-        name: prof_review_stats
+        name: prof_clear_buckets
         using:
           manual_configuration:
             column_mapping:
               id: prof_id
             remote_table:
-              name: prof_review_stats
+              name: prof_clear_buckets
               schema: aggregate
+      - comment: null
+        name: prof_engaging_buckets
+        using:
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table:
+              name: prof_engaging_buckets
+              schema: aggregate
+    - table: prof_course
+      object_relationships:
+      - comment: null
+        name: prof
+        using:
+          foreign_key_constraint_on: prof_id
+      - comment: null
+        name: course
+        using:
+          foreign_key_constraint_on: course_id
     - table: user
       array_relationships:
       - comment: null
@@ -220,5 +252,8 @@
         name: course_useful_buckets
         schema: aggregate
     - table:
-        name: prof_review_stats
+        name: prof_clear_buckets
+        schema: aggregate
+    - table:
+        name: prof_engaging_buckets
         schema: aggregate
