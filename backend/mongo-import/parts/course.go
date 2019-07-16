@@ -45,26 +45,37 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	_, err = tx.Exec("TRUNCATE course CASCADE")
 	if err != nil {
 		return err
 	}
 	idMap.Course = make(map[string]int)
 	courses := readMongoCourses(rootPath)
+	preparedCourses := make([][]interface{}, len(courses))
 
 	bar := pb.StartNew(len(courses))
 	for i, course := range courses {
 		bar.Increment()
-		idMap.Course[course.Id] = i
-		_, err = tx.Exec(
-			`INSERT INTO course(id, code, name, description, prereqs, coreqs, antireqs)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			i, course.Id, course.Name, course.Description,
-			course.Prereqs, course.Coreqs, course.Antireqs,
-		)
-		if err != nil {
-			return err
+		idMap.Course[course.Id] = i + 1
+		preparedCourses[i] = []interface{}{
+			i + 1,
+			course.Id,
+			course.Name,
+			course.Description,
+			course.Prereqs,
+			course.Coreqs,
+			course.Antireqs,
 		}
+	}
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course"},
+		[]string{"id", "code", "name", "description", "prereqs", "coreqs", "antireqs"},
+		pgx.CopyFromRows(preparedCourses),
+	)
+	if err != nil {
+		return err
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -79,6 +90,8 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	_, err = tx.Exec("TRUNCATE course_prerequisite CASCADE")
 	if err != nil {
 		return err
@@ -88,6 +101,9 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 		return err
 	}
 	courses := readMongoCourses(rootPath)
+	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
+	preparedPrereqs := make([][]interface{}, 0, len(courses))
+	preparedAntireqs := make([][]interface{}, 0, len(courses))
 
 	bar := pb.StartNew(len(courses))
 	courseCodeRegexp := regexp.MustCompile(CourseCodePattern)
@@ -99,13 +115,10 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			prereqCodes := courseCodeRegexp.FindAllString(*course.Prereqs, -1)
 			for _, prereqCode := range prereqCodes {
 				if prereqId, ok := idMap.Course[strings.ToLower(prereqCode)]; ok {
-					_, err = tx.Exec(
-						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
-             VALUES ($1, $2, $3)`, courseId, prereqId, false,
+					preparedPrereqs = append(
+						preparedPrereqs,
+						[]interface{}{courseId, prereqId, false},
 					)
-					if err != nil {
-						return err
-					}
 				}
 			}
 		}
@@ -114,13 +127,10 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			coreqCodes := courseCodeRegexp.FindAllString(*course.Coreqs, -1)
 			for _, coreqCode := range coreqCodes {
 				if coreqId, ok := idMap.Course[strings.ToLower(coreqCode)]; ok {
-					_, err := tx.Exec(
-						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
-             VALUES ($1, $2, $3)`, courseId, coreqId, true,
+					preparedPrereqs = append(
+						preparedPrereqs,
+						[]interface{}{courseId, coreqId, true},
 					)
-					if err != nil {
-						return err
-					}
 				}
 			}
 		}
@@ -129,16 +139,30 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			antireqCodes := courseCodeRegexp.FindAllString(*course.Antireqs, -1)
 			for _, antireqCode := range antireqCodes {
 				if antireqId, ok := idMap.Course[strings.ToLower(antireqCode)]; ok {
-					_, err = tx.Exec(
-						`INSERT INTO course_antirequisite(course_id, antirequisite_id)
-             VALUES ($1, $2)`, courseId, antireqId,
+					preparedAntireqs = append(
+						preparedAntireqs,
+						[]interface{}{courseId, antireqId},
 					)
-					if err != nil {
-						return err
-					}
 				}
 			}
 		}
+	}
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course_prerequisite"},
+		[]string{"course_id", "prerequisite_id", "is_corequisite"},
+		pgx.CopyFromRows(preparedPrereqs),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course_antirequisite"},
+		[]string{"course_id", "antirequisite_id"},
+		pgx.CopyFromRows(preparedAntireqs),
+	)
+	if err != nil {
+		return err
 	}
 	err = tx.Commit()
 	if err != nil {

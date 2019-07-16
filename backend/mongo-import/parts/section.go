@@ -137,6 +137,9 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	for _, section := range sections {
 		bar.Increment()
 		courseId := idMap.Course[section.CourseId]
+		if courseId == 0 {
+			continue
+		}
 		postgresSection := ConvertSection(section, idMap)
 
 		for _, class := range postgresSection.Classes {
