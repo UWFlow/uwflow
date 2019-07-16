@@ -8,8 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/cheggaaa/pb.v1"
@@ -17,25 +16,24 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/mongo-import/parts"
 )
 
-func readMongo(rootPath, collection string) []map[string]interface{} {
-       data, err := ioutil.ReadFile(path.Join(rootPath, fmt.Sprintf("%s.bson", collection)))
-       if err != nil {
-               log.Fatal(err)
-       }
+type ImportFunction func(*pgx.Conn, string, *parts.IdentifierMap) error
 
-       var mcourses []map[string]interface{}
-       // We must iteratively fetch each MongoDB Document until all bytes are ingested
-       for len(data) > 0 {
-               // Raw is a wrapper around byte slice that is interpreted as BSON document
-               // Data must be wrapped by Raw before being decoded and stored in map
-               var r bson.Raw
-               var m map[string]interface{}
-               bson.Unmarshal(data, &r)
-               bson.Unmarshal(r, &m)
-               mcourses = append(mcourses, m)
-               data = data[len(r):]
-       }
-       return mcourses
+func readMongo(rootPath, collection string) []map[string]interface{} {
+	data, _ := ioutil.ReadFile(path.Join(rootPath, fmt.Sprintf("%s.bson", collection)))
+
+	var mcourses []map[string]interface{}
+	// We must iteratively fetch each MongoDB Document until all bytes are ingested
+	for len(data) > 0 {
+		// Raw is a wrapper around byte slice that is interpreted as BSON document
+		// Data must be wrapped by Raw before being decoded and stored in map
+		var r bson.Raw
+		var m map[string]interface{}
+		bson.Unmarshal(data, &r)
+		bson.Unmarshal(r, &m)
+		mcourses = append(mcourses, m)
+		data = data[len(r):]
+	}
+	return mcourses
 }
 
 func convertRating(value interface{}) interface{} {
@@ -54,50 +52,85 @@ func convertRating(value interface{}) interface{} {
 	}
 }
 
-func Profs(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
-	tx := db.MustBegin()
+func Profs(conn *pgx.Conn, rootPath string, idMap *parts.IdentifierMap) error {
+	tx, err := conn.Begin()
+	if err != nil {
+		return err
+	}
 	idMap.Prof = make(map[string]int)
 	mProfs := readMongo(rootPath, "professor")
-	tx.MustExec("TRUNCATE prof CASCADE")
+	_, err = tx.Exec("TRUNCATE prof CASCADE")
+	if err != nil {
+		return err
+	}
 
 	bar := pb.StartNew(len(mProfs))
 	for i := range mProfs {
 		bar.Increment()
-		idMap.Prof[mProfs[i]["_id"].(string)] = i + 1 // Start indexing at 1
-		tx.MustExec(
+		profId := mProfs[i]["_id"].(string)
+		profName := strings.TrimSpace(fmt.Sprintf("%s %s", mProfs[i]["first_name"].(string), mProfs[i]["last_name"].(string)))
+		idMap.Prof[profId] = i + 1 // Start indexing at 1
+		_, err := tx.Exec(
 			"INSERT INTO prof(id, name) VALUES ($1, $2)",
-			i + 1, strings.TrimSpace(fmt.Sprintf("%s %s", mProfs[i]["first_name"].(string), mProfs[i]["last_name"].(string))),
+			i+1, profName,
 		)
+		if err != nil {
+			return err
+		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Import profs finished")
+	return nil
 }
 
-func Users(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
-	tx := db.MustBegin()
+func Users(db *pgx.Conn, rootPath string, idMap *parts.IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	idMap.User = make(map[primitive.ObjectID]int)
 	mUsers := readMongo(rootPath, "user")
-	tx.MustExec("TRUNCATE \"user\" CASCADE")
+	_, err = tx.Exec("TRUNCATE \"user\" CASCADE")
+	if err != nil {
+		return err
+	}
 
 	bar := pb.StartNew(len(mUsers))
 	for i := range mUsers {
 		bar.Increment()
 		userId := mUsers[i]["_id"].(primitive.ObjectID)
+		userName := strings.TrimSpace(fmt.Sprintf("%s %s", mUsers[i]["first_name"].(string), mUsers[i]["last_name"].(string)))
 		idMap.User[userId] = i
-		tx.MustExec(
+		_, err = tx.Exec(
 			"INSERT INTO \"user\"(id, name) VALUES ($1, $2)",
-			i, strings.TrimSpace(fmt.Sprintf("%s %s", mUsers[i]["first_name"].(string), mUsers[i]["last_name"].(string))),
+			i, userName,
 		)
+		if err != nil {
+			return err
+		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Importing users finished")
+	return nil
 }
 
-func CourseReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
-	tx := db.MustBegin()
+func CourseReviews(db *pgx.Conn, rootPath string, idMap *parts.IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	mReviews := readMongo(rootPath, "user_course")
-	tx.MustExec("TRUNCATE course_review CASCADE")
+	_, err = tx.Exec("TRUNCATE course_review CASCADE")
+	if err != nil {
+		return err
+	}
 
 	bar := pb.StartNew(len(mReviews))
 	for i := range mReviews {
@@ -122,7 +155,7 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 		}
 
 		userId := mReviews[i]["user_id"].(primitive.ObjectID)
-		tx.MustExec(
+		_, err = tx.Exec(
 			"INSERT INTO course_review(course_id, prof_id, user_id, text, easy, liked, useful) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			CourseID,
 			ProfID,
@@ -132,16 +165,29 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 			convertRating(mr["interest"]),
 			convertRating(mr["usefulness"]),
 		)
+		if err != nil {
+			return err
+		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Importing course reviews finished")
+	return nil
 }
 
-func ProfReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
-	tx := db.MustBegin()
+func ProfReviews(db *pgx.Conn, rootPath string, idMap *parts.IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	mReviews := readMongo(rootPath, "user_course")
-	tx.MustExec("TRUNCATE prof_review CASCADE")
+	_, err = tx.Exec("TRUNCATE prof_review CASCADE")
+	if err != nil {
+		return err
+	}
 
 	bar := pb.StartNew(len(mReviews))
 	for i := range mReviews {
@@ -166,7 +212,7 @@ func ProfReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 		}
 
 		userId := mReviews[i]["user_id"].(primitive.ObjectID)
-		tx.MustExec(
+		_, err = tx.Exec(
 			"INSERT INTO prof_review(course_id, prof_id, user_id, text, clear, engaging) VALUES ($1, $2, $3, $4, $5, $6)",
 			CourseID,
 			ProfID,
@@ -175,31 +221,50 @@ func ProfReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 			convertRating(mr["clarity"]),
 			convertRating(mr["passion"]),
 		)
+		if err != nil {
+			return err
+		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Importing prof reviews finished")
+	return nil
 }
 
-func Connect() *sqlx.DB {
-	name := os.Getenv("POSTGRES_DB")
-	pass := os.Getenv("POSTGRES_PASSWORD")
-	port := os.Getenv("POSTGRES_PORT")
-	user := os.Getenv("POSTGRES_USER")
-	url := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, pass, port, name)
-	return sqlx.MustConnect("postgres", url)
+func Connect() (*pgx.Conn, error) {
+	config := pgx.ConnConfig{
+		Database: os.Getenv("POSTGRES_DB"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		User:     os.Getenv("POSTGRES_USER"),
+	}
+	return pgx.Connect(config)
 }
 
 func Run(rootPath string) {
-	db := Connect()
-	idMap := &parts.IdentifierMap{}
+	conn, err := Connect()
+	defer conn.Close()
+	if err != nil {
+		log.Fatal("Failed to open database connection: %v", err)
+	}
 
-	parts.ImportCourses(db, rootPath, idMap)
-	parts.ImportCourseRequisites(db, rootPath, idMap)
-	Profs(db, rootPath, idMap)
-	parts.ImportSections(db, rootPath, idMap)
-	Users(db, rootPath, idMap)
-	CourseReviews(db, rootPath, idMap)
-	ProfReviews(db, rootPath, idMap)
+	idMap := &parts.IdentifierMap{}
+	operations := []ImportFunction{
+		parts.ImportCourses,
+		parts.ImportCourseRequisites,
+		Profs,
+		parts.ImportSections,
+		Users,
+		CourseReviews,
+		ProfReviews,
+	}
+	for _, operation := range operations {
+		err = operation(conn, rootPath, idMap)
+		if err != nil {
+			log.Fatal("Import failed: %v", err)
+		}
+	}
 }
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/cheggaaa/pb.v1"
 )
@@ -126,30 +126,42 @@ func ConvertSection(section MongoSection, idMap *IdentifierMap) PostgresSection 
 	}
 }
 
-func ImportSections(db *sqlx.DB, rootPath string, idMap *IdentifierMap) error {
-	tx := db.MustBegin()
+func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	sections := readMongoSections(rootPath)
 
 	bar := pb.StartNew(len(sections))
 	for _, section := range sections {
 		bar.Increment()
-    courseId := idMap.Course[section.CourseId]
+		courseId := idMap.Course[section.CourseId]
 		postgresSection := ConvertSection(section, idMap)
 
-    for _, class := range postgresSection.Classes {
-      if class.ProfId > 0 {
-        tx.MustExec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-        class.ProfId, courseId)
-      }
-    }
+		for _, class := range postgresSection.Classes {
+			if class.ProfId > 0 {
+				_, err = tx.Exec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+					class.ProfId, courseId)
+				if err != nil {
+					return err
+				}
+			}
+		}
 
 		sectionJson, err := json.Marshal(postgresSection)
 		if err != nil {
 			return err
 		}
-		tx.MustExec(SectionQuery, sectionJson, courseId)
+		_, err = tx.Exec(SectionQuery, sectionJson, courseId)
+		if err != nil {
+			return err
+		}
 	}
-	err := tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Sections finished")
 	return err
 }
