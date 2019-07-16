@@ -18,24 +18,24 @@ import (
 )
 
 func readMongo(rootPath, collection string) []map[string]interface{} {
-	data, err := ioutil.ReadFile(path.Join(rootPath, fmt.Sprintf("%s.bson", collection)))
-	if err != nil {
-		log.Fatal(err)
-	}
+       data, err := ioutil.ReadFile(path.Join(rootPath, fmt.Sprintf("%s.bson", collection)))
+       if err != nil {
+               log.Fatal(err)
+       }
 
-	var mcourses []map[string]interface{}
-	// We must iteratively fetch each MongoDB Document until all bytes are ingested
-	for len(data) > 0 {
-		// Raw is a wrapper around byte slice that is interpreted as BSON document
-		// Data must be wrapped by Raw before being decoded and stored in map
-		var r bson.Raw
-		var m map[string]interface{}
-		bson.Unmarshal(data, &r)
-		bson.Unmarshal(r, &m)
-		mcourses = append(mcourses, m)
-		data = data[len(r):]
-	}
-	return mcourses
+       var mcourses []map[string]interface{}
+       // We must iteratively fetch each MongoDB Document until all bytes are ingested
+       for len(data) > 0 {
+               // Raw is a wrapper around byte slice that is interpreted as BSON document
+               // Data must be wrapped by Raw before being decoded and stored in map
+               var r bson.Raw
+               var m map[string]interface{}
+               bson.Unmarshal(data, &r)
+               bson.Unmarshal(r, &m)
+               mcourses = append(mcourses, m)
+               data = data[len(r):]
+       }
+       return mcourses
 }
 
 func convertRating(value interface{}) interface{} {
@@ -54,16 +54,16 @@ func convertRating(value interface{}) interface{} {
 	}
 }
 
-func Profs(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func Profs(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 	tx := db.MustBegin()
-	idMap["prof"] = bson.M{}
+	idMap.Prof = make(map[string]int)
 	mProfs := readMongo(rootPath, "professor")
 	tx.MustExec("TRUNCATE prof CASCADE")
 
 	bar := pb.StartNew(len(mProfs))
 	for i := range mProfs {
 		bar.Increment()
-		idMap["prof"][mProfs[i]["_id"].(string)] = i + 1 // Start indexing at 1
+		idMap.Prof[mProfs[i]["_id"].(string)] = i + 1 // Start indexing at 1
 		tx.MustExec(
 			"INSERT INTO prof(id, name) VALUES ($1, $2)",
 			i + 1, strings.TrimSpace(fmt.Sprintf("%s %s", mProfs[i]["first_name"].(string), mProfs[i]["last_name"].(string))),
@@ -73,17 +73,17 @@ func Profs(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 	bar.FinishPrint("Import profs finished")
 }
 
-func Users(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func Users(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 	tx := db.MustBegin()
-	idMap["user"] = bson.M{}
+	idMap.User = make(map[primitive.ObjectID]int)
 	mUsers := readMongo(rootPath, "user")
 	tx.MustExec("TRUNCATE \"user\" CASCADE")
 
 	bar := pb.StartNew(len(mUsers))
 	for i := range mUsers {
 		bar.Increment()
-		userId := mUsers[i]["_id"].(primitive.ObjectID).String()
-		idMap["user"][userId] = i
+		userId := mUsers[i]["_id"].(primitive.ObjectID)
+		idMap.User[userId] = i
 		tx.MustExec(
 			"INSERT INTO \"user\"(id, name) VALUES ($1, $2)",
 			i, strings.TrimSpace(fmt.Sprintf("%s %s", mUsers[i]["first_name"].(string), mUsers[i]["last_name"].(string))),
@@ -93,27 +93,27 @@ func Users(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 	bar.FinishPrint("Importing users finished")
 }
 
-func CourseReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func CourseReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 	tx := db.MustBegin()
-	idMap["course_review"] = bson.M{}
+	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	mReviews := readMongo(rootPath, "user_course")
 	tx.MustExec("TRUNCATE course_review CASCADE")
 
 	bar := pb.StartNew(len(mReviews))
 	for i := range mReviews {
 		bar.Increment()
-		reviewId := mReviews[i]["_id"].(primitive.ObjectID).String()
-		idMap["course_review"][reviewId] = i
+		reviewId := mReviews[i]["_id"].(primitive.ObjectID)
+		idMap.CourseReview[reviewId] = i
 		mr := mReviews[i]["course_review"].(map[string]interface{})
 
 		var CourseID interface{} = nil
 		if course_id, ok := mReviews[i]["course_id"].(string); ok {
-			CourseID = idMap["course"][course_id]
+			CourseID = idMap.Course[course_id]
 		}
 
 		var ProfID interface{} = nil
 		if prof_id, ok := mReviews[i]["professor_id"].(string); ok {
-			ProfID = idMap["prof"][prof_id]
+			ProfID = idMap.Prof[prof_id]
 		}
 
 		var Text interface{} = nil
@@ -121,12 +121,12 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 			Text = text
 		}
 
-		userId := mReviews[i]["user_id"].(primitive.ObjectID).String()
+		userId := mReviews[i]["user_id"].(primitive.ObjectID)
 		tx.MustExec(
 			"INSERT INTO course_review(course_id, prof_id, user_id, text, easy, liked, useful) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			CourseID,
 			ProfID,
-			idMap["user"][userId],
+			idMap.User[userId],
 			Text,
 			convertRating(mr["easiness"]),
 			convertRating(mr["interest"]),
@@ -137,27 +137,27 @@ func CourseReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 	bar.FinishPrint("Importing course reviews finished")
 }
 
-func ProfReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func ProfReviews(db *sqlx.DB, rootPath string, idMap *parts.IdentifierMap) {
 	tx := db.MustBegin()
-	idMap["prof_review"] = bson.M{}
+	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	mReviews := readMongo(rootPath, "user_course")
 	tx.MustExec("TRUNCATE prof_review CASCADE")
 
 	bar := pb.StartNew(len(mReviews))
 	for i := range mReviews {
 		bar.Increment()
-		reviewId := mReviews[i]["_id"].(primitive.ObjectID).String()
-		idMap["prof_review"][reviewId] = i
+		reviewId := mReviews[i]["_id"].(primitive.ObjectID)
+		idMap.ProfReview[reviewId] = i
 		mr := mReviews[i]["professor_review"].(map[string]interface{})
 
 		var CourseID interface{} = nil
 		if course_id, ok := mReviews[i]["course_id"].(string); ok {
-			CourseID = idMap["course"][course_id]
+			CourseID = idMap.Course[course_id]
 		}
 
 		var ProfID interface{} = nil
 		if prof_id, ok := mReviews[i]["professor_id"].(string); ok {
-			ProfID = idMap["prof"][prof_id]
+			ProfID = idMap.Prof[prof_id]
 		}
 
 		var Text interface{} = nil
@@ -165,12 +165,12 @@ func ProfReviews(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 			Text = text
 		}
 
-		userId := mReviews[i]["user_id"].(primitive.ObjectID).String()
+		userId := mReviews[i]["user_id"].(primitive.ObjectID)
 		tx.MustExec(
 			"INSERT INTO prof_review(course_id, prof_id, user_id, text, clear, engaging) VALUES ($1, $2, $3, $4, $5, $6)",
 			CourseID,
 			ProfID,
-			idMap["user"][userId],
+			idMap.User[userId],
 			Text,
 			convertRating(mr["clarity"]),
 			convertRating(mr["passion"]),
@@ -191,7 +191,7 @@ func Connect() *sqlx.DB {
 
 func Run(rootPath string) {
 	db := Connect()
-	idMap := map[string]bson.M{}
+	idMap := &parts.IdentifierMap{}
 
 	parts.ImportCourses(db, rootPath, idMap)
 	parts.ImportCourseRequisites(db, rootPath, idMap)

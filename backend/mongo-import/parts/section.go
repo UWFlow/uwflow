@@ -78,7 +78,7 @@ func readMongoSections(rootPath string) []MongoSection {
 	return sections
 }
 
-func ConvertMeeting(meeting MongoMeeting, idMap map[string]bson.M) PostgresClass {
+func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresClass {
 	class := PostgresClass{
 		Days:         meeting.Days,
 		IsCancelled:  meeting.IsCancelled,
@@ -87,8 +87,8 @@ func ConvertMeeting(meeting MongoMeeting, idMap map[string]bson.M) PostgresClass
 		StartSeconds: meeting.StartSeconds,
 		EndSeconds:   meeting.EndSeconds,
 	}
-	if profId, ok := idMap["prof"][meeting.ProfId]; ok {
-		class.ProfId = profId.(int)
+	if profId, ok := idMap.Prof[meeting.ProfId]; ok {
+		class.ProfId = profId
 	}
 	if meeting.Building != "" {
 		class.Location = meeting.Building + " " + meeting.Room
@@ -107,7 +107,7 @@ func ConvertTermId(termId string) (id int, ok bool) {
 	return 0, false
 }
 
-func ConvertSection(section MongoSection, idMap map[string]bson.M) PostgresSection {
+func ConvertSection(section MongoSection, idMap *IdentifierMap) PostgresSection {
 	classes := make([]PostgresClass, len(section.Meetings))
 	for i, meeting := range section.Meetings {
 		classes[i] = ConvertMeeting(meeting, idMap)
@@ -126,24 +126,22 @@ func ConvertSection(section MongoSection, idMap map[string]bson.M) PostgresSecti
 	}
 }
 
-func ImportSections(db *sqlx.DB, rootPath string, idMap map[string]bson.M) error {
+func ImportSections(db *sqlx.DB, rootPath string, idMap *IdentifierMap) error {
 	tx := db.MustBegin()
 	sections := readMongoSections(rootPath)
 
 	bar := pb.StartNew(len(sections))
 	for _, section := range sections {
 		bar.Increment()
-		courseId := idMap["course"][section.CourseId]
+    courseId := idMap.Course[section.CourseId]
 		postgresSection := ConvertSection(section, idMap)
 
-		if courseId != nil {
-			for _, class := range postgresSection.Classes {
-				if class.ProfId > 0 {
-					tx.MustExec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-					class.ProfId, courseId)
-				}
-			}
-		}
+    for _, class := range postgresSection.Classes {
+      if class.ProfId > 0 {
+        tx.MustExec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        class.ProfId, courseId)
+      }
+    }
 
 		sectionJson, err := json.Marshal(postgresSection)
 		if err != nil {

@@ -40,16 +40,16 @@ func readMongoCourses(rootPath string) []MongoCourse {
 	return courses
 }
 
-func ImportCourses(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func ImportCourses(db *sqlx.DB, rootPath string, idMap *IdentifierMap) {
 	tx := db.MustBegin()
-	idMap["course"] = bson.M{}
+	idMap.Course = make(map[string]int)
 	courses := readMongoCourses(rootPath)
 	tx.MustExec("TRUNCATE course CASCADE")
 
 	bar := pb.StartNew(len(courses))
 	for i, course := range courses {
 		bar.Increment()
-		idMap["course"][course.Id] = i
+		idMap.Course[course.Id] = i
 		tx.MustExec(
 			`INSERT INTO course(id, code, name, description, prereqs, coreqs, antireqs)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -61,7 +61,7 @@ func ImportCourses(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
 	bar.FinishPrint("Courses finished")
 }
 
-func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
+func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap *IdentifierMap) {
 	tx := db.MustBegin()
 	courses := readMongoCourses(rootPath)
 	tx.MustExec("TRUNCATE course_prerequisite CASCADE")
@@ -71,12 +71,12 @@ func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.
 	courseCodeRegexp := regexp.MustCompile(CourseCodePattern)
 	for _, course := range courses {
 		bar.Increment()
-		courseId := idMap["course"][course.Id]
+		courseId := idMap.Course[course.Id]
 
 		if course.Prereqs != nil {
 			prereqCodes := courseCodeRegexp.FindAllString(*course.Prereqs, -1)
 			for _, prereqCode := range prereqCodes {
-				if prereqId, ok := idMap["course"][strings.ToLower(prereqCode)]; ok {
+				if prereqId, ok := idMap.Course[strings.ToLower(prereqCode)]; ok {
 					tx.MustExec(
 						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
              VALUES ($1, $2, $3)`, courseId, prereqId, false,
@@ -88,7 +88,7 @@ func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.
 		if course.Coreqs != nil {
 			coreqCodes := courseCodeRegexp.FindAllString(*course.Coreqs, -1)
 			for _, coreqCode := range coreqCodes {
-				if coreqId, ok := idMap["course"][strings.ToLower(coreqCode)]; ok {
+				if coreqId, ok := idMap.Course[strings.ToLower(coreqCode)]; ok {
 					tx.MustExec(
 						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
              VALUES ($1, $2, $3)`, courseId, coreqId, true,
@@ -100,7 +100,7 @@ func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.
 		if course.Antireqs != nil {
 			antireqCodes := courseCodeRegexp.FindAllString(*course.Antireqs, -1)
 			for _, antireqCode := range antireqCodes {
-				if antireqId, ok := idMap["course"][strings.ToLower(antireqCode)]; ok {
+				if antireqId, ok := idMap.Course[strings.ToLower(antireqCode)]; ok {
 					tx.MustExec(
 						`INSERT INTO course_antirequisite(course_id, antirequisite_id)
              VALUES ($1, $2)`, courseId, antireqId,
