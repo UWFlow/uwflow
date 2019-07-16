@@ -11,20 +11,16 @@ import (
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
-const SectionQuery = `UPDATE course
-SET sections = COALESCE(sections, '[]'::JSONB) || $1
-WHERE id = $2`
-
 type MongoMeeting struct {
 	Days         []string `bson:"days"`
-	StartSeconds int      `bson:"start_seconds"`
-	EndSeconds   int      `bson:"end_seconds"`
 	IsCancelled  bool     `bson:"is_cancelled"`
 	IsClosed     bool     `bson:"is_closed"`
 	IsTBA        bool     `bson:"is_tba"`
-	ProfId       string   `bson:"prof_id"`
-	Building     string   `bson:"building"`
-	Room         string   `bson:"room"`
+	StartSeconds *int     `bson:"start_seconds"`
+	EndSeconds   *int     `bson:"end_seconds"`
+	ProfId       *string  `bson:"prof_id"`
+	Building     *string  `bson:"building"`
+	Room         *string  `bson:"room"`
 }
 
 type MongoSection struct {
@@ -40,14 +36,14 @@ type MongoSection struct {
 }
 
 type PostgresClass struct {
-	StartSeconds int      `json:"start_seconds",omitempty`
-	EndSeconds   int      `json:"end_seconds",omitempty`
 	Days         []string `json:"days"`
 	IsCancelled  bool     `json:"is_cancelled"`
 	IsClosed     bool     `json:"is_closed"`
 	IsTBA        bool     `json:"is_tba"`
-	ProfId       int      `json:"prof_id",omitempty`
-	Location     string   `json:"location",omitempty`
+	StartSeconds *int     `json:"start_seconds",omitempty`
+	EndSeconds   *int     `json:"end_seconds",omitempty`
+	ProfId       *int     `json:"prof_id",omitempty`
+	Location     *string  `json:"location",omitempty`
 }
 
 type PostgresSection struct {
@@ -87,11 +83,14 @@ func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresClass {
 		StartSeconds: meeting.StartSeconds,
 		EndSeconds:   meeting.EndSeconds,
 	}
-	if profId, ok := idMap.Prof[meeting.ProfId]; ok {
-		class.ProfId = profId
+	if meeting.ProfId != nil {
+		if profId, ok := idMap.Prof[*(meeting.ProfId)]; ok {
+			class.ProfId = &profId
+		}
 	}
-	if meeting.Building != "" {
-		class.Location = meeting.Building + " " + meeting.Room
+	if meeting.Building != nil && meeting.Room != nil {
+		location := *meeting.Building + " " + *meeting.Room
+		class.Location = &location
 	}
 	return class
 }
@@ -131,21 +130,41 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	sections := readMongoSections(rootPath)
+	// We cannot use CopyFrom here, as this is an update of an existing field.
+	// This is no tragedy: prepared statements are still quite fast.
+	_, err = tx.Prepare(
+		"update_course",
+		"UPDATE course SET sections = COALESCE(sections, '[]'::JSONB) || $1 WHERE id = $2",
+	)
+	if err != nil {
+		return err
+	}
+	// While we are at it, we will avoid using CopyFrom for prof_course as well.
+	// It would be faster, but we would have to reify ON CONFLIECT DO NOTHING.
+	// CopyFrom makes more sense on very heavy imports, that is reviews.
+	_, err = tx.Prepare(
+		"insert_prof_course",
+		"INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+	)
+	if err != nil {
+		return err
+	}
 
 	bar := pb.StartNew(len(sections))
 	for _, section := range sections {
 		bar.Increment()
-		courseId := idMap.Course[section.CourseId]
-		if courseId == 0 {
-			continue
+		courseId, courseFound := idMap.Course[section.CourseId]
+		if !courseFound {
+			continue // We cannot do anything for missing courses
 		}
-		postgresSection := ConvertSection(section, idMap)
 
+		postgresSection := ConvertSection(section, idMap)
 		for _, class := range postgresSection.Classes {
-			if class.ProfId > 0 {
-				_, err = tx.Exec("INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-					class.ProfId, courseId)
+			if class.ProfId != nil {
+				_, err = tx.Exec("insert_prof_course", *(class.ProfId), courseId)
 				if err != nil {
 					return err
 				}
@@ -156,7 +175,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(SectionQuery, sectionJson, courseId)
+		_, err = tx.Exec("update_course", sectionJson, courseId)
 		if err != nil {
 			return err
 		}
