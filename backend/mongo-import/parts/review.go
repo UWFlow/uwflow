@@ -40,8 +40,8 @@ type MongoReview struct {
 	CourseReview MongoCourseReview  `bson:"course_review"`
 	ProfId       *string            `bson:"professor_id"`
 	ProfReview   MongoProfReview    `bson:"professor_review"`
-  TermId       string             `bson:"term_id"`
-  LevelId      *string            `bson:"program_year_id"`
+	TermId       string             `bson:"term_id"`
+	LevelId      *string            `bson:"program_year_id"`
 }
 
 func convertRating(value *float64) interface{} {
@@ -115,7 +115,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	preparedCourseReviews := make([][]interface{}, 0, len(reviews))
 	preparedProfReviews := make([][]interface{}, 0, len(reviews))
-  preparedUserCourses := make([][]interface{}, 0, len(reviews))
+	preparedUserCourses := make([][]interface{}, 0, len(reviews))
 
 	bar := pb.StartNew(len(reviews))
 	courseReviewId, profReviewId := 1, 1
@@ -166,18 +166,18 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			profReviewId += 1
 		}
 
-    if courseFound {
-      termId, _ := convert.MongoToPostgresTerm(review.TermId)
-      preparedUserCourses = append(
-        preparedUserCourses,
-        []interface{}{
-          courseId,
-          idMap.User[review.UserId],
-          termId,
-          review.LevelId,
-        },
-      )
-    }
+		if courseFound {
+			termId, _ := convert.MongoToPostgresTerm(review.TermId)
+			preparedUserCourses = append(
+				preparedUserCourses,
+				[]interface{}{
+					courseId,
+					idMap.User[review.UserId],
+					termId,
+					review.LevelId,
+				},
+			)
+		}
 	}
 
 	_, err = tx.CopyFrom(
@@ -196,11 +196,11 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  _, err = tx.CopyFrom(
-    pgx.Identifier{"user_course_taken"},
-    []string{"course_id", "user_id", "term", "level"},
-    pgx.CopyFromRows(preparedUserCourses),
-  )
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"user_course_taken"},
+		[]string{"course_id", "user_id", "term", "level"},
+		pgx.CopyFromRows(preparedUserCourses),
+	)
 	if err != nil {
 		return err
 	}

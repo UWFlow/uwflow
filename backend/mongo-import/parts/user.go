@@ -12,10 +12,10 @@ import (
 )
 
 type MongoUser struct {
-	Id        primitive.ObjectID `bson:"_id"`
-	FirstName string             `bson:"first_name"`
-	LastName  string             `bson:"last_name"`
-  ProgramName *string          `bson:"program_name"`
+	Id          primitive.ObjectID `bson:"_id"`
+	FirstName   string             `bson:"first_name"`
+	LastName    string             `bson:"last_name"`
+	ProgramName *string            `bson:"program_name"`
 }
 
 func readMongoUsers(rootPath string) []MongoUser {
@@ -56,13 +56,13 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		bar.Increment()
 		fullName := strings.TrimSpace(user.FirstName + " " + user.LastName)
 		idMap.User[user.Id] = i + 1
-    // If the program name is longer than 256 characters,
-    // it's almost certainly not actually a program name.
-    // We have some users with entire transcipts as "program names".
-    // We take the liberty of dropping such long string here.
-    if user.ProgramName != nil && len(*user.ProgramName) > 256 {
-      user.ProgramName = nil
-    }
+		// If the program name is longer than 256 characters,
+		// it's almost certainly not actually a program name.
+		// We have some users with entire transcipts as "program names".
+		// We take the liberty of dropping such long string here.
+		if user.ProgramName != nil && len(*user.ProgramName) > 256 {
+			user.ProgramName = nil
+		}
 		preparedUsers[i] = []interface{}{i + 1, fullName, user.ProgramName}
 	}
 
