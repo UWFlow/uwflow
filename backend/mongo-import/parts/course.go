@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/cheggaaa/pb.v1"
 )
@@ -40,46 +40,84 @@ func readMongoCourses(rootPath string) []MongoCourse {
 	return courses
 }
 
-func ImportCourses(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
-	tx := db.MustBegin()
-	idMap["course"] = bson.M{}
+func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("TRUNCATE course CASCADE")
+	if err != nil {
+		return err
+	}
+	idMap.Course = make(map[string]int)
 	courses := readMongoCourses(rootPath)
-	tx.MustExec("TRUNCATE course CASCADE")
+	preparedCourses := make([][]interface{}, len(courses))
 
 	bar := pb.StartNew(len(courses))
 	for i, course := range courses {
 		bar.Increment()
-		idMap["course"][course.Id] = i
-		tx.MustExec(
-			`INSERT INTO course(id, code, name, description, prereqs, coreqs, antireqs)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			i, course.Id, course.Name, course.Description,
-			course.Prereqs, course.Coreqs, course.Antireqs,
-		)
+		idMap.Course[course.Id] = i + 1
+		preparedCourses[i] = []interface{}{
+			i + 1,
+			course.Id,
+			course.Name,
+			course.Description,
+			course.Prereqs,
+			course.Coreqs,
+			course.Antireqs,
+		}
 	}
-	tx.Commit()
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course"},
+		[]string{"id", "code", "name", "description", "prereqs", "coreqs", "antireqs"},
+		pgx.CopyFromRows(preparedCourses),
+	)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Courses finished")
+	return nil
 }
 
-func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.M) {
-	tx := db.MustBegin()
+func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec("TRUNCATE course_prerequisite CASCADE")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("TRUNCATE course_antirequisite CASCADE")
+	if err != nil {
+		return err
+	}
 	courses := readMongoCourses(rootPath)
-	tx.MustExec("TRUNCATE course_prerequisite CASCADE")
-	tx.MustExec("TRUNCATE course_antirequisite CASCADE")
+	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
+	preparedPrereqs := make([][]interface{}, 0, len(courses))
+	preparedAntireqs := make([][]interface{}, 0, len(courses))
 
 	bar := pb.StartNew(len(courses))
 	courseCodeRegexp := regexp.MustCompile(CourseCodePattern)
 	for _, course := range courses {
 		bar.Increment()
-		courseId := idMap["course"][course.Id]
+		courseId := idMap.Course[course.Id]
 
 		if course.Prereqs != nil {
 			prereqCodes := courseCodeRegexp.FindAllString(*course.Prereqs, -1)
 			for _, prereqCode := range prereqCodes {
-				if prereqId, ok := idMap["course"][strings.ToLower(prereqCode)]; ok {
-					tx.MustExec(
-						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
-             VALUES ($1, $2, $3)`, courseId, prereqId, false,
+				if prereqId, ok := idMap.Course[strings.ToLower(prereqCode)]; ok {
+					preparedPrereqs = append(
+						preparedPrereqs,
+						[]interface{}{courseId, prereqId, false},
 					)
 				}
 			}
@@ -88,10 +126,10 @@ func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.
 		if course.Coreqs != nil {
 			coreqCodes := courseCodeRegexp.FindAllString(*course.Coreqs, -1)
 			for _, coreqCode := range coreqCodes {
-				if coreqId, ok := idMap["course"][strings.ToLower(coreqCode)]; ok {
-					tx.MustExec(
-						`INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
-             VALUES ($1, $2, $3)`, courseId, coreqId, true,
+				if coreqId, ok := idMap.Course[strings.ToLower(coreqCode)]; ok {
+					preparedPrereqs = append(
+						preparedPrereqs,
+						[]interface{}{courseId, coreqId, true},
 					)
 				}
 			}
@@ -100,15 +138,36 @@ func ImportCourseRequisites(db *sqlx.DB, rootPath string, idMap map[string]bson.
 		if course.Antireqs != nil {
 			antireqCodes := courseCodeRegexp.FindAllString(*course.Antireqs, -1)
 			for _, antireqCode := range antireqCodes {
-				if antireqId, ok := idMap["course"][strings.ToLower(antireqCode)]; ok {
-					tx.MustExec(
-						`INSERT INTO course_antirequisite(course_id, antirequisite_id)
-             VALUES ($1, $2)`, courseId, antireqId,
+				if antireqId, ok := idMap.Course[strings.ToLower(antireqCode)]; ok {
+					preparedAntireqs = append(
+						preparedAntireqs,
+						[]interface{}{courseId, antireqId},
 					)
 				}
 			}
 		}
 	}
-	tx.Commit()
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course_prerequisite"},
+		[]string{"course_id", "prerequisite_id", "is_corequisite"},
+		pgx.CopyFromRows(preparedPrereqs),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course_antirequisite"},
+		[]string{"course_id", "antirequisite_id"},
+		pgx.CopyFromRows(preparedAntireqs),
+	)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 	bar.FinishPrint("Course requisites finished")
+	return nil
 }
