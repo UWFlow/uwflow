@@ -89,7 +89,7 @@ CREATE TABLE user_course_taken (
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   term INT NOT NULL,
-  level TEXT NOT NULL
+  level TEXT
 );
 
 CREATE TABLE user_shortlist (
