@@ -180,6 +180,30 @@
           foreign_key_constraint_on:
             column: user_id
             table: prof_review_vote
+      - comment: null
+        name: courses_taken
+        using:
+          foreign_key_constraint_on:
+            column: user_id
+            table: user_course_taken
+      - comment: null
+        name: shortlist
+        using:
+          foreign_key_constraint_on:
+            column: user_id
+            table: user_shortlist
+    - table: user_course_taken
+      object_relationships:
+      - comment: null
+        name: course
+        using:
+          foreign_key_constraint_on: course_id
+    - table: user_shortlist
+      object_relationships:
+      - comment: null
+        name: course
+        using:
+          foreign_key_constraint_on: course_id
     - table: course_review
       array_relationships:
       - comment: null

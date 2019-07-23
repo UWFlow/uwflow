@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/AyushK1/uwflow2.0/backend/mongo-import/convert"
 )
 
 type MongoMeeting struct {
@@ -95,23 +97,12 @@ func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresClass {
 	return class
 }
 
-func ConvertTermId(termId string) (id int, ok bool) {
-	for i := range termId {
-		if termId[i] == '_' {
-			year, _ := strconv.Atoi(termId[:i])
-			month, _ := strconv.Atoi(termId[i+1:])
-			return 1000 + (year%100)*10 + month, true
-		}
-	}
-	return 0, false
-}
-
 func ConvertSection(section MongoSection, idMap *IdentifierMap) PostgresSection {
 	classes := make([]PostgresClass, len(section.Meetings))
 	for i, meeting := range section.Meetings {
 		classes[i] = ConvertMeeting(meeting, idMap)
 	}
-	termId, _ := ConvertTermId(section.TermId)
+	termId, _ := convert.MongoToPostgresTerm(section.TermId)
 	classNumber, _ := strconv.Atoi(section.ClassNumber)
 
 	return PostgresSection{
