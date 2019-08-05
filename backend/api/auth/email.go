@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"errors"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
@@ -11,7 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type EmailAuthRequest struct {
+type EmailAuthLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type EmailAuthRegisterRequest struct {
+	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -47,7 +54,7 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	body := EmailAuthRequest{}
+	body := EmailAuthLoginRequest{}
 	err = json.Unmarshal(rawBody, &body)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
@@ -62,6 +69,40 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 	id, err := authenticate(body.Email, []byte(body.Password))
 	if err != nil {
 		serde.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(MakeHasuraJWT(id))
+}
+
+func register(name string, email string, password []byte) (int, error) {
+	// Hit DB with SELECT * FROM secret.user_email WHERE email = email
+	// If email exists then error
+	// Otherwise Hit DB with INSERT INTO
+	return 0, errors.New("")
+}
+
+func RegisterEmail(w http.ResponseWriter, r *http.Request) {
+	rawBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	body := EmailAuthRegisterRequest{}
+	err = json.Unmarshal(rawBody, &body)
+	if err != nil {
+		serde.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if body.Email == "" || body.Password == "" || body.Name == "" {
+		serde.Error(w, "Expected {name, email, password}", http.StatusBadRequest)
+		return
+	}
+
+	id, err := register(body.Name, body.Email, []byte(body.Password))
+	if err != nil {
+		serde.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
