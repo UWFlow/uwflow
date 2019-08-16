@@ -16,6 +16,8 @@ type MongoUser struct {
 	FirstName   string             `bson:"first_name"`
 	LastName    string             `bson:"last_name"`
 	ProgramName *string            `bson:"program_name"`
+	Email       string             `bson:"email"`
+	Password    string             `bson:"password"`
 }
 
 func readMongoUsers(rootPath string) []MongoUser {
@@ -50,6 +52,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	idMap.User = make(map[primitive.ObjectID]int)
 	users := readMongoUsers(rootPath)
 	preparedUsers := make([][]interface{}, len(users))
+	var emailCredentials [][]interface{}
 
 	bar := pb.StartNew(len(users))
 	for i, user := range users {
@@ -64,12 +67,27 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			user.ProgramName = nil
 		}
 		preparedUsers[i] = []interface{}{i + 1, fullName, user.ProgramName}
+
+		// Only add email users with valid email and password
+		// Not sure why there are email users without password?
+		if user.Email != "" && len(user.Password) == 60 {
+			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Email, user.Password})
+		}
 	}
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"user"},
 		[]string{"id", "full_name", "program"},
 		pgx.CopyFromRows(preparedUsers),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"secret", "user_email"},
+		[]string{"user_id", "email", "password_hash"},
+		pgx.CopyFromRows(emailCredentials),
 	)
 	if err != nil {
 		return err

@@ -2,9 +2,9 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
-	"errors"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
@@ -24,8 +24,8 @@ type EmailAuthRegisterRequest struct {
 }
 
 type EmailAuthRecord struct {
-	Id       int    `db:"id"`
-	Email    string `db:"email"`
+	Id           int    `db:"user_id"`
+	Email        string `db:"email"`
 	PasswordHash []byte `db:"password_hash"`
 }
 
@@ -37,7 +37,7 @@ const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 func authenticate(email string, password []byte) (int, error) {
 	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
 	dbErr := db.Handle.Get(&target,
-		"SELECT id, password_hash FROM secret.user_email WHERE email = $1",
+		"SELECT user_id, password_hash FROM secret.user_email WHERE email = $1",
 		email)
 	// Always attempt auth to prevent enumeration of valid emails
 	authErr := bcrypt.CompareHashAndPassword(target.PasswordHash, password)
@@ -76,10 +76,41 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func register(name string, email string, password []byte) (int, error) {
-	// Hit DB with SELECT * FROM secret.user_email WHERE email = email
-	// If email exists then error
-	// Otherwise Hit DB with INSERT INTO
-	return 0, errors.New("")
+	// Check db if email is already being used
+	var emailExists bool
+	emailErr := db.Handle.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM secret.user_email WHERE email = $1)",
+		email).Scan(&emailExists)
+	if emailErr != nil {
+		return 0, emailErr
+	} else if emailExists {
+		return 0, errors.New("Email already exists")
+	}
+
+	// Assign the email user a new id
+	// Increment the current largest id
+	var maxId int
+	dbErr := db.Handle.QueryRow(
+		"SELECT id FROM \"user\" ORDER BY id DESC LIMIT 1").Scan(&maxId)
+	if dbErr != nil {
+		return 0, dbErr
+	}
+
+	db.Handle.MustExec(
+		"INSERT INTO \"user\"(id, full_name) VALUES ($1, $2)",
+		maxId+1, name,
+	)
+
+	// Store the password hash as a column
+	passwordHash, err := bcrypt.GenerateFromPassword(password, 10)
+	if err != nil {
+		return 0, err
+	}
+	db.Handle.MustExec(
+		"INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)",
+		maxId+1, email, passwordHash,
+	)
+	return maxId + 1, nil
 }
 
 func RegisterEmail(w http.ResponseWriter, r *http.Request) {
