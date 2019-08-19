@@ -16,8 +16,8 @@ type MongoUser struct {
 	FirstName   string             `bson:"first_name"`
 	LastName    string             `bson:"last_name"`
 	ProgramName *string            `bson:"program_name"`
-	Email       string             `bson:"email"`
-	Password    string             `bson:"password"`
+	Email       *string            `bson:"email"`
+	Password    *string            `bson:"password"`
 }
 
 func readMongoUsers(rootPath string) []MongoUser {
@@ -70,7 +70,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 		// Only add email users with valid email and password
 		// Not sure why there are email users without password?
-		if user.Email != "" && len(user.Password) == 60 {
+		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
 			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Email, user.Password})
 		}
 	}

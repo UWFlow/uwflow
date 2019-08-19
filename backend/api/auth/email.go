@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
@@ -34,6 +33,9 @@ type EmailAuthRecord struct {
 // thereby faithfully emulating a legitimate bcrypt delay
 const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 
+// Default value for bcrypt cost/difficulty
+const bcryptCost = 10
+
 func authenticate(email string, password []byte) (int, error) {
 	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
 	dbErr := db.Handle.Get(&target,
@@ -49,13 +51,8 @@ func authenticate(email string, password []byte) (int, error) {
 }
 
 func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
-	rawBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
 	body := EmailAuthLoginRequest{}
-	err = json.Unmarshal(rawBody, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -102,9 +99,9 @@ func register(name string, email string, password []byte) (int, error) {
 	)
 
 	// Store the password hash as a column
-	passwordHash, err := bcrypt.GenerateFromPassword(password, 10)
-	if err != nil {
-		return 0, err
+	passwordHash, hashErr := bcrypt.GenerateFromPassword(password, bcryptCost)
+	if hashErr != nil {
+		return 0, hashErr
 	}
 	db.Handle.MustExec(
 		"INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)",
@@ -114,13 +111,8 @@ func register(name string, email string, password []byte) (int, error) {
 }
 
 func RegisterEmail(w http.ResponseWriter, r *http.Request) {
-	rawBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
 	body := EmailAuthRegisterRequest{}
-	err = json.Unmarshal(rawBody, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return
