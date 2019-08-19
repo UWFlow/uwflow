@@ -17,9 +17,9 @@ type EmailAuthLoginRequest struct {
 }
 
 type EmailAuthRegisterRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name     *string `json:"name"`
+	Email    string  `json:"email"`
+	Password *string `json:"password"`
 }
 
 type EmailAuthRecord struct {
@@ -118,12 +118,12 @@ func RegisterEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if body.Email == "" || body.Password == "" || body.Name == "" {
+	if body.Email == "" || body.Password == nil || body.Name == nil {
 		serde.Error(w, "Expected {name, email, password}", http.StatusBadRequest)
 		return
 	}
 
-	id, err := register(body.Name, body.Email, []byte(body.Password))
+	id, err := register(*body.Name, body.Email, []byte(*body.Password))
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusUnauthorized)
 		return
