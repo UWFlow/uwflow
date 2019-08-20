@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
@@ -35,9 +36,6 @@ const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 
 // Default value for bcrypt cost/difficulty
 const bcryptCost = 10
-
-// temporary secret
-const sampleSecret = "5BEC95A53F54EFFDFA3BD3B5AF30F31A36F2BB1AFB1B1C464380AB02E2BF3440"
 
 func authenticate(email string, password []byte) (int, error) {
 	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
@@ -72,7 +70,7 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(sampleSecret)))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
 }
 
 func register(name string, email string, password []byte) (int, error) {
@@ -132,5 +130,5 @@ func RegisterEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(sampleSecret)))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
 }
