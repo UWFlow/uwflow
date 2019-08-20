@@ -19,7 +19,8 @@ func Routes() *chi.Mux {
 		middleware.Recoverer,
 	)
 
-	router.Post("/auth/email", auth.AuthenticateEmail)
+	router.Post("/auth/email/login", auth.AuthenticateEmail)
+	router.Post("/auth/email/register", auth.RegisterEmail)
 
 	return router
 }

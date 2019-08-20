@@ -2,8 +2,9 @@ package auth
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"net/http"
+	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
@@ -11,14 +12,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type EmailAuthRequest struct {
+type EmailAuthLoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
+type EmailAuthRegisterRequest struct {
+	Name     *string `json:"name"`
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
+}
+
 type EmailAuthRecord struct {
-	Id       int    `db:"id"`
-	Email    string `db:"email"`
+	Id           int    `db:"user_id"`
+	Email        string `db:"email"`
 	PasswordHash []byte `db:"password_hash"`
 }
 
@@ -27,10 +34,13 @@ type EmailAuthRecord struct {
 // thereby faithfully emulating a legitimate bcrypt delay
 const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 
+// Default value for bcrypt cost/difficulty
+const bcryptCost = 10
+
 func authenticate(email string, password []byte) (int, error) {
 	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
 	dbErr := db.Handle.Get(&target,
-		"SELECT id, password_hash FROM secret.user_email WHERE email = $1",
+		"SELECT user_id, password_hash FROM secret.user_email WHERE email = $1",
 		email)
 	// Always attempt auth to prevent enumeration of valid emails
 	authErr := bcrypt.CompareHashAndPassword(target.PasswordHash, password)
@@ -42,13 +52,8 @@ func authenticate(email string, password []byte) (int, error) {
 }
 
 func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
-	rawBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	body := EmailAuthRequest{}
-	err = json.Unmarshal(rawBody, &body)
+	body := EmailAuthLoginRequest{}
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -65,5 +70,65 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(MakeHasuraJWT(id))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
+}
+
+func register(name string, email string, password []byte) (int, error) {
+	// Check db if email is already being used
+	var emailExists bool
+	emailErr := db.Handle.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM secret.user_email WHERE email = $1)",
+		email).Scan(&emailExists)
+	if emailErr != nil {
+		return 0, emailErr
+	} else if emailExists {
+		return 0, errors.New("Email already exists")
+	}
+
+	// Assign the email user a new id
+	// Increment the current largest id
+	var maxId int
+	dbErr := db.Handle.QueryRow(
+		"SELECT id FROM \"user\" ORDER BY id DESC LIMIT 1").Scan(&maxId)
+	if dbErr != nil {
+		return 0, dbErr
+	}
+
+	db.Handle.MustExec(
+		"INSERT INTO \"user\"(id, full_name) VALUES ($1, $2)",
+		maxId+1, name,
+	)
+
+	// Store the password hash as a column
+	passwordHash, hashErr := bcrypt.GenerateFromPassword(password, bcryptCost)
+	if hashErr != nil {
+		return 0, hashErr
+	}
+	db.Handle.MustExec(
+		"INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)",
+		maxId+1, email, passwordHash,
+	)
+	return maxId + 1, nil
+}
+
+func RegisterEmail(w http.ResponseWriter, r *http.Request) {
+	body := EmailAuthRegisterRequest{}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		serde.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if body.Email == nil || body.Password == nil || body.Name == nil {
+		serde.Error(w, "Expected {name, email, password}", http.StatusBadRequest)
+		return
+	}
+
+	id, err := register(*body.Name, *body.Email, []byte(*body.Password))
+	if err != nil {
+		serde.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
 }

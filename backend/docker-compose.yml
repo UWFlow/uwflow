@@ -23,6 +23,7 @@ services:
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: "http-log, query-log, startup"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
+      HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
     image: hasura/graphql-engine:v1.0.0-beta.3.cli-migrations
     ports:
       - $API_PORT:$API_PORT
