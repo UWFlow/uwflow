@@ -6,6 +6,8 @@ import (
 
 	"github.com/AyushK1/uwflow2.0/backend/api/auth"
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
+	"github.com/AyushK1/uwflow2.0/backend/api/parse"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -13,7 +15,6 @@ import (
 func Routes() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
-		middleware.AllowContentType("application/json"),
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Logger,
 		middleware.Recoverer,
@@ -21,6 +22,7 @@ func Routes() *chi.Mux {
 
 	router.Post("/auth/email/login", auth.AuthenticateEmail)
 	router.Post("/auth/email/register", auth.RegisterEmail)
+	router.Post("/parse/transcript", parse.HandleTranscript)
 
 	return router
 }
