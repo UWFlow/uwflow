@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/AyushK1/uwflow2.0/backend/api/util"
 )
 
 type TermSummary struct {
@@ -58,25 +60,6 @@ var (
 	TermRegexp      = regexp.MustCompile(`(Fall|Winter|Spring)\s+(\d{4})`)
 )
 
-func HumanToPostgresTerm(season string, year string) (int, error) {
-	var seasonId int
-	switch season {
-	case "Fall":
-		seasonId = 9
-	case "Spring":
-		seasonId = 5
-	case "Winter":
-		seasonId = 1
-	default:
-		return 0, fmt.Errorf("%s is not a season", season)
-	}
-	yearId, err := strconv.Atoi(year)
-	if err != nil {
-		return 0, fmt.Errorf("%s is not a year: %v", year, err)
-	}
-	return 1000 + (yearId%100)*10 + seasonId, nil
-}
-
 func extractCourseHistory(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
 	terms := TermRegexp.FindAllStringSubmatchIndex(text, -1)
@@ -89,7 +72,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 	for i, j := 0, 0; i < len(terms); i++ {
 		season := text[terms[i][2]:terms[i][3]]
 		year := text[terms[i][4]:terms[i][5]]
-		term, err := HumanToPostgresTerm(season, year)
+		term, err := util.HumanToPostgresTerm(season, year)
 		if err != nil {
 			return nil, fmt.Errorf("\"%s %s\" is not a term: %v", season, year, err)
 		}
