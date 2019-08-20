@@ -18,7 +18,7 @@ type EmailAuthLoginRequest struct {
 
 type EmailAuthRegisterRequest struct {
 	Name     *string `json:"name"`
-	Email    string  `json:"email"`
+	Email    *string `json:"email"`
 	Password *string `json:"password"`
 }
 
@@ -35,6 +35,9 @@ const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 
 // Default value for bcrypt cost/difficulty
 const bcryptCost = 10
+
+// temporary secret
+const sampleSecret = "5BEC95A53F54EFFDFA3BD3B5AF30F31A36F2BB1AFB1B1C464380AB02E2BF3440"
 
 func authenticate(email string, password []byte) (int, error) {
 	target := EmailAuthRecord{PasswordHash: []byte(fakeHash)}
@@ -69,7 +72,7 @@ func AuthenticateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(MakeHasuraJWT(id))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(sampleSecret)))
 }
 
 func register(name string, email string, password []byte) (int, error) {
@@ -118,16 +121,16 @@ func RegisterEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if body.Email == "" || body.Password == nil || body.Name == nil {
+	if body.Email == nil || body.Password == nil || body.Name == nil {
 		serde.Error(w, "Expected {name, email, password}", http.StatusBadRequest)
 		return
 	}
 
-	id, err := register(*body.Name, body.Email, []byte(*body.Password))
+	id, err := register(*body.Name, *body.Email, []byte(*body.Password))
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	json.NewEncoder(w).Encode(MakeHasuraJWT(id))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, []byte(sampleSecret)))
 }
