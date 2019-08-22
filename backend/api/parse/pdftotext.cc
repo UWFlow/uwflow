@@ -22,16 +22,16 @@ extern "C" {
       }
       const int N = doc->pages();
 
-      std::string contents[N];
+      std::vector<char> contents[N];
       int text_length = 0;
       for (int i = 0; i < N; ++i) {
-        contents[i] = doc->create_page(i)->text().to_latin1();
-        text_length += contents[i].length();
+        contents[i] = doc->create_page(i)->text().to_utf8();
+        text_length += contents[i].size();
       }
 
       char *buffer = (char *)std::malloc(text_length + 1);
-      for (int i = 0, offset = 0; i < N; offset += contents[i].length(), ++i) {
-        std::memcpy(buffer + offset, contents[i].c_str(), contents[i].length());
+      for (int i = 0, offset = 0; i < N; offset += contents[i].size(), ++i) {
+        std::memcpy(buffer + offset, contents[i].data(), contents[i].size());
       }
       buffer[text_length] = '\0';
 
