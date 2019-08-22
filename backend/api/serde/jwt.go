@@ -1,7 +1,7 @@
 package serde
 
 import (
-  "os"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,15 +15,15 @@ type HasuraClaims struct {
 }
 
 type CombinedClaims struct {
-  Hasura HasuraClaims `json:"https://hasura.io/jwt/claims"`
-  jwt.StandardClaims
+	Hasura HasuraClaims `json:"https://hasura.io/jwt/claims"`
+	jwt.StandardClaims
 }
 
 func MakeAndSignHasuraJWT(userId int, secret []byte) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, CombinedClaims{
-    StandardClaims: jwt.StandardClaims{
-      IssuedAt: time.Now().Unix(),
-    },
+		StandardClaims: jwt.StandardClaims{
+			IssuedAt: time.Now().Unix(),
+		},
 		Hasura: HasuraClaims{
 			[]string{"user"},
 			"user",
@@ -38,21 +38,21 @@ func MakeAndSignHasuraJWT(userId int, secret []byte) string {
 }
 
 func UserIdFromAuthToken(tokenString string) (int, error) {
-  token, err := jwt.ParseWithClaims(
-    tokenString,
-    &CombinedClaims{},
-    func(t *jwt.Token) (interface{}, error) {
-      return []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY")), nil
-    },
-  )
-  if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
-    userId, err := strconv.Atoi(claims.Hasura.UserId)
-    if err != nil {
-      return 0, err
-    } else {
-      return userId, nil
-    }
-  } else {
-    return 0, err
-  }
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&CombinedClaims{},
+		func(t *jwt.Token) (interface{}, error) {
+			return []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY")), nil
+		},
+	)
+	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
+		userId, err := strconv.Atoi(claims.Hasura.UserId)
+		if err != nil {
+			return 0, err
+		} else {
+			return userId, nil
+		}
+	} else {
+		return 0, err
+	}
 }

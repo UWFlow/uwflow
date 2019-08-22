@@ -1,8 +1,8 @@
 package util
 
 import (
-  "fmt"
-  "strconv"
+	"fmt"
+	"strconv"
 )
 
 func HumanToPostgresTerm(season string, year string) (int, error) {
