@@ -15,12 +15,12 @@ The following packages are required for anything at all to work:
 
 The following packages are required by optional components:
 
-- `libpq-dev` (required for Python services interacting with Postgres)
-- [`hasura-cli`](https://docs.hasura.io/1.0/graphql/manual/hasura-cli/install-hasura-cli.html#install) (autogenerating Hasura migrations)
+- [`hasura-cli`](https://docs.hasura.io/1.0/graphql/manual/hasura-cli/install-hasura-cli.html#install): Hasura web interface
+- `golang`: Mongo importer
 
 The following packages are neat to have:
 
-- `postgres-client` (interface with Postgres directly)
+- `postgres-client`: interface with Postgres directly
 
 Exact package names may vary across distributions;
 for example, Ubuntu refers to `docker` as `docker.io`.
@@ -55,17 +55,17 @@ will spawn a Postgres shell connected to the database container.
 
 Various recipes for getting commonly desired things done follow.
 
-### Just give me a Hasura instance with some fake data
+### Bring everything up and import Mongo data
 
 Frontend will mostly be interested in doing just this.
 ```sh
-sudo apt install docker.io docker-compose  # Amend as appropriate
+sudo apt install docker.io docker-compose golang-go  # Amend as appropriate
 cd uwflow2.0/backend
 cp .env.sample .env
 docker-compose up -d
 # Wait ~1min for containers to stabilize
-cd db-random-populate
-pipenv install && pipenv run python main.py
+cd mongo-import
+go run . $PATH_TO_MONGO_DUMP
 ```
 Voilà, now you have an endpoint to query at `http://localhost:8080/v1/graphql`.
 Remember that Hasura requires auth; see the relevant [README](hasura/README.md).
