@@ -3,7 +3,6 @@ package parse
 import (
 	"bytes"
 	"net/http"
-	"strings"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse/transcript"
@@ -11,19 +10,11 @@ import (
 )
 
 func HandleTranscript(w http.ResponseWriter, r *http.Request) {
-	var userId int
-	var err error
-	if authStrings, ok := r.Header["Authorization"]; ok {
-		authToken := strings.TrimPrefix(authStrings[0], "Bearer ")
-		userId, err = serde.UserIdFromAuthToken(authToken)
-		if err != nil {
-			serde.Error(w, "invalid auth token: "+err.Error(), http.StatusUnauthorized)
-			return
-		}
-	} else {
-		serde.Error(w, "authorization header required", http.StatusUnauthorized)
-		return
-	}
+  userId, err := serde.UserIdFromRequest(r)
+  if err != nil {
+    serde.Error(w, err.Error(), http.StatusUnauthorized)
+    return
+  }
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -53,16 +44,18 @@ func HandleTranscript(w http.ResponseWriter, r *http.Request) {
 	)
 	for _, summary := range result.CourseHistory {
 		for _, course := range summary.Courses {
+      // If (course, user, term) combination exists, do not add it again
 			tx.MustExec(
 				`INSERT INTO user_course_taken(course_id, user_id, term, level)
-         SELECT id, $2, $3, $4 FROM course WHERE code = $1`,
+         SELECT id, $2, $3, $4 FROM course WHERE code = $1
+         ON CONFLICT DO NOTHING`,
 				course, userId, summary.Term, summary.Level,
 			)
 		}
 	}
 	err = tx.Commit()
 	if err != nil {
-		serde.Error(w, "failed to commit transaction: "+err.Error(), http.StatusBadRequest)
+		serde.Error(w, "failed to write to database: "+err.Error(), http.StatusBadRequest)
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}

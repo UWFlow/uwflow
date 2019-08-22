@@ -1,8 +1,11 @@
 package serde
 
 import (
+  "fmt"
+	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -37,7 +40,14 @@ func MakeAndSignHasuraJWT(userId int, secret []byte) string {
 	return jwtString
 }
 
-func UserIdFromAuthToken(tokenString string) (int, error) {
+func UserIdFromRequest(request *http.Request) (int, error) {
+  var tokenString string
+	if authStrings, ok := request.Header["Authorization"]; ok {
+		tokenString = strings.TrimPrefix(authStrings[0], "Bearer ")
+	} else {
+		return 0, fmt.Errorf("authorization header required")
+	}
+
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&CombinedClaims{},
@@ -48,11 +58,11 @@ func UserIdFromAuthToken(tokenString string) (int, error) {
 	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
 		userId, err := strconv.Atoi(claims.Hasura.UserId)
 		if err != nil {
-			return 0, err
+      return 0, fmt.Errorf("invalid user id: %v", err)
 		} else {
 			return userId, nil
 		}
 	} else {
-		return 0, err
+    return 0, fmt.Errorf("invalid auth token: %v", err)
 	}
 }
