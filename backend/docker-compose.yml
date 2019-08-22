@@ -1,5 +1,21 @@
 version: '3.6'
 services:
+  api:
+    build: ./api
+    container_name: api
+    depends_on:
+      - postgres
+    environment:
+      API_PORT: $API_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_USER: $POSTGRES_USER
+    image: api:latest
+    ports:
+      - $API_PORT:$API_PORT
+    restart: always
   postgres:
     container_name: postgres
     environment:
@@ -19,14 +35,14 @@ services:
       - postgres
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_GRAPHQL_ADMIN_SECRET
-      HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_PORT/$POSTGRES_DB
+      HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: "http-log, query-log, startup"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
-    image: hasura/graphql-engine:v1.0.0-beta.3.cli-migrations
+    image: hasura/graphql-engine:v1.0.0-beta.4.cli-migrations
     ports:
-      - $API_PORT:$API_PORT
+      - $HASURA_PORT:$HASURA_PORT
     restart: always
     volumes:
       - ./hasura/migrations:/hasura-migrations
