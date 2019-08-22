@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
-  "os"
+	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/auth"
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
@@ -16,7 +16,7 @@ import (
 func SetupRouter() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
-    // Reponses are always JSON, but requests may not be (e.g. PDF uploads)
+		// Reponses are always JSON, but requests may not be (e.g. PDF uploads)
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Logger,
 		middleware.Recoverer,
@@ -33,6 +33,6 @@ func main() {
 	db.Connect()
 
 	router := SetupRouter()
-  port := os.Getenv("API_PORT")
-	log.Fatal(http.ListenAndServe(":" + port, router))
+	port := os.Getenv("API_PORT")
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

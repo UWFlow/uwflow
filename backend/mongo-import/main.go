@@ -39,7 +39,7 @@ func Run(rootPath string) {
 	for _, operation := range operations {
 		err = operation(conn, rootPath, idMap)
 		if err != nil {
-			log.Fatalf("Import failed: %v", err)
+			log.Fatal("Import failed: %v", err)
 		}
 	}
 }

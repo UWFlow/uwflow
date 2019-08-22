@@ -1,7 +1,7 @@
 package serde
 
 import (
-  "fmt"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -41,7 +41,7 @@ func MakeAndSignHasuraJWT(userId int, secret []byte) string {
 }
 
 func UserIdFromRequest(request *http.Request) (int, error) {
-  var tokenString string
+	var tokenString string
 	if authStrings, ok := request.Header["Authorization"]; ok {
 		tokenString = strings.TrimPrefix(authStrings[0], "Bearer ")
 	} else {
@@ -58,11 +58,11 @@ func UserIdFromRequest(request *http.Request) (int, error) {
 	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
 		userId, err := strconv.Atoi(claims.Hasura.UserId)
 		if err != nil {
-      return 0, fmt.Errorf("invalid user id: %v", err)
+			return 0, fmt.Errorf("invalid user id: %v", err)
 		} else {
 			return userId, nil
 		}
 	} else {
-    return 0, fmt.Errorf("invalid auth token: %v", err)
+		return 0, fmt.Errorf("invalid auth token: %v", err)
 	}
 }

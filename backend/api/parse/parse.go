@@ -10,11 +10,11 @@ import (
 )
 
 func HandleTranscript(w http.ResponseWriter, r *http.Request) {
-  userId, err := serde.UserIdFromRequest(r)
-  if err != nil {
-    serde.Error(w, err.Error(), http.StatusUnauthorized)
-    return
-  }
+	userId, err := serde.UserIdFromRequest(r)
+	if err != nil {
+		serde.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -44,7 +44,7 @@ func HandleTranscript(w http.ResponseWriter, r *http.Request) {
 	)
 	for _, summary := range result.CourseHistory {
 		for _, course := range summary.Courses {
-      // If (course, user, term) combination exists, do not add it again
+			// If (course, user, term) combination exists, do not add it again
 			tx.MustExec(
 				`INSERT INTO user_course_taken(course_id, user_id, term, level)
          SELECT id, $2, $3, $4 FROM course WHERE code = $1
