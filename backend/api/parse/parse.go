@@ -2,7 +2,7 @@ package parse
 
 import (
 	"bytes"
-  "log"
+	"log"
 	"net/http"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/db"
@@ -60,5 +60,5 @@ func HandleTranscript(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
-  log.Printf("Imported transcript for user %d: %v\n", userId, result)
+	log.Printf("Imported transcript for user %d: %v\n", userId, result)
 }
