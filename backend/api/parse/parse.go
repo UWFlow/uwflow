@@ -47,9 +47,9 @@ func HandleTranscript(w http.ResponseWriter, r *http.Request) {
 		for _, course := range summary.Courses {
 			// If (course, user, term) combination exists, do not add it again
 			tx.MustExec(
-				`INSERT INTO user_course_taken(course_id, user_id, term, level)
-         SELECT id, $2, $3, $4 FROM course WHERE code = $1
-         ON CONFLICT DO NOTHING`,
+				`INSERT INTO user_course_taken(course_id, user_id, term, level)`+
+					`SELECT id, $2, $3, $4 FROM course WHERE code = $1`+
+					`ON CONFLICT DO NOTHING`,
 				course, userId, summary.Term, summary.Level,
 			)
 		}
