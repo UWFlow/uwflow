@@ -7,6 +7,9 @@ This is the Flow API server for handling non-CRUD tasks.
 - Authentication:
   - [x] email
   - [ ] OpenID
+- Parsing:
+  - [ ] schedule
+  - [x] transcript
 
 ## How to run this
 
