@@ -86,9 +86,11 @@ func register(name string, email string, password []byte) (int, error) {
 	}
 
 	var userId int
-	err := db.Handle.QueryRow(`INSERT INTO "user"(full_name) VALUES ($1) RETURNING id`, name).Scan(&userId)
-	if err != nil {
-		return 0, err
+	dbErr := db.Handle.QueryRow(
+		`INSERT INTO "user"(full_name) VALUES ($1) RETURNING id`, name,
+	).Scan(&userId)
+	if dbErr != nil {
+		return 0, dbErr
 	}
 
 	// Store the password hash as a column
