@@ -45,10 +45,6 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE \"user\" CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.User = make(map[primitive.ObjectID]int)
 	users := readMongoUsers(rootPath)
 	preparedUsers := make([][]interface{}, len(users))

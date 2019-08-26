@@ -47,10 +47,6 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE course CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.Course = make(map[string]int)
 	courses := readMongoCourses(rootPath)
 	preparedCourses := make([][]interface{}, len(courses))
@@ -92,14 +88,6 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE course_prerequisite CASCADE")
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec("TRUNCATE course_antirequisite CASCADE")
-	if err != nil {
-		return err
-	}
 	courses := readMongoCourses(rootPath)
 	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
 	preparedPrereqs := make([][]interface{}, 0, len(courses))

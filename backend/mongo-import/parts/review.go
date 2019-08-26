@@ -101,14 +101,6 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE course_review CASCADE")
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec("TRUNCATE prof_review CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	reviews := readMongoReviews(rootPath)

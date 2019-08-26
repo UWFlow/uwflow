@@ -41,10 +41,6 @@ func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE prof CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.Prof = make(map[string]int)
 	profs := readMongoProfs(rootPath)
 	preparedProfs := make([][]interface{}, len(profs))
