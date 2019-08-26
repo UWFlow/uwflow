@@ -70,13 +70,11 @@ go run . $PATH_TO_MONGO_DUMP
 Voilà, now you have an endpoint to query at `http://localhost:8080/v1/graphql`.
 Remember that Hasura requires auth; see the relevant [README](hasura/README.md).
 
-### Completely reset database state
+### Reset database state
 
-Normally, it should be sufficient to `TRUNCATE` tables by hand
-as necessary via the `psql` interface shown above; this is the fastest way.
+If one desires to re-import data from Mongo (say, because one is developing `mongo-import`),
+it is necessary to first purge Postgres state, which is most easily achieved as below:
 
-However, if something has gone horribly wrong, backend state
-can be reset completely, discarding all database data. Run
 ```sh
 docker-compose down
 docker volume rm backend_postgres
