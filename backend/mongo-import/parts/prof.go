@@ -41,10 +41,6 @@ func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE prof CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.Prof = make(map[string]int)
 	profs := readMongoProfs(rootPath)
 	preparedProfs := make([][]interface{}, len(profs))
@@ -54,12 +50,12 @@ func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		bar.Increment()
 		profName := strings.TrimSpace(prof.FirstName + " " + prof.LastName)
 		idMap.Prof[prof.Id] = i + 1
-		preparedProfs[i] = []interface{}{i + 1, profName}
+		preparedProfs[i] = []interface{}{profName}
 	}
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"prof"},
-		[]string{"id", "name"},
+		[]string{"name"},
 		pgx.CopyFromRows(preparedProfs),
 	)
 	if err != nil {

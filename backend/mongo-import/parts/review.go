@@ -101,14 +101,6 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("TRUNCATE course_review CASCADE")
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec("TRUNCATE prof_review CASCADE")
-	if err != nil {
-		return err
-	}
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	reviews := readMongoReviews(rootPath)
@@ -135,7 +127,6 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			preparedCourseReviews = append(
 				preparedCourseReviews,
 				[]interface{}{
-					courseReviewId,
 					courseId,
 					nilIfZero(profId),
 					idMap.User[review.UserId],
@@ -153,7 +144,6 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			preparedProfReviews = append(
 				preparedProfReviews,
 				[]interface{}{
-					profReviewId,
 					courseId,
 					profId,
 					idMap.User[review.UserId],
@@ -182,7 +172,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"course_review"},
-		[]string{"id", "course_id", "prof_id", "user_id", "text", "easy", "liked", "useful"},
+		[]string{"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful"},
 		pgx.CopyFromRows(preparedCourseReviews),
 	)
 	if err != nil {
@@ -190,7 +180,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"prof_review"},
-		[]string{"id", "course_id", "prof_id", "user_id", "text", "clear", "engaging"},
+		[]string{"course_id", "prof_id", "user_id", "text", "clear", "engaging"},
 		pgx.CopyFromRows(preparedProfReviews),
 	)
 	if err != nil {
