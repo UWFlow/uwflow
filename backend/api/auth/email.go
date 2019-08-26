@@ -85,19 +85,11 @@ func register(name string, email string, password []byte) (int, error) {
 		return 0, errors.New("Email already exists")
 	}
 
-	// Assign the email user a new id
-	// Increment the current largest id
-	var maxId int
-	dbErr := db.Handle.QueryRow(
-		"SELECT id FROM \"user\" ORDER BY id DESC LIMIT 1").Scan(&maxId)
-	if dbErr != nil {
-		return 0, dbErr
+	var userId int
+	err := db.Handle.QueryRow(`INSERT INTO "user"(full_name) VALUES ($1) RETURNING id`, name).Scan(&userId)
+	if err != nil {
+		return 0, err
 	}
-
-	db.Handle.MustExec(
-		"INSERT INTO \"user\"(id, full_name) VALUES ($1, $2)",
-		maxId+1, name,
-	)
 
 	// Store the password hash as a column
 	passwordHash, hashErr := bcrypt.GenerateFromPassword(password, bcryptCost)
@@ -106,9 +98,9 @@ func register(name string, email string, password []byte) (int, error) {
 	}
 	db.Handle.MustExec(
 		"INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)",
-		maxId+1, email, passwordHash,
+		userId, email, passwordHash,
 	)
-	return maxId + 1, nil
+	return userId, nil
 }
 
 func RegisterEmail(w http.ResponseWriter, r *http.Request) {
