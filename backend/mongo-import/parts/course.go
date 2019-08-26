@@ -56,7 +56,6 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		bar.Increment()
 		idMap.Course[course.Id] = i + 1
 		preparedCourses[i] = []interface{}{
-			i + 1,
 			course.Id,
 			course.Name,
 			course.Description,
@@ -67,7 +66,7 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"course"},
-		[]string{"id", "code", "name", "description", "prereqs", "coreqs", "antireqs"},
+		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
 		pgx.CopyFromRows(preparedCourses),
 	)
 	if err != nil {

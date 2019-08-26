@@ -62,7 +62,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		if user.ProgramName != nil && len(*user.ProgramName) > 256 {
 			user.ProgramName = nil
 		}
-		preparedUsers[i] = []interface{}{i + 1, fullName, user.ProgramName}
+		preparedUsers[i] = []interface{}{fullName, user.ProgramName}
 
 		// Only add email users with valid email and password
 		// Not sure why there are email users without password?
@@ -73,7 +73,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"user"},
-		[]string{"id", "full_name", "program"},
+		[]string{"full_name", "program"},
 		pgx.CopyFromRows(preparedUsers),
 	)
 	if err != nil {
