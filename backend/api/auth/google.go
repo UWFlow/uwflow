@@ -53,22 +53,19 @@ func registerGoogleUser(googleID string, idToken string) (int, error) {
 		return 0, errors.New("Invalid id token")
 	}
 
-	// temporary solution to get next unique user_id value
-	var maxId int
-	err = db.Handle.QueryRow("SELECT id FROM \"user\" ORDER BY id DESC LIMIT 1").Scan(&maxId)
+	var userID int
+	err = db.Handle.QueryRow(
+		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
+		tokenClaims.Name, tokenClaims.Picture,
+	).Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
-
 	db.Handle.MustExec(
-		"INSERT INTO \"user\"(id, full_name, picture_url) VALUES ($1, $2. $3)",
-		maxId+1, tokenClaims.Name, tokenClaims.Picture,
+		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
+		userID, googleID,
 	)
-	db.Handle.MustExec(
-		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2. $3)",
-		maxId+1, googleID,
-	)
-	return maxId + 1, nil
+	return userID, nil
 }
 
 func AuthenticateGoogleUser(w http.ResponseWriter, r *http.Request) {
