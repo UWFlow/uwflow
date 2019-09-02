@@ -17,7 +17,7 @@ Ensure that Docker-compose is up and run
 
 ```sh
 go build
-export (cat ../.env | xargs)
+export $(cat ../.env | xargs)
 ./api
 ```
 
