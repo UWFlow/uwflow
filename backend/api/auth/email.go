@@ -63,7 +63,8 @@ func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Reques
 
 	id, err := authenticate(state, body.Email, []byte(body.Password))
 	if err != nil {
-		// Do not reveal what went wrong: this could be exploitable
+		// Do not reveal what went wrong: this could be exploitable.
+		// However, it is still a good idea to retain the error in the logs.
 		log.Printf("Error: %v\n", err)
 		serde.Error(w, "invalid credentials", http.StatusUnauthorized)
 		return
