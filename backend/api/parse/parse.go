@@ -11,8 +11,8 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
 )
 
-func HandleTranscript(api *state.State, w http.ResponseWriter, r *http.Request) {
-	userId, err := serde.UserIdFromRequest(r)
+func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request) {
+	userId, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
 		serde.Error(
 			w,
@@ -43,7 +43,7 @@ func HandleTranscript(api *state.State, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	tx, err := api.Conn.Begin()
+	tx, err := state.Conn.Begin()
 	if err != nil {
 		serde.Error(
 			w,
