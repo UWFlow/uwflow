@@ -3,11 +3,11 @@ package serde
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/AyushK1/uwflow2.0/backend/api/state"
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -40,7 +40,7 @@ func MakeAndSignHasuraJWT(userId int, secret []byte) string {
 	return jwtString
 }
 
-func UserIdFromRequest(request *http.Request) (int, error) {
+func UserIdFromRequest(state *state.State, request *http.Request) (int, error) {
 	var tokenString string
 	if authStrings, ok := request.Header["Authorization"]; ok {
 		tokenString = strings.TrimPrefix(authStrings[0], "Bearer ")
@@ -52,7 +52,7 @@ func UserIdFromRequest(request *http.Request) (int, error) {
 		tokenString,
 		&CombinedClaims{},
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY")), nil
+			return state.Env.JwtKey, nil
 		},
 	)
 	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {

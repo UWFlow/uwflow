@@ -3,17 +3,24 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/auth"
-	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse"
+	"github.com/AyushK1/uwflow2.0/backend/api/state"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-func SetupRouter() *chi.Mux {
+type StatefulHandlerFunc func(*state.State, http.ResponseWriter, *http.Request)
+
+func WithState(state *state.State, handler StatefulHandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handler(state, w, r)
+	}
+}
+
+func SetupRouter(state *state.State) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
 		// Reponses are always JSON, but requests may not be (e.g. PDF uploads)
@@ -22,17 +29,19 @@ func SetupRouter() *chi.Mux {
 		middleware.Recoverer,
 	)
 
-	router.Post("/auth/email/login", auth.AuthenticateEmail)
-	router.Post("/auth/email/register", auth.RegisterEmail)
-	router.Post("/parse/transcript", parse.HandleTranscript)
+	router.Post("/auth/email/login", WithState(state, auth.AuthenticateEmail))
+	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
+	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
 
 	return router
 }
 
 func main() {
-	db.Connect()
+	state, err := state.Initialize()
+	if err != nil {
+		log.Fatal("Error: %v", err)
+	}
 
-	router := SetupRouter()
-	port := os.Getenv("API_PORT")
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	router := SetupRouter(state)
+	log.Fatal("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
 }

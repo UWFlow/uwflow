@@ -2,18 +2,23 @@ package parse
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse/transcript"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
+	"github.com/AyushK1/uwflow2.0/backend/api/state"
 )
 
-func HandleTranscript(w http.ResponseWriter, r *http.Request) {
-	userId, err := serde.UserIdFromRequest(r)
+func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request) {
+	userId, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusUnauthorized)
+		serde.Error(
+			w,
+			fmt.Sprintf("failed to extract user id: %v", err),
+			http.StatusUnauthorized,
+		)
 		return
 	}
 
@@ -28,37 +33,69 @@ func HandleTranscript(w http.ResponseWriter, r *http.Request) {
 	fileContents.ReadFrom(file)
 	text, err := PdfToText(fileContents.Bytes())
 	if err != nil {
-		serde.Error(w, "failed to convert transcript: "+err.Error(), http.StatusBadRequest)
+		serde.Error(w, fmt.Sprintf("failed to convert transcript: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	result, err := transcript.Parse(text)
 	if err != nil {
-		serde.Error(w, "failed to parse transcript: "+err.Error(), http.StatusBadRequest)
+		serde.Error(w, fmt.Sprintf("failed to parse transcript: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	tx := db.Handle.MustBegin()
-	tx.MustExec(
+	tx, err := state.Conn.Begin()
+	if err != nil {
+		serde.Error(
+			w,
+			fmt.Sprintf("failed to open transaction: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
 		`UPDATE "user" SET program = $1 WHERE id = $2`,
 		result.ProgramName, userId,
 	)
+	if err != nil {
+		serde.Error(
+			w,
+			fmt.Sprintf("failed to update user record: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
 	for _, summary := range result.CourseHistory {
 		for _, course := range summary.Courses {
 			// If (course, user, term) combination exists, do not add it again
-			tx.MustExec(
+			_, err = tx.Exec(
 				`INSERT INTO user_course_taken(course_id, user_id, term, level)`+
 					`SELECT id, $2, $3, $4 FROM course WHERE code = $1`+
 					`ON CONFLICT DO NOTHING`,
 				course, userId, summary.Term, summary.Level,
 			)
+			if err != nil {
+				serde.Error(
+					w,
+					fmt.Sprintf("failed to update user record: %v", err),
+					http.StatusInternalServerError,
+				)
+				return
+			}
 		}
 	}
+
 	err = tx.Commit()
 	if err != nil {
-		serde.Error(w, "failed to write to database: "+err.Error(), http.StatusBadRequest)
+		serde.Error(
+			w,
+			fmt.Sprintf("failed to commit transaction: %v", err),
+			http.StatusInternalServerError,
+		)
 	} else {
 		w.WriteHeader(http.StatusOK)
+		log.Printf("Imported transcript for user %d: %v\n", userId, result)
 	}
-	log.Printf("Imported transcript for user %d: %v\n", userId, result)
 }
