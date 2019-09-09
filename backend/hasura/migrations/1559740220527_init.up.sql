@@ -115,6 +115,7 @@ CREATE TABLE course_section (
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   section TEXT NOT NULL,
+  campus TEXT NOT NULL,
   term INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL

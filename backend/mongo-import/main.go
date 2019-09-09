@@ -24,7 +24,7 @@ func Run(rootPath string) {
 	conn, err := Connect()
 	defer conn.Close()
 	if err != nil {
-		log.Fatal("Failed to open database connection: %v", err)
+		log.Fatalf("Failed to open database connection: %v", err)
 	}
 
 	idMap := &parts.IdentifierMap{}
@@ -39,7 +39,7 @@ func Run(rootPath string) {
 	for _, operation := range operations {
 		err = operation(conn, rootPath, idMap)
 		if err != nil {
-			log.Fatal("Import failed: %v", err)
+			log.Fatalf("Import failed: %v", err)
 		}
 	}
 }

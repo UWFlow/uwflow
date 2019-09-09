@@ -3,8 +3,8 @@ package parts
 import (
 	"io/ioutil"
 	"path"
-  "time"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,17 +14,17 @@ import (
 )
 
 type MongoMeeting struct {
-	Days         []string `bson:"days"`
-	IsCancelled  bool     `bson:"is_cancelled"`
-	IsClosed     bool     `bson:"is_closed"`
-	IsTba        bool     `bson:"is_tba"`
-  StartDate    *time.Time  `bson:"start_date"`
-  EndDate      *time.Time  `bson:"end_date"`
-	StartSeconds *int     `bson:"start_seconds"`
-	EndSeconds   *int     `bson:"end_seconds"`
-	ProfId       *string  `bson:"prof_id"`
-	Building     *string  `bson:"building"`
-	Room         *string  `bson:"room"`
+	Days         []string   `bson:"days"`
+	IsCancelled  bool       `bson:"is_cancelled"`
+	IsClosed     bool       `bson:"is_closed"`
+	IsTba        bool       `bson:"is_tba"`
+	StartDate    *time.Time `bson:"start_date"`
+	EndDate      *time.Time `bson:"end_date"`
+	StartSeconds *int       `bson:"start_seconds"`
+	EndSeconds   *int       `bson:"end_seconds"`
+	ProfId       *string    `bson:"prof_id"`
+	Building     *string    `bson:"building"`
+	Room         *string    `bson:"room"`
 }
 
 type MongoSection struct {
@@ -39,27 +39,27 @@ type MongoSection struct {
 	Meetings           []MongoMeeting `bson:"meetings"`
 }
 
-type PostgresClass struct {
+type PostgresMeeting struct {
 	Days         []string
 	IsCancelled  bool
 	IsClosed     bool
 	IsTba        bool
 	StartDate    *time.Time
 	EndDate      *time.Time
-  StartSeconds    *int
-  EndSeconds      *int
+	StartSeconds *int
+	EndSeconds   *int
 	ProfId       *int
 	Location     *string
 }
 
 type PostgresSection struct {
-	Campus             string
 	ClassNumber        int
 	SectionName        string
+	Campus             string
+	TermId             int
 	EnrollmentCapacity int
 	EnrollmentTotal    int
-	TermId             int
-	Classes            []PostgresClass
+	Meetings           []PostgresMeeting
 }
 
 func readMongoSections(rootPath string) []MongoSection {
@@ -80,45 +80,45 @@ func readMongoSections(rootPath string) []MongoSection {
 	return sections
 }
 
-func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresClass {
-	class := PostgresClass{
+func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresMeeting {
+	postgresMeeting := PostgresMeeting{
 		Days:         meeting.Days,
 		IsCancelled:  meeting.IsCancelled,
 		IsClosed:     meeting.IsClosed,
 		IsTba:        meeting.IsTba,
-    StartDate:    meeting.StartDate,
-    EndDate:    meeting.EndDate,
+		StartDate:    meeting.StartDate,
+		EndDate:      meeting.EndDate,
 		StartSeconds: meeting.StartSeconds,
 		EndSeconds:   meeting.EndSeconds,
 	}
 	if meeting.ProfId != nil {
 		if profId, ok := idMap.Prof[*(meeting.ProfId)]; ok {
-			class.ProfId = &profId
+			postgresMeeting.ProfId = &profId
 		}
 	}
 	if meeting.Building != nil && meeting.Room != nil {
 		location := *meeting.Building + " " + *meeting.Room
-		class.Location = &location
+		postgresMeeting.Location = &location
 	}
-	return class
+	return postgresMeeting
 }
 
 func ConvertSection(section MongoSection, idMap *IdentifierMap) PostgresSection {
-	classes := make([]PostgresClass, len(section.Meetings))
-	for i, meeting := range section.Meetings {
-		classes[i] = ConvertMeeting(meeting, idMap)
+	meetings := make([]PostgresMeeting, len(section.Meetings))
+	for i, mongoMeeting := range section.Meetings {
+		meetings[i] = ConvertMeeting(mongoMeeting, idMap)
 	}
 	termId, _ := convert.MongoToPostgresTerm(section.TermId)
 	classNumber, _ := strconv.Atoi(section.ClassNumber)
 
 	return PostgresSection{
-		Campus:             section.Campus,
 		ClassNumber:        classNumber,
 		SectionName:        section.SectionType + " " + section.SectionNumber,
+		Campus:             section.Campus,
+		TermId:             termId,
 		EnrollmentCapacity: section.EnrollmentCapacity,
 		EnrollmentTotal:    section.EnrollmentTotal,
-		TermId:             termId,
-		Classes:            classes,
+		Meetings:           meetings,
 	}
 }
 
@@ -130,21 +130,12 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	defer tx.Rollback()
 
 	sections := readMongoSections(rootPath)
-  preparedSections := make([][]interface{}, 0, len(sections))
-  // Say each course has on average 3 meetings or more
-  // preparedClasses := make([][]interface{}, 0, 3 * len(sections))
-	// We cannot use CopyFrom here, as this is an update of an existing field.
-	// This is no tragedy: prepared statements are still quite fast.
-	_, err = tx.Prepare(
-		"update_course",
-		"UPDATE course SET sections = COALESCE(sections, '[]'::JSONB) || $1 WHERE id = $2",
-	)
-	if err != nil {
-		return err
-	}
-	// While we are at it, we will avoid using CopyFrom for prof_course as well.
+	preparedSections := make([][]interface{}, 0, len(sections))
+	// For pre-allocation, say each course has on average 3 meetings or more
+	preparedMeetings := make([][]interface{}, 0, 3*len(sections))
+	// We will avoid using CopyFrom for prof_course.
 	// It would be faster, but we would have to reify ON CONFLIECT DO NOTHING.
-	// CopyFrom makes more sense on very heavy imports, that is reviews.
+	// CopyFrom makes more sense on very heavy imports like reviews.
 	_, err = tx.Prepare(
 		"insert_prof_course",
 		"INSERT INTO prof_course(prof_id, course_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
@@ -162,20 +153,37 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		}
 
 		postgresSection := ConvertSection(section, idMap)
-    preparedSections = append(
-      preparedSections,
-      []interface{}{
-        postgresSection.ClassNumber,
-        courseId,
-        postgresSection.SectionName,
-        postgresSection.TermId,
-        postgresSection.EnrollmentCapacity,
-        postgresSection.EnrollmentTotal,
-      },
-    )
-		for _, class := range postgresSection.Classes {
-			if class.ProfId != nil {
-				_, err = tx.Exec("insert_prof_course", *(class.ProfId), courseId)
+		preparedSections = append(
+			preparedSections,
+			[]interface{}{
+				postgresSection.ClassNumber,
+				courseId,
+				postgresSection.SectionName,
+				postgresSection.Campus,
+				postgresSection.TermId,
+				postgresSection.EnrollmentCapacity,
+				postgresSection.EnrollmentTotal,
+			},
+		)
+		for _, postgresMeeting := range postgresSection.Meetings {
+			preparedMeetings = append(
+				preparedMeetings,
+				[]interface{}{
+					postgresSection.ClassNumber,
+					postgresMeeting.ProfId,
+					postgresMeeting.StartDate,
+					postgresMeeting.EndDate,
+					postgresMeeting.StartSeconds,
+					postgresMeeting.EndSeconds,
+					postgresMeeting.Location,
+					postgresMeeting.Days,
+					postgresMeeting.IsCancelled,
+					postgresMeeting.IsClosed,
+					postgresMeeting.IsTba,
+				},
+			)
+			if postgresMeeting.ProfId != nil {
+				_, err = tx.Exec("insert_prof_course", *(postgresMeeting.ProfId), courseId)
 				if err != nil {
 					return err
 				}
@@ -184,11 +192,24 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		pgx.Identifier{"course_schedule"},
+		pgx.Identifier{"course_section"},
 		[]string{
-      "class_number", "course_id", "section", "term", "enrollment_capacity", "enrollment_total",
-    },
+			"class_number", "course_id", "section", "campus",
+			"term", "enrollment_capacity", "enrollment_total",
+		},
 		pgx.CopyFromRows(preparedSections),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"section_meeting"},
+		[]string{
+			"class_number", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
+			"location", "days", "is_cancelled", "is_closed", "is_tba",
+		},
+		pgx.CopyFromRows(preparedMeetings),
 	)
 	if err != nil {
 		return err
