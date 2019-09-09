@@ -117,8 +117,8 @@ CREATE TABLE course_schedule (
     ON UPDATE CASCADE,
   section TEXT NOT NULL,
   term INT NOT NULL,
-  enrollment_capacity INT,
-  enrollment_total INT
+  enrollment_capacity INT NOT NULL,
+  enrollment_total INT NOT NULL
 );
 
 CREATE TABLE schedule_class (
@@ -130,15 +130,15 @@ CREATE TABLE schedule_class (
     REFERENCES prof(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  days TEXT,
   start_date DATE,
   end_date DATE,
   start_time TIMETZ,
   end_time TIMETZ,
-  is_cancelled BOOLEAN,
-  is_closed BOOLEAN,
-  is_tba BOOLEAN,
-  location TEXT
+  location TEXT,
+  days TEXT NOT NULL,
+  is_cancelled BOOLEAN NOT NULL,
+  is_closed BOOLEAN NOT NULL,
+  is_tba BOOLEAN NOT NULL
 );
 
 CREATE TABLE course_review (
