@@ -1,9 +1,9 @@
 package parts
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"path"
+  "time"
 	"strconv"
 
 	"github.com/jackc/pgx"
@@ -17,7 +17,9 @@ type MongoMeeting struct {
 	Days         []string `bson:"days"`
 	IsCancelled  bool     `bson:"is_cancelled"`
 	IsClosed     bool     `bson:"is_closed"`
-	IsTBA        bool     `bson:"is_tba"`
+	IsTba        bool     `bson:"is_tba"`
+  StartDate    *time.Time  `bson:"start_date"`
+  EndDate      *time.Time  `bson:"end_date"`
 	StartSeconds *int     `bson:"start_seconds"`
 	EndSeconds   *int     `bson:"end_seconds"`
 	ProfId       *string  `bson:"prof_id"`
@@ -38,24 +40,26 @@ type MongoSection struct {
 }
 
 type PostgresClass struct {
-	Days         []string `json:"days"`
-	IsCancelled  bool     `json:"is_cancelled"`
-	IsClosed     bool     `json:"is_closed"`
-	IsTBA        bool     `json:"is_tba"`
-	StartSeconds *int     `json:"start_seconds",omitempty`
-	EndSeconds   *int     `json:"end_seconds",omitempty`
-	ProfId       *int     `json:"prof_id",omitempty`
-	Location     *string  `json:"location",omitempty`
+	Days         []string
+	IsCancelled  bool
+	IsClosed     bool
+	IsTba        bool
+	StartDate    *time.Time
+	EndDate      *time.Time
+  StartSeconds    *int
+  EndSeconds      *int
+	ProfId       *int
+	Location     *string
 }
 
 type PostgresSection struct {
-	Campus             string          `json:"campus"`
-	ClassNumber        int             `json:"class_number"`
-	SectionName        string          `json:"section"`
-	EnrollmentCapacity int             `json:"enrollment_capacity"`
-	EnrollmentTotal    int             `json:"enrollment_total"`
-	TermId             int             `json:"term"`
-	Classes            []PostgresClass `json:"classes"`
+	Campus             string
+	ClassNumber        int
+	SectionName        string
+	EnrollmentCapacity int
+	EnrollmentTotal    int
+	TermId             int
+	Classes            []PostgresClass
 }
 
 func readMongoSections(rootPath string) []MongoSection {
@@ -81,7 +85,9 @@ func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresClass {
 		Days:         meeting.Days,
 		IsCancelled:  meeting.IsCancelled,
 		IsClosed:     meeting.IsClosed,
-		IsTBA:        meeting.IsTBA,
+		IsTba:        meeting.IsTba,
+    StartDate:    meeting.StartDate,
+    EndDate:    meeting.EndDate,
 		StartSeconds: meeting.StartSeconds,
 		EndSeconds:   meeting.EndSeconds,
 	}
@@ -124,6 +130,9 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	defer tx.Rollback()
 
 	sections := readMongoSections(rootPath)
+  preparedSections := make([][]interface{}, 0, len(sections))
+  // Say each course has on average 3 meetings or more
+  // preparedClasses := make([][]interface{}, 0, 3 * len(sections))
 	// We cannot use CopyFrom here, as this is an update of an existing field.
 	// This is no tragedy: prepared statements are still quite fast.
 	_, err = tx.Prepare(
@@ -153,6 +162,17 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		}
 
 		postgresSection := ConvertSection(section, idMap)
+    preparedSections = append(
+      preparedSections,
+      []interface{}{
+        postgresSection.ClassNumber,
+        courseId,
+        postgresSection.SectionName,
+        postgresSection.TermId,
+        postgresSection.EnrollmentCapacity,
+        postgresSection.EnrollmentTotal,
+      },
+    )
 		for _, class := range postgresSection.Classes {
 			if class.ProfId != nil {
 				_, err = tx.Exec("insert_prof_course", *(class.ProfId), courseId)
@@ -161,16 +181,19 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 				}
 			}
 		}
-
-		sectionJson, err := json.Marshal(postgresSection)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("update_course", sectionJson, courseId)
-		if err != nil {
-			return err
-		}
 	}
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"course_schedule"},
+		[]string{
+      "class_number", "course_id", "section", "term", "enrollment_capacity", "enrollment_total",
+    },
+		pgx.CopyFromRows(preparedSections),
+	)
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
