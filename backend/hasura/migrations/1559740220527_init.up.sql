@@ -15,7 +15,6 @@ CREATE TABLE course (
     CONSTRAINT course_coreqs_length CHECK (LENGTH(coreqs) <= 1024),
   antireqs TEXT
     CONSTRAINT course_antireqs_length CHECK (LENGTH(antireqs) <= 1024),
-  sections JSONB,
   textbooks JSONB
 );
 
@@ -106,7 +105,7 @@ CREATE TABLE user_shortlist (
     ON UPDATE CASCADE
 );
 
-CREATE TABLE course_schedule (
+CREATE TABLE course_section (
   -- Remarkably, here we use API-provided data (class_number) as primary key.
   -- Why? Other things (user schedules) reference it, so we need to keep it.
   -- Since we keep it and it is unique within a term, might as well pk it.
@@ -121,21 +120,23 @@ CREATE TABLE course_schedule (
   enrollment_total INT NOT NULL
 );
 
-CREATE TABLE schedule_class (
+CREATE TABLE section_meeting (
   class_number INT NOT NULL
-    REFERENCES course_schedule(class_number)
+    REFERENCES course_section(class_number)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   prof_id INT
     REFERENCES prof(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
+  -- We could store these as TIMETZ, but that is a waste of space:
+  -- Our data does not have such granularity as to require 12 bytes of storage.
+  start_time INT,
+  end_time INT,
   start_date DATE,
   end_date DATE,
-  start_time TIMETZ,
-  end_time TIMETZ,
   location TEXT,
-  days TEXT NOT NULL,
+  days TEXT[] NOT NULL,
   is_cancelled BOOLEAN NOT NULL,
   is_closed BOOLEAN NOT NULL,
   is_tba BOOLEAN NOT NULL
