@@ -131,8 +131,9 @@ CREATE TABLE section_meeting (
     ON UPDATE CASCADE,
   -- We could store these as TIMETZ, but that is a waste of space:
   -- Our data does not have such granularity as to require 12 bytes of storage.
-  start_time INT,
-  end_time INT,
+  -- Another advantage of such storage is ease of serialization.
+  start_seconds INT,
+  end_seconds INT,
   start_date DATE,
   end_date DATE,
   location TEXT,
