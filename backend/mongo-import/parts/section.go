@@ -133,6 +133,8 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	preparedSections := make([][]interface{}, 0, len(sections))
 	// For pre-allocation, say each course has on average 3 meetings or more
 	preparedMeetings := make([][]interface{}, 0, 3*len(sections))
+  idMap.Section = make(map[SectionKey]int)
+
 	// We will avoid using CopyFrom for prof_course.
 	// It would be faster, but we would have to reify ON CONFLIECT DO NOTHING.
 	// CopyFrom makes more sense on very heavy imports like reviews.
@@ -145,7 +147,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	bar := pb.StartNew(len(sections))
-	for _, section := range sections {
+	for i, section := range sections {
 		bar.Increment()
 		courseId, courseFound := idMap.Course[section.CourseId]
 		if !courseFound {
@@ -165,11 +167,17 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 				postgresSection.EnrollmentTotal,
 			},
 		)
+    key := SectionKey{
+      ClassNumber: postgresSection.ClassNumber,
+      TermId: postgresSection.TermId,
+    }
+    idMap.Section[key] = i + 1
+
 		for _, postgresMeeting := range postgresSection.Meetings {
 			preparedMeetings = append(
 				preparedMeetings,
 				[]interface{}{
-					postgresSection.ClassNumber,
+					i + 1,
 					postgresMeeting.ProfId,
 					postgresMeeting.StartDate,
 					postgresMeeting.EndDate,
@@ -206,7 +214,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"section_meeting"},
 		[]string{
-			"class_number", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
+			"section_id", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
 			"location", "days", "is_cancelled", "is_closed", "is_tba",
 		},
 		pgx.CopyFromRows(preparedMeetings),
