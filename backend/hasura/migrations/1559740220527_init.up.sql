@@ -153,7 +153,8 @@ CREATE TABLE user_schedule (
   section_id INT NOT NULL
     REFERENCES course_section(id)
     ON DELETE CASCADE
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT section_uniquely_taken UNIQUE(user_id, section_id)
 );
 
 CREATE TABLE course_review (

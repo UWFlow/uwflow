@@ -86,7 +86,6 @@
           - prereqs
           - coreqs
           - antireqs
-          - sections
           - textbooks
           filter: {}
         role: anonymous
@@ -95,7 +94,6 @@
           allow_aggregations: false
           columns:
           - id
-          - sections
           - textbooks
           - antireqs
           - code
@@ -106,6 +104,32 @@
           filter: {}
         role: user
       table: course
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships:
+        - comment: null
+          name: course
+          using:
+            foreign_key_constraint_on: course_id
+      select_permissions:
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - campus
+            - class_number
+            - course_id
+            - enrollment_capacity
+            - enrollment_total
+            - id
+            - section
+            - term
+            filter: {}
+          role: user
+      table: course_section
       update_permissions: []
     - array_relationships:
       - comment: null

@@ -133,7 +133,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	preparedSections := make([][]interface{}, 0, len(sections))
 	// For pre-allocation, say each course has on average 3 meetings or more
 	preparedMeetings := make([][]interface{}, 0, 3*len(sections))
-  idMap.Section = make(map[SectionKey]int)
+	idMap.Section = make(map[SectionKey]int)
 
 	// We will avoid using CopyFrom for prof_course.
 	// It would be faster, but we would have to reify ON CONFLIECT DO NOTHING.
@@ -147,7 +147,8 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	bar := pb.StartNew(len(sections))
-	for i, section := range sections {
+	sectionId := 1
+	for _, section := range sections {
 		bar.Increment()
 		courseId, courseFound := idMap.Course[section.CourseId]
 		if !courseFound {
@@ -167,17 +168,17 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 				postgresSection.EnrollmentTotal,
 			},
 		)
-    key := SectionKey{
-      ClassNumber: postgresSection.ClassNumber,
-      TermId: postgresSection.TermId,
-    }
-    idMap.Section[key] = i + 1
+		key := SectionKey{
+			ClassNumber: postgresSection.ClassNumber,
+			TermId:      postgresSection.TermId,
+		}
+		idMap.Section[key] = sectionId
 
 		for _, postgresMeeting := range postgresSection.Meetings {
 			preparedMeetings = append(
 				preparedMeetings,
 				[]interface{}{
-					i + 1,
+					sectionId,
 					postgresMeeting.ProfId,
 					postgresMeeting.StartDate,
 					postgresMeeting.EndDate,
@@ -190,6 +191,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					postgresMeeting.IsTba,
 				},
 			)
+
 			if postgresMeeting.ProfId != nil {
 				_, err = tx.Exec("insert_prof_course", *(postgresMeeting.ProfId), courseId)
 				if err != nil {
@@ -197,6 +199,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 				}
 			}
 		}
+		sectionId += 1
 	}
 
 	_, err = tx.CopyFrom(

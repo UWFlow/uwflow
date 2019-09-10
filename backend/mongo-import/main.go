@@ -34,7 +34,7 @@ func Run(rootPath string) {
 		parts.ImportProfs,
 		parts.ImportSections,
 		parts.ImportUsers,
-		// parts.ImportReviews,
+		parts.ImportReviews,
 		parts.ImportSchedules,
 	}
 	for _, operation := range operations {
