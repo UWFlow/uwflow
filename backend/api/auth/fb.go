@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
+	"github.com/AyushK1/uwflow2.0/backend/api/state"
 )
 
 type fbAuthLoginRequest struct {
@@ -74,7 +74,7 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 	return body.Data["user_id"].(string), nil
 }
 
-func registerFbUser(accessToken string, fbID string) (int, error) {
+func registerFbUser(state *state.State, accessToken string, fbID string) (int, error) {
 	fields := []string{"name", "profile_pic"}
 	userInfo, err := GetFbUserInfo(fbID, accessToken, fields)
 	if err != nil {
@@ -82,21 +82,21 @@ func registerFbUser(accessToken string, fbID string) (int, error) {
 	}
 
 	var userID int
-	err = db.Handle.QueryRow(
+	err = state.Conn.QueryRow(
 		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
 		userInfo["name"].(string), userInfo["profile_pic"].(string),
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
-	db.Handle.MustExec(
+	state.Conn.Exec(
 		"INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)",
 		userID, fbID,
 	)
 	return userID, nil
 }
 
-func AuthenticateFbUser(w http.ResponseWriter, r *http.Request) {
+func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Request) {
 	body := fbAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -119,7 +119,7 @@ func AuthenticateFbUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userID int
-	err = db.Handle.QueryRow(
+	err = state.Conn.QueryRow(
 		"SELECT user_id FROM secret.user_fb WHERE fb_id = $1",
 		fbID).Scan(&userID)
 	if err != nil {
@@ -128,7 +128,7 @@ func AuthenticateFbUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID == 0 {
-		userID, err = registerFbUser(body.AccessToken, fbID)
+		userID, err = registerFbUser(state, body.AccessToken, fbID)
 		if err != nil {
 			serde.Error(w, err.Error(), http.StatusInternalServerError)
 			return
