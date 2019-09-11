@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/AyushK1/uwflow2.0/backend/api/db"
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
+	"github.com/AyushK1/uwflow2.0/backend/api/state"
 	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/api/oauth2/v2"
 )
@@ -41,7 +41,7 @@ func verifyGoogleIDToken(idToken string) (*oauth2.Tokeninfo, error) {
 	return tokenInfo, nil
 }
 
-func registerGoogleUser(googleID string, idToken string) (int, error) {
+func registerGoogleUser(state *state.State, googleID string, idToken string) (int, error) {
 	// assuming that we have already validated the idToken (jwt),
 	// we can safely extract the desired jwt claims from the token
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &googleIDTokenClaims{})
@@ -54,21 +54,21 @@ func registerGoogleUser(googleID string, idToken string) (int, error) {
 	}
 
 	var userID int
-	err = db.Handle.QueryRow(
+	err = state.Conn.QueryRow(
 		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
 		tokenClaims.Name, tokenClaims.Picture,
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
-	db.Handle.MustExec(
+	state.Conn.Exec(
 		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
 		userID, googleID,
 	)
 	return userID, nil
 }
 
-func AuthenticateGoogleUser(w http.ResponseWriter, r *http.Request) {
+func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.Request) {
 	body := googleAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -90,7 +90,7 @@ func AuthenticateGoogleUser(w http.ResponseWriter, r *http.Request) {
 	// tokenInfo provides the user's unique Google id as UserId
 	// so we can check if the Google id already exists
 	var userID int
-	err = db.Handle.QueryRow(
+	err = state.Conn.QueryRow(
 		"SELECT user_id FROM secret.user_google WHERE google_id = $1",
 		tokenInfo.UserId).Scan(&userID)
 	if err != nil {
@@ -102,7 +102,7 @@ func AuthenticateGoogleUser(w http.ResponseWriter, r *http.Request) {
 	if userID == 0 {
 		// the raw id token needs to be parsed here since tokenInfo does not
 		// provide required profile info including name and profile pic url
-		userID, err = registerGoogleUser(tokenInfo.UserId, body.IDToken)
+		userID, err = registerGoogleUser(state, tokenInfo.UserId, body.IDToken)
 		if err != nil {
 			serde.Error(w, err.Error(), http.StatusInternalServerError)
 			return
