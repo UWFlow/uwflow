@@ -26,7 +26,7 @@ type fbVerifyAccessTokenResponse struct {
 func GetFbUserInfo(fbID string, accessToken string, fields []string) (map[string]interface{}, error) {
 	url := fmt.Sprintf(
 		"https://graph.facebook.com/%s?fields=%s&access_token=%s",
-		strings.Join(fields, ","), accessToken,
+		fbID, strings.Join(fields, ","), accessToken,
 	)
 	response, err := http.Get(url)
 	if err != nil {
@@ -58,7 +58,7 @@ func GetFbAppToken() (string, error) {
 
 func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 	url := fmt.Sprintf(
-		"https://graph.facebook.com/oauth/debug_token?input_token=%s&access_token=%s",
+		"https://graph.facebook.com/debug_token?input_token=%s&access_token=%s",
 		accessToken, appToken,
 	)
 	response, err := http.Get(url)
@@ -75,16 +75,19 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 }
 
 func registerFbUser(state *state.State, accessToken string, fbID string) (int, error) {
-	fields := []string{"name", "profile_pic"}
+	fields := []string{"name"}
 	userInfo, err := GetFbUserInfo(fbID, accessToken, fields)
 	if err != nil {
 		return 0, err
 	}
+	profilePicURL := fmt.Sprintf(
+		"https://graph.facebook.com/%s/picture?type=large", fbID,
+	)
 
 	var userID int
 	err = state.Conn.QueryRow(
 		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
-		userInfo["name"].(string), userInfo["profile_pic"].(string),
+		userInfo["name"].(string), profilePicURL,
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
@@ -119,13 +122,11 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	var userID int
-	err = state.Conn.QueryRow(
-		"SELECT user_id FROM secret.user_fb WHERE fb_id = $1",
-		fbID).Scan(&userID)
-	if err != nil {
-		serde.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	state.Conn.QueryRow("SELECT user_id FROM secret.user_fb WHERE fb_id LIKE $1", fbID).Scan(&userID)
+	// if err != nil {
+	// 	serde.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	if userID == 0 {
 		userID, err = registerFbUser(state, body.AccessToken, fbID)

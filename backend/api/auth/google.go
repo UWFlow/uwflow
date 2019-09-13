@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -83,7 +84,8 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// Validate Google id token using Google API
 	tokenInfo, err := verifyGoogleIDToken(body.IDToken)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Println(err.Error())
+		serde.Error(w, "Invalid Google id token provided", http.StatusInternalServerError)
 		return
 	}
 
