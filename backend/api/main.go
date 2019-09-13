@@ -33,7 +33,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
 	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
 	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
-	router.Post("/auth/google/login", WithState(state, auth.AuthenticateFbUser))
+	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
 
 	return router
 }
