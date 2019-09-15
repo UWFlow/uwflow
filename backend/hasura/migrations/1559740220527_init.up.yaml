@@ -42,6 +42,12 @@
           foreign_key_constraint_on:
             column: course_id
             table: prof_course
+      - comment: null
+        name: sections
+        using:
+          foreign_key_constraint_on:
+            column: course_id
+            table: course_section
       delete_permissions: []
       event_triggers: []
       insert_permissions: []
@@ -105,7 +111,13 @@
         role: user
       table: course
       update_permissions: []
-    - array_relationships: []
+    - array_relationships:
+        - comment: null
+          name: meetings
+          using:
+            foreign_key_constraint_on:
+              table: section_meeting
+              column: section_id
       delete_permissions: []
       insert_permissions: []
       is_enum: false
@@ -129,7 +141,67 @@
             - term
             filter: {}
           role: user
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - campus
+            - class_number
+            - course_id
+            - enrollment_capacity
+            - enrollment_total
+            - id
+            - section
+            - term
+            filter: {}
+          role: anonymous
       table: course_section
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships:
+        - comment: null
+          name: prof
+          using:
+            foreign_key_constraint_on: prof_id
+      select_permissions:
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - section_id
+            - prof_id
+            - start_seconds
+            - end_seconds
+            - start_date
+            - end_date
+            - location
+            - days
+            - is_cancelled
+            - is_closed
+            - is_tba
+            filter: {}
+          role: user
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - section_id
+            - prof_id
+            - start_seconds
+            - end_seconds
+            - start_date
+            - end_date
+            - location
+            - days
+            - is_cancelled
+            - is_closed
+            - is_tba
+            filter: {}
+          role: anonymous
+      table: section_meeting
       update_permissions: []
     - array_relationships:
       - comment: null
@@ -821,6 +893,12 @@
           foreign_key_constraint_on:
             column: user_id
             table: user_course_taken
+      - comment: null
+        name: schedule
+        using:
+          foreign_key_constraint_on:
+            column: user_id
+            table: user_schedule
       - comment: null
         name: shortlist
         using:
