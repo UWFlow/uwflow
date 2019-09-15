@@ -119,7 +119,7 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	body := fbAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusBadRequest)
+		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
 		return
 	}
 	if body.AccessToken == "" {

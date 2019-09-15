@@ -85,7 +85,7 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	body := googleAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusBadRequest)
+		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
 		return
 	}
 	if body.IDToken == "" {
