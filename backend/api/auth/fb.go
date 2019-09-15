@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -76,6 +77,10 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// "is_valid" field is false in API response if verification fails
+	if !body.Data["is_valid"].(bool) {
+		return "", errors.New("Invalid access token")
+	}
 	return body.Data["user_id"].(string), nil
 }
 
@@ -133,6 +138,7 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	fbID, err := verifyFbAccessToken(body.AccessToken, appToken)
 	if err != nil {
 		serde.Error(w, "Invalid Facebook access token provided", http.StatusInternalServerError)
+		return
 	}
 
 	// check if fb user already exists

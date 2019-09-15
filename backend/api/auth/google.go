@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
 	"github.com/dgrijalva/jwt-go"
-	"google.golang.org/api/oauth2/v2"
 )
 
 type googleIDTokenClaims struct {
@@ -25,21 +23,35 @@ type googleAuthLoginRequest struct {
 	IDToken string `json:"id_token"`
 }
 
-func verifyGoogleIDToken(idToken string) (*oauth2.Tokeninfo, error) {
-	ctx := context.Background()
-	oauth2Service, err := oauth2.NewService(ctx)
+type googleVerifyTokenResponse struct {
+	GoogleID *string `json:"user_id"`
+}
+
+func verifyGoogleIDToken(idToken string) (string, error) {
+	// use Google API to verify provided id token
+	url := fmt.Sprintf(
+		"https://www.googleapis.com/oauth2/v2/tokeninfo?id_token=%s",
+		idToken,
+	)
+	response, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	tokenInfoCall := oauth2Service.Tokeninfo()
-	// sets the id_token parameter before making call
-	tokenInfoCall.IdToken(idToken)
-	// makes call to https://www.googleapis.com/oauth2/v2/tokeninfo
-	tokenInfo, err := tokenInfoCall.Do()
+
+	// attempt to extract "user_id" from Google API response
+	defer response.Body.Close()
+	body := googleVerifyTokenResponse{}
+	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return tokenInfo, nil
+	// response will only contain "error_description"
+	// field if verification fails
+	if body.GoogleID == nil {
+		return "", errors.New("Invalid value")
+	}
+	// otherwise return the "user_id"
+	return *body.GoogleID, nil
 }
 
 func registerGoogleUser(state *state.State, googleID string, idToken string) (int, error) {
@@ -82,9 +94,9 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	}
 
 	// Validate Google id token using Google API
-	tokenInfo, err := verifyGoogleIDToken(body.IDToken)
+	// tokenInfo, err := verifyGoogleIDToken(body.IDToken)
+	googleID, err := verifyGoogleIDToken(body.IDToken)
 	if err != nil {
-		fmt.Println(err.Error())
 		serde.Error(w, "Invalid Google id token provided", http.StatusInternalServerError)
 		return
 	}
@@ -92,19 +104,15 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// tokenInfo provides the user's unique Google id as UserId
 	// so we can check if the Google id already exists
 	var userID int
-	err = state.Conn.QueryRow(
-		"SELECT user_id FROM secret.user_google WHERE google_id = $1",
-		tokenInfo.UserId).Scan(&userID)
-	if err != nil {
-		serde.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	state.Conn.QueryRow(
+		"SELECT user_id FROM secret.user_google WHERE google_id LIKE $1",
+		googleID).Scan(&userID)
 
 	// If the Google id is new, we must register the user
 	if userID == 0 {
 		// the raw id token needs to be parsed here since tokenInfo does not
 		// provide required profile info including name and profile pic url
-		userID, err = registerGoogleUser(state, tokenInfo.UserId, body.IDToken)
+		userID, err = registerGoogleUser(state, googleID, body.IDToken)
 		if err != nil {
 			serde.Error(w, err.Error(), http.StatusInternalServerError)
 			return
