@@ -7,7 +7,6 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/api/auth"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse"
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
-	"github.com/AyushK1/uwflow2.0/backend/api/webcal"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -33,7 +32,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/email/login", WithState(state, auth.AuthenticateEmail))
 	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
 	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
-	router.Get("/webcal/{userId}", WithState(state, webcal.HandleWebcal))
+	router.Post("/parse/schedule", WithState(state, parse.HandleSchedule))
 
 	return router
 }
@@ -41,9 +40,9 @@ func SetupRouter(state *state.State) *chi.Mux {
 func main() {
 	state, err := state.Initialize()
 	if err != nil {
-		log.Fatal("Error: %v", err)
+		log.Fatalf("Error: %v", err)
 	}
 
 	router := SetupRouter(state)
-	log.Fatal("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
+	log.Fatalf("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
 }
