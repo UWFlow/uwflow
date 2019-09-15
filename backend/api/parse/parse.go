@@ -19,7 +19,7 @@ type ScheduleParseRequest struct {
 }
 
 type ScheduleParseResponse struct {
-  SectionsImported int `json:"sections_imported"`
+	SectionsImported int `json:"sections_imported"`
 }
 
 func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request) {
@@ -82,9 +82,9 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 		for _, course := range summary.Courses {
 			// If (course, user, term) combination exists, do not add it again
 			_, err = tx.Exec(
-				`INSERT INTO user_course_taken(course_id, user_id, term, level)
-				 SELECT id, $2, $3, $4 FROM course WHERE code = $1
-         ON CONFLICT DO NOTHING`,
+				`INSERT INTO user_course_taken(course_id, user_id, term, level) `+
+					`SELECT id, $2, $3, $4 FROM course WHERE code = $1 `+
+					`ON CONFLICT DO NOTHING`,
 				course, userId, summary.Term, summary.Level,
 			)
 			if err != nil {
@@ -126,22 +126,22 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		serde.Error(w, fmt.Sprintf("malformed JSON: %v", err), http.StatusBadRequest)
-    return
+		return
 	}
 
 	scheduleSummary, err := schedule.Parse(req.Text)
 	if err != nil {
 		serde.Error(w, fmt.Sprintf("failed to parse schedule: %v", err), http.StatusBadRequest)
-    return
+		return
 	}
-  if scheduleSummary.Term < util.CurrentPostgresTerm() {
-    serde.Error(
-      w,
-      fmt.Sprintf("cannot import schedule for past term %d", scheduleSummary.Term),
-      http.StatusBadRequest,
-    )
-    return
-  }
+	if scheduleSummary.Term < util.CurrentPostgresTerm() {
+		serde.Error(
+			w,
+			fmt.Sprintf("cannot import schedule for past term %d", scheduleSummary.Term),
+			http.StatusBadRequest,
+		)
+		return
+	}
 
 	tx, err := state.Conn.Begin()
 	if err != nil {
@@ -155,28 +155,28 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	defer tx.Rollback()
 
 	for _, classNumber := range scheduleSummary.ClassNumbers {
-    tag, err := tx.Exec(
-			`INSERT INTO user_schedule(user_id, section_id)
-			 SELECT $1, id FROM course_section
-			 WHERE class_number = $2 AND term = $3`,
+		tag, err := tx.Exec(
+			`INSERT INTO user_schedule(user_id, section_id) `+
+				`SELECT $1, id FROM course_section `+
+				`WHERE class_number = $2 AND term = $3`,
 			userId, classNumber, scheduleSummary.Term,
 		)
 		if err != nil {
 			serde.Error(
-        w,
-        fmt.Sprintf("failed to store section: %v", err),
-        http.StatusInternalServerError,
-      )
+				w,
+				fmt.Sprintf("failed to store section: %v", err),
+				http.StatusInternalServerError,
+			)
 			return
 		}
-    if tag.RowsAffected() == 0 {
-      serde.Error(
-        w,
-        fmt.Sprintf("class number %d not found in term %d", classNumber, scheduleSummary.Term),
-        http.StatusBadRequest,
-      )
-      return
-    }
+		if tag.RowsAffected() == 0 {
+			serde.Error(
+				w,
+				fmt.Sprintf("class number %d not found in term %d", classNumber, scheduleSummary.Term),
+				http.StatusBadRequest,
+			)
+			return
+		}
 	}
 
 	err = tx.Commit()

@@ -2,24 +2,24 @@ package util
 
 import (
 	"fmt"
-  "time"
 	"strconv"
+	"time"
 )
 
 func CurrentPostgresTerm() int {
-  return DateToPostgresTerm(time.Now())
+	return DateToPostgresTerm(time.Now())
 }
 
 func DateToPostgresTerm(date time.Time) int {
-  var seasonId int
-  if date.Month() >= time.September {
-    seasonId = 9
-  } else if date.Month() >= time.May {
-    seasonId = 5
-  } else {
-    seasonId = 1
-  }
-  return (date.Year() - 1900) * 10 + seasonId
+	var seasonId int
+	if date.Month() >= time.September {
+		seasonId = 9
+	} else if date.Month() >= time.May {
+		seasonId = 5
+	} else {
+		seasonId = 1
+	}
+	return (date.Year()-1900)*10 + seasonId
 }
 
 func HumanToPostgresTerm(season string, year string) (int, error) {
@@ -38,5 +38,5 @@ func HumanToPostgresTerm(season string, year string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("%s is not a year: %v", year, err)
 	}
-	return (yearNumber - 1900)*10 + seasonId, nil
+	return (yearNumber-1900)*10 + seasonId, nil
 }

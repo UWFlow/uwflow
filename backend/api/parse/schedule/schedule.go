@@ -30,8 +30,8 @@ func (ts ScheduleSummary) Equals(other ScheduleSummary) bool {
 
 var (
 	TermRegexp = regexp.MustCompile(`(Spring|Fall|Winter)\s+(\d{4})`)
-  // Class numbers are *the* four-digit sequences
-  // which occur on a separate line, perhaps parenthesized.
+	// Class numbers are *the* four-digit sequences
+	// which occur on a separate line, perhaps parenthesized.
 	ClassNumberRegexp = regexp.MustCompile(`\n\(?(\d{4})\)?\n`)
 )
 
