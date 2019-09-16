@@ -108,10 +108,13 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 		return 0, err
 	}
 	// insert into user_fb table
-	state.Conn.Exec(
+	_, err = state.Conn.Exec(
 		"INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)",
 		userID, fbID,
 	)
+	if err != nil {
+		return 0, err
+	}
 	return userID, nil
 }
 

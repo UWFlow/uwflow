@@ -72,10 +72,13 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 	if err != nil {
 		return 0, err
 	}
-	state.Conn.Exec(
+	_, err = state.Conn.Exec(
 		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
 		userID, googleID,
 	)
+	if err != nil {
+		return 0, err
+	}
 	return userID, nil
 }
 
