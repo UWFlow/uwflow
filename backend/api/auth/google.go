@@ -2,10 +2,8 @@ package auth
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
@@ -14,8 +12,8 @@ import (
 
 type googleIDTokenClaims struct {
 	// Following fields are provided only if user allows access to profile
-	Name    string `json:"name"`
-	Picture string `json:"picture"`
+	Name       string `json:"name"`
+	PictureUrl string `json:"picture"`
 	jwt.StandardClaims
 }
 
@@ -48,7 +46,7 @@ func verifyGoogleIDToken(idToken string) (string, error) {
 	// response will only contain "error_description"
 	// field if verification fails
 	if body.GoogleID == nil {
-		return "", errors.New("Invalid value")
+		return "", fmt.Errorf("Invalid id token")
 	}
 	// otherwise return the "user_id"
 	return *body.GoogleID, nil
@@ -59,17 +57,17 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 	// we can safely extract the desired jwt claims from the token
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &googleIDTokenClaims{})
 	if err != nil {
-		return 0, errors.New("Invalid id token")
+		return 0, fmt.Errorf("Invalid id token")
 	}
 	tokenClaims, ok := token.Claims.(*googleIDTokenClaims)
 	if !ok {
-		return 0, errors.New("Invalid id token")
+		return 0, fmt.Errorf("Invalid id token")
 	}
 
 	var userID int
 	err = state.Conn.QueryRow(
-		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
-		tokenClaims.Name, tokenClaims.Picture,
+		`INSERT INTO "user"(full_name, picture_url) VALUES ($1, $2) RETURNING id`,
+		tokenClaims.Name, tokenClaims.PictureUrl,
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
@@ -97,7 +95,7 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// tokenInfo, err := verifyGoogleIDToken(body.IDToken)
 	googleID, err := verifyGoogleIDToken(body.IDToken)
 	if err != nil {
-		serde.Error(w, "Invalid Google id token provided", http.StatusInternalServerError)
+		serde.Error(w, "Invalid Google id token provided", http.StatusUnauthorized)
 		return
 	}
 
@@ -105,7 +103,7 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// so we can check if the Google id already exists
 	var userID int
 	state.Conn.QueryRow(
-		"SELECT user_id FROM secret.user_google WHERE google_id LIKE $1",
+		"SELECT user_id FROM secret.user_google WHERE google_id = $1",
 		googleID).Scan(&userID)
 
 	// If the Google id is new, we must register the user
@@ -119,5 +117,5 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 		}
 	}
 
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey))
 }

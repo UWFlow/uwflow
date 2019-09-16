@@ -22,6 +22,8 @@ type Environment struct {
 	PostgresPassword string `from:"POSTGRES_PASSWORD"`
 	PostgresPort     string `from:"POSTGRES_PORT"`
 	PostgresUser     string `from:"POSTGRES_USER"`
+	FbAppID          string `from:"FB_APP_ID"`
+	FbAppSecret      string `from:"FB_APP_SECRET"`
 }
 
 // State is the collection of all conceptually "global" data in the API.

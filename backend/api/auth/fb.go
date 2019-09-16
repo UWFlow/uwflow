@@ -2,10 +2,8 @@ package auth
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/serde"
@@ -21,7 +19,10 @@ type fbAppTokenResponse struct {
 }
 
 type fbVerifyAccessTokenResponse struct {
-	Data map[string]interface{} `json:"data"`
+	Data struct {
+		IsValid bool   `json:"is_valid"`
+		UserID  string `json:"user_id"`
+	} `json:"data"`
 }
 
 // Fetches specified user fields from fb Graph API
@@ -43,10 +44,10 @@ func GetFbUserInfo(fbID string, accessToken string, fields []string) (map[string
 }
 
 // Fetches the fb app specific token
-func GetFbAppToken() (string, error) {
+func GetFbAppToken(state *state.State) (string, error) {
 	url := fmt.Sprintf(
 		"https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&grant_type=client_credentials",
-		os.Getenv("FB_APP_ID"), os.Getenv("FB_APP_SECRET"),
+		state.Env.FbAppID, state.Env.FbAppSecret,
 	)
 	response, err := http.Get(url)
 	if err != nil {
@@ -78,10 +79,10 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 		return "", err
 	}
 	// "is_valid" field is false in API response if verification fails
-	if !body.Data["is_valid"].(bool) {
-		return "", errors.New("Invalid access token")
+	if !body.Data.IsValid {
+		return "", fmt.Errorf("Invalid access token")
 	}
-	return body.Data["user_id"].(string), nil
+	return body.Data.UserID, nil
 }
 
 // Registration for new fb user
@@ -100,7 +101,7 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 	// insert into "user" table
 	var userID int
 	err = state.Conn.QueryRow(
-		"INSERT INTO \"user\"(full_name, picture_url) VALUES ($1, $2) RETURNING id",
+		`INSERT INTO "user"(full_name, picture_url) VALUES ($1, $2) RETURNING id`,
 		userInfo["name"].(string), profilePicURL,
 	).Scan(&userID)
 	if err != nil {
@@ -128,7 +129,7 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	// fetch fb app specific token
-	appToken, err := GetFbAppToken()
+	appToken, err := GetFbAppToken(state)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -137,14 +138,14 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	// verify the received access token
 	fbID, err := verifyFbAccessToken(body.AccessToken, appToken)
 	if err != nil {
-		serde.Error(w, "Invalid Facebook access token provided", http.StatusInternalServerError)
+		serde.Error(w, "Invalid Facebook access token provided", http.StatusUnauthorized)
 		return
 	}
 
 	// check if fb user already exists
 	var userID int
 	state.Conn.QueryRow(
-		"SELECT user_id FROM secret.user_fb WHERE fb_id LIKE $1",
+		"SELECT user_id FROM secret.user_fb WHERE fb_id = $1",
 		fbID).Scan(&userID)
 
 	// register new user if doesn't exist in db
@@ -157,5 +158,5 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	// return Hasura JWT
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, []byte(os.Getenv("HASURA_GRAPHQL_JWT_KEY"))))
+	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey))
 }
