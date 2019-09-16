@@ -18,6 +18,7 @@ type MongoUser struct {
 	ProgramName *string            `bson:"program_name"`
 	Email       *string            `bson:"email"`
 	Password    *string            `bson:"password"`
+	FBId        *string            `bson:"fbid"`
 }
 
 func readMongoUsers(rootPath string) []MongoUser {
@@ -48,7 +49,9 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	idMap.User = make(map[primitive.ObjectID]int)
 	users := readMongoUsers(rootPath)
 	preparedUsers := make([][]interface{}, len(users))
+
 	var emailCredentials [][]interface{}
+	var fbCredentials [][]interface{}
 
 	bar := pb.StartNew(len(users))
 	for i, user := range users {
@@ -69,6 +72,10 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
 			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Email, user.Password})
 		}
+
+		if user.FBId != nil {
+			fbCredentials = append(fbCredentials, []interface{}{i + 1, user.FBId})
+		}
 	}
 
 	_, err = tx.CopyFrom(
@@ -84,6 +91,15 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		pgx.Identifier{"secret", "user_email"},
 		[]string{"user_id", "email", "password_hash"},
 		pgx.CopyFromRows(emailCredentials),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"secret", "user_fb"},
+		[]string{"user_id", "fb_id"},
+		pgx.CopyFromRows(fbCredentials),
 	)
 	if err != nil {
 		return err
