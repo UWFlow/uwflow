@@ -20,7 +20,7 @@ func TestFbNoToken(t *testing.T) {
 	defer ts.Close()
 	res, err := http.Get(ts.URL)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if res.StatusCode != 400 {
 		t.Fatalf("Expected 400 error, got %d", res.StatusCode)
@@ -41,9 +41,9 @@ func TestFbInvalidToken(t *testing.T) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
-	if res.StatusCode != 500 {
+	if res.StatusCode != 401 {
 		t.Fatalf("Expected 500 error, got %d", res.StatusCode)
 	}
 }
@@ -56,7 +56,7 @@ func TestGoogleNoToken(t *testing.T) {
 	defer ts.Close()
 	res, err := http.Get(ts.URL)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if res.StatusCode != 400 {
 		t.Fatalf("Expected 400 error, got %d", res.StatusCode)
@@ -77,9 +77,9 @@ func TestGoogleInvalidToken(t *testing.T) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
-	if res.StatusCode != 500 {
+	if res.StatusCode != 401 {
 		t.Fatalf("Expected 500 error, got %d", res.StatusCode)
 	}
 }
