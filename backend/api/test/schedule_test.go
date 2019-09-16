@@ -1,4 +1,4 @@
-package schedule_test
+package test
 
 import (
 	"io/ioutil"

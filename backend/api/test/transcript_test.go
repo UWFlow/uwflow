@@ -1,4 +1,4 @@
-package transcript_test
+package test
 
 import (
 	"io/ioutil"
