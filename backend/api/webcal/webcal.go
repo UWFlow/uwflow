@@ -186,5 +186,6 @@ func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
     return
 	}
   w.Header().Set("Content-Type", "text/calendar")
+  w.WriteHeader(http.StatusCreated)
   WriteCalendar(w, webcalEvents)
 }
