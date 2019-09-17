@@ -23,6 +23,11 @@ type EmailAuthRegisterRequest struct {
 	Password *string `json:"password"`
 }
 
+type AuthResponse struct {
+	Token string `json:"token"`
+	ID    int    `json:"user_id"`
+}
+
 // This is the string "password", hashed
 // If no email is found, we try to match against this,
 // thereby faithfully emulating a legitimate bcrypt delay
@@ -70,7 +75,12 @@ func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey))
+	encoder := json.NewEncoder(w)
+	data := AuthResponse{
+		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
+		ID:    id,
+	}
+	encoder.Encode(data)
 }
 
 func register(state *state.State, name string, email string, password []byte) (int, error) {
@@ -141,6 +151,10 @@ func RegisterEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		serde.Error(w, fmt.Sprintf("failed to register: %v", err), http.StatusBadRequest)
 		return
 	}
-
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey))
+	encoder := json.NewEncoder(w)
+	data := AuthResponse{
+		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
+		ID:    id,
+	}
+	encoder.Encode(data)
 }
