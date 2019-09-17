@@ -22,7 +22,7 @@ type PostgresEvent struct {
 	EndDate      *time.Time
 	StartSeconds int
 	EndSeconds   int
-  Days         []string
+	Days         []string
 }
 
 type WebcalEvent struct {
@@ -49,19 +49,19 @@ END:VEVENT
 `
 
 var (
-  DayMap = map[string]int{
-    "Su": 0,
-    "M": 1,
-    "Tu": 2,
-    "W": 3,
-    "Th": 4,
-    "F": 5,
-    "S": 6,
-  }
-  // FIXME: these will be supplied by the UW API,
-  // but currently they are not available due to what likely is a bug on their end.
-  TermStartDate = time.Date(2019, 9, 4, 0, 0, 0, 0, time.Local)
-  TermEndDate = time.Date(2019, 12, 3, 0, 0, 0, 0, time.Local)
+	DayMap = map[string]int{
+		"Su": 0,
+		"M":  1,
+		"Tu": 2,
+		"W":  3,
+		"Th": 4,
+		"F":  5,
+		"S":  6,
+	}
+	// FIXME: these will be supplied by the UW API,
+	// but currently they are not available due to what likely is a bug on their end.
+	TermStartDate = time.Date(2019, 9, 4, 0, 0, 0, 0, time.Local)
+	TermEndDate   = time.Date(2019, 12, 3, 0, 0, 0, 0, time.Local)
 )
 
 func WriteCalendar(w io.Writer, events []*WebcalEvent) {
@@ -83,7 +83,7 @@ func WriteCalendar(w io.Writer, events []*WebcalEvent) {
 }
 
 func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
-  var events []*PostgresEvent
+	var events []*PostgresEvent
 	rows, err := state.Conn.Query(
 		`SELECT
       c.code, cs.section, c.name, sm.location,
@@ -97,7 +97,7 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
       us.user_id = $1
       AND sm.start_seconds IS NOT NULL
       AND sm.end_seconds IS NOT NULL`,
-    userId,
+		userId,
 	)
 	if err != nil {
 		return nil, err
@@ -108,84 +108,84 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
 		var ev PostgresEvent
 		err = rows.Scan(
 			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.Location,
-      &ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
+			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
 			return nil, err
 		}
-    events = append(events, &ev)
+		events = append(events, &ev)
 	}
 	return events, nil
 }
 
 func PostgresToWebcalEvent(event *PostgresEvent) *WebcalEvent {
-    summary := fmt.Sprintf(
-      "%s - %s - %s",
-      strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
-    )
-    var location string
-    if event.Location != nil {
-      location = *event.Location
-    } else {
-      location = "Unknown"
-    }
-    return &WebcalEvent{
-      Summary: summary,
-      StartTime: event.StartDate.Add(time.Second * time.Duration(event.StartSeconds)),
-      EndTime: event.StartDate.Add(time.Second * time.Duration(event.EndSeconds)),
-      Location: location,
-    }
+	summary := fmt.Sprintf(
+		"%s - %s - %s",
+		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
+	)
+	var location string
+	if event.Location != nil {
+		location = *event.Location
+	} else {
+		location = "Unknown"
+	}
+	return &WebcalEvent{
+		Summary:   summary,
+		StartTime: event.StartDate.Add(time.Second * time.Duration(event.StartSeconds)),
+		EndTime:   event.StartDate.Add(time.Second * time.Duration(event.EndSeconds)),
+		Location:  location,
+	}
 }
 
 func PostgresToWebcalEvents(postgresEvents []*PostgresEvent) ([]*WebcalEvent, error) {
-  var webcalEvents []*WebcalEvent
-  var recurringEvents [7][]*PostgresEvent
+	var webcalEvents []*WebcalEvent
+	var recurringEvents [7][]*PostgresEvent
 
-  for _, event := range postgresEvents {
-    // Events without a start date are recurring.
-    if event.StartDate == nil {
-      for _, day := range event.Days {
-        dayInt := DayMap[day]
-        recurringEvents[dayInt] = append(recurringEvents[dayInt], event)
-      }
-      fmt.Println(recurringEvents)
-      continue
-    }
+	for _, event := range postgresEvents {
+		// Events without a start date are recurring.
+		if event.StartDate == nil {
+			for _, day := range event.Days {
+				dayInt := DayMap[day]
+				recurringEvents[dayInt] = append(recurringEvents[dayInt], event)
+			}
+			fmt.Println(recurringEvents)
+			continue
+		}
 
-    // Otherwise, this is a one-time event.
-    if !event.EndDate.Equal(*event.StartDate) {
-      return nil, fmt.Errorf("one-time event start and end dates do not match: %v", event)
-    }
-    webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event))
-  }
+		// Otherwise, this is a one-time event.
+		if !event.EndDate.Equal(*event.StartDate) {
+			return nil, fmt.Errorf("one-time event start and end dates do not match: %v", event)
+		}
+		webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event))
+	}
 
-  for date := TermStartDate; date.Before(TermEndDate); date = date.AddDate(0, 0, 1) {
-    for _, event := range recurringEvents[int(date.Weekday())] {
-      event.StartDate = &date
-      webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event))
-    }
-  }
-  return webcalEvents, nil
+	for date := TermStartDate; date.Before(TermEndDate); date = date.AddDate(0, 0, 1) {
+		for _, event := range recurringEvents[int(date.Weekday())] {
+			event.StartDate = &date
+			webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event))
+		}
+	}
+	return webcalEvents, nil
 }
 
 func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(chi.URLParam(r, "userId"))
 	if err != nil {
-    serde.Error(w, err.Error(), http.StatusBadRequest)
-    return
+		serde.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-  events, err := ExtractUserEvents(state, userId)
-  fmt.Println(events)
+	events, err := ExtractUserEvents(state, userId)
+	fmt.Println(events)
 	if err != nil {
-    serde.Error(w, err.Error(), http.StatusBadRequest)
-    return
+		serde.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-  webcalEvents, err := PostgresToWebcalEvents(events)
+	webcalEvents, err := PostgresToWebcalEvents(events)
 	if err != nil {
-    serde.Error(w, err.Error(), http.StatusBadRequest)
-    return
+		serde.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-  w.Header().Set("Content-Type", "text/calendar")
-  w.WriteHeader(http.StatusCreated)
-  WriteCalendar(w, webcalEvents)
+	w.Header().Set("Content-Type", "text/calendar")
+	w.WriteHeader(http.StatusCreated)
+	WriteCalendar(w, webcalEvents)
 }

@@ -1,16 +1,16 @@
 package util
 
 import (
-  "fmt"
-  "strconv"
-  "strings"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
 func TermNameToId(name string) (int, error) {
-  components := strings.Split(name, " ")
-  if len(components) != 2 {
-    return 0, fmt.Errorf("not a term name: %s", name)
-  }
+	components := strings.Split(name, " ")
+	if len(components) != 2 {
+		return 0, fmt.Errorf("not a term name: %s", name)
+	}
 	var month int
 	switch components[0] {
 	case "Fall":
@@ -20,7 +20,7 @@ func TermNameToId(name string) (int, error) {
 	case "Winter":
 		month = 1
 	default:
-    return 0, fmt.Errorf("not a season: %s", components[0])
+		return 0, fmt.Errorf("not a season: %s", components[0])
 	}
 	year, err := strconv.Atoi(components[1])
 	if err != nil {
