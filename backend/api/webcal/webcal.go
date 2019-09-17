@@ -146,7 +146,6 @@ func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
 func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*WebcalEvent, error) {
 	var webcalEvents []*WebcalEvent
 
-	// For timeframed events, walk date range for each (they are fortunately narrow)
 	for _, event := range events {
 		for date := event.StartDate; !date.After(event.EndDate); date = date.AddDate(0, 0, 1) {
 			if event.HasDay[int(date.Weekday())] {
