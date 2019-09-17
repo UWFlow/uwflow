@@ -58,8 +58,6 @@ var (
 		"F":  5,
 		"S":  6,
 	}
-	// FIXME: these will be supplied by the UW API,
-	// but currently they are not available due to what likely is a bug on their end.
 	TermStartDate = time.Date(2019, 9, 4, 0, 0, 0, 0, time.Local)
 	TermEndDate   = time.Date(2019, 12, 3, 0, 0, 0, 0, time.Local)
 )
@@ -148,7 +146,6 @@ func PostgresToWebcalEvents(postgresEvents []*PostgresEvent) ([]*WebcalEvent, er
 				dayInt := DayMap[day]
 				recurringEvents[dayInt] = append(recurringEvents[dayInt], event)
 			}
-			fmt.Println(recurringEvents)
 			continue
 		}
 
@@ -175,7 +172,6 @@ func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	events, err := ExtractUserEvents(state, userId)
-	fmt.Println(events)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return
