@@ -161,5 +161,10 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	// return Hasura JWT
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey))
+	encoder := json.NewEncoder(w)
+	jwt := AuthResponse{
+		Token: serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey),
+		ID:    userID,
+	}
+	encoder.Encode(jwt)
 }
