@@ -120,5 +120,10 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 		}
 	}
 
-	json.NewEncoder(w).Encode(serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey))
+	encoder := json.NewEncoder(w)
+	jwt := AuthResponse{
+		Token: serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey),
+		ID:    userID,
+	}
+	encoder.Encode(jwt)
 }
