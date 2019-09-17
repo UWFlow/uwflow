@@ -18,13 +18,14 @@ type PostgresEvent struct {
 	SectionName  string
 	CourseName   string
 	Location     *string
-	StartDate    *time.Time
-	EndDate      *time.Time
+	StartDate    time.Time
+	EndDate      time.Time
 	StartSeconds int
 	EndSeconds   int
-  Days         []string
-  // Days[x] is true if event occurs on weekday x
-	HasDay       [7]bool
+	TermId       int
+	Days         []string
+	// Days[x] is true if event occurs on weekday x
+	HasDay [7]bool
 }
 
 type WebcalEvent struct {
@@ -60,8 +61,6 @@ var (
 		"F":  5,
 		"S":  6,
 	}
-	TermStartDate = time.Date(2019, 9, 4, 0, 0, 0, 0, time.Local)
-	TermEndDate   = time.Date(2019, 12, 3, 0, 0, 0, 0, time.Local)
 )
 
 func WriteCalendar(w io.Writer, events []*WebcalEvent) {
@@ -84,12 +83,13 @@ func WriteCalendar(w io.Writer, events []*WebcalEvent) {
 
 func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
 	var events []*PostgresEvent
-  // Fetch meetings where start_seconds and end_seconds are present.
-  // Otherwise, we cannot say anything useful about when they take place.
+	// Fetch meetings where start_seconds and end_seconds are present.
+	// Otherwise, we cannot say anything useful about when they take place.
 	rows, err := state.Conn.Query(
 		`SELECT
       c.code, cs.section, c.name, sm.location,
-      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds, sm.days
+      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds,
+      cs.term, sm.days
      FROM
       user_schedule us
       JOIN course_section cs ON cs.id = us.section_id
@@ -108,32 +108,36 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
 
 	for rows.Next() {
 		var ev PostgresEvent
+
 		err = rows.Scan(
 			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.Location,
-			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
+			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds,
+			&ev.TermId, &ev.Days,
 		)
-    for _, day := range ev.Days {
-      ev.HasDay[DayToIndex[day]] = true
-    }
 		if err != nil {
 			return nil, err
 		}
+
+		for _, day := range ev.Days {
+			ev.HasDay[DayToIndex[day]] = true
+		}
+
 		events = append(events, &ev)
 	}
 	return events, nil
 }
 
 func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
-	summary := fmt.Sprintf(
-		"%s - %s - %s",
-		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
-	)
 	var location string
 	if event.Location != nil {
 		location = *event.Location
 	} else {
 		location = "Unknown"
 	}
+	summary := fmt.Sprintf(
+		"%s - %s - %s",
+		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
+	)
 	return &WebcalEvent{
 		Summary:   summary,
 		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
@@ -142,36 +146,15 @@ func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
 	}
 }
 
-func PostgresToWebcalEvents(postgresEvents []*PostgresEvent) ([]*WebcalEvent, error) {
+func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*WebcalEvent, error) {
 	var webcalEvents []*WebcalEvent
-  var timeframedEvents []*PostgresEvent
-	var recurringEvents [7][]*PostgresEvent
 
-	for _, event := range postgresEvents {
-    if event.StartDate != nil {
-      timeframedEvents = append(timeframedEvents, event)
-    } else {
-      for _, day := range event.Days {
-        dayIndex := DayToIndex[day]
-        recurringEvents[dayIndex] = append(recurringEvents[dayIndex], event)
-      }
-    }
-  }
-
-  // For timeframed events, walk date range for each (they are fortunately narrow)
-  for _, event := range timeframedEvents {
-    for date := *event.StartDate; date.Before(*event.EndDate); date = date.AddDate(0, 0, 1) {
-      if event.HasDay[int(date.Weekday())] {
-        webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
-      }
-    }
-  }
-
-  // For recurrent events, walk the common time range (entire term)
-	for date := TermStartDate; date.Before(TermEndDate); date = date.AddDate(0, 0, 1) {
-		for _, event := range recurringEvents[int(date.Weekday())] {
-        // This is a recurring event => occurs unconditionally if the day matches
-        webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
+	// For timeframed events, walk date range for each (they are fortunately narrow)
+	for _, event := range events {
+		for date := event.StartDate; !date.After(event.EndDate); date = date.AddDate(0, 0, 1) {
+			if event.HasDay[int(date.Weekday())] {
+				webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
+			}
 		}
 	}
 
@@ -189,7 +172,7 @@ func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	webcalEvents, err := PostgresToWebcalEvents(events)
+	webcalEvents, err := PostgresToWebcalEvents(state, events)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -137,14 +137,16 @@ CREATE TABLE section_meeting (
     REFERENCES prof(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
+  location TEXT,
   -- We could store these as TIMETZ, but that is a waste of space:
   -- seconds do not require 12 bytes of storage.
   -- Another advantage of this format is ease of serialization.
   start_seconds INT,
   end_seconds INT,
-  start_date DATE,
-  end_date DATE,
-  location TEXT,
+  -- Date must always be filled. When UW API returns null,
+  -- we simply fill it with the correponding term-wide date.
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
   days TEXT[] NOT NULL,
   is_cancelled BOOLEAN NOT NULL,
   is_closed BOOLEAN NOT NULL,
