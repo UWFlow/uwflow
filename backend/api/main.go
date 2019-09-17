@@ -38,6 +38,8 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
 	router.Post("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
 
+	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
+
 	return router
 }
 
