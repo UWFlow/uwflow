@@ -22,7 +22,6 @@ type PostgresEvent struct {
 	EndDate      time.Time
 	StartSeconds int
 	EndSeconds   int
-	TermId       int
 	Days         []string
 	// HasDay[x] is true if event occurs on weekday x
 	HasDay [7]bool
@@ -88,8 +87,7 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
 	rows, err := state.Conn.Query(
 		`SELECT
       c.code, cs.section, c.name, sm.location,
-      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds,
-      cs.term, sm.days
+      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds, sm.days
      FROM
       user_schedule us
       JOIN course_section cs ON cs.id = us.section_id
@@ -111,8 +109,7 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
 
 		err = rows.Scan(
 			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.Location,
-			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds,
-			&ev.TermId, &ev.Days,
+			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
 			return nil, err
