@@ -24,7 +24,7 @@ type PostgresEvent struct {
 	EndSeconds   int
 	TermId       int
 	Days         []string
-	// Days[x] is true if event occurs on weekday x
+	// HasDay[x] is true if event occurs on weekday x
 	HasDay [7]bool
 }
 
