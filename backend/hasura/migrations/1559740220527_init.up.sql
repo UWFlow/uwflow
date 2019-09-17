@@ -265,3 +265,19 @@ CREATE TABLE secret.user_email (
   password_hash TEXT
     CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
 );
+
+CREATE TABLE secret.user_fb (
+  user_id INT
+    REFERENCES "user"(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  fb_id TEXT
+);
+
+CREATE TABLE secret.user_google (
+  user_id INT
+    REFERENCES "user"(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  google_id TEXT
+);
