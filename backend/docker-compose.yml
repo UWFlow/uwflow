@@ -8,14 +8,14 @@ services:
     env_file: .env
     image: api:latest
     ports:
-      - $API_PORT
+      - $API_PORT:$API_PORT
     restart: always
   postgres:
     container_name: postgres
     env_file: .env
     image: postgres:12-alpine
     ports:
-      - $POSTGRES_PORT
+      - $POSTGRES_PORT:$POSTGRES_PORT
     restart: always
     volumes:
       - postgres:/var/lib/postgresql/data
@@ -33,7 +33,7 @@ services:
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
     image: hasura/graphql-engine:v1.0.0-beta.6.cli-migrations
     ports:
-      - $HASURA_PORT
+      - $HASURA_PORT:HASURA_PORT
     restart: always
     volumes:
       - ./hasura/migrations:/hasura-migrations
