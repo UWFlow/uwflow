@@ -1,4 +1,4 @@
-version: '3.6'
+version: '3'
 services:
   api:
     build: ./api
@@ -10,7 +10,8 @@ services:
     ports:
       - $API_PORT:$API_PORT
     restart: always
-    volumes: ./api:/api/
+    volumes:
+      - ./api:/api/
   postgres:
     container_name: postgres
     env_file: .env
