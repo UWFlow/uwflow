@@ -64,7 +64,8 @@ func New(ctx context.Context) (*ApiClient, error) {
 
 func (api *ApiClient) Get(endpoint string) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", BaseUrl, endpoint)
-	req, err := http.NewRequest("GET", url, nil)
+	// We do not need to add .WithTimeout here: client.Timeout is respected
+	req, err := http.NewRequestWithContext(api.Context, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
