@@ -89,6 +89,7 @@ func ImportantDates(client *client.ApiClient) error {
 		}
 
 		_, err = client.Conn.Exec(
+			client.Context,
 			`INSERT INTO term_date(term, start_date, end_date) VALUES ($1, $2, $3) `+
 				`ON CONFLICT (term) DO UPDATE `+
 				`SET start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date`,
