@@ -1,0 +1,119 @@
+
+GO!
+Student 3
+My Academics
+Course Selection (Undergrad only)
+Search for Classes
+Enroll
+ 	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information	 
+My Class Schedule
+List View
+Weekly Calendar View
+Select Display Option
+L
+Fall 2019 | Undergraduate | University of Waterloo
+Group Box
+Collapse section Class Schedule Filter Options Class Schedule Filter Options 
+Show Enrolled Classes
+Show Dropped Classes
+Show Waitlisted Classes
+BET 420 - Entrepreneurship Social Impact
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+5211
+001
+LEC
+Th 4:00PM - 6:50PM
+E7 2317
+Swaroopa Reddy
+04/09/2019 - 03/12/2019
+CO 487 - Applied Cryptography
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+8052
+001
+LEC
+MWF 10:30AM - 11:20AM
+RCH 101
+Douglas Stebila
+04/09/2019 - 03/12/2019
+CS 341 - Algorithms
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+9289
+101
+LAB
+F 8:30AM - 9:20AM
+MC 2034
+Staff
+04/09/2019 - 03/12/2019
+6394
+201
+TST
+T 7:00PM - 8:50PM
+TBA
+Caroline Kierstead
+22/10/2019 - 22/10/2019
+5867
+001
+LEC
+MW 8:30AM - 9:50AM
+MC 2017
+Anna Lubiw
+04/09/2019 - 03/12/2019
+CS 350 - Operating Systems
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6321
+101
+TST
+W 7:00PM - 8:50PM
+TBA
+Gustavo Fortes Tondello
+30/10/2019 - 30/10/2019
+6205
+002
+LEC
+TTh 1:00PM - 2:20PM
+AL 124
+Lesley Istead
+04/09/2019 - 03/12/2019
+PHYS 256 - Geometrical & Physical Optics
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+7253
+001
+LEC
+TTh 11:30AM - 12:50PM
+DC 1351
+Kyung Soo Choi
+04/09/2019 - 03/12/2019
+7254
+101
+TUT
+M 12:30PM - 1:20PM
+DC 1351
+Kyung Soo Choi
+04/09/2019 - 03/12/2019
+Printer Friendly Page
+Go to top iconGo to top

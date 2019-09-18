@@ -1,14 +1,23 @@
 package convert
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
-func MongoToPostgresTerm(termId string) (id int, ok bool) {
+func MongoToPostgresTerm(termId string) (int, error) {
 	for i := range termId {
 		if termId[i] == '_' {
-			year, _ := strconv.Atoi(termId[:i])
-			month, _ := strconv.Atoi(termId[i+1:])
-			return 1000 + (year%100)*10 + month, true
+			year, err := strconv.Atoi(termId[:i])
+			if err != nil {
+				return 0, fmt.Errorf("%q is not a number", termId[:i])
+			}
+			month, err := strconv.Atoi(termId[i+1:])
+			if err != nil {
+				return 0, fmt.Errorf("%q is not a number", termId[:i+1])
+			}
+			return 1000 + (year%100)*10 + month, nil
 		}
 	}
-	return 0, false
+	return 0, fmt.Errorf("no underscore in %q", termId)
 }
