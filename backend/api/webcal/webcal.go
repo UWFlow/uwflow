@@ -147,6 +147,9 @@ func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*Web
 	var webcalEvents []*WebcalEvent
 
 	for _, event := range events {
+    // Walk entire date range for each event. It would be more efficient
+    // to map days to events and walk the union of date ranges for all events simultaneously,
+    // but this is so fast as-is that the difference is negligible.
 		for date := event.StartDate; !date.After(event.EndDate); date = date.AddDate(0, 0, 1) {
 			if event.HasDay[int(date.Weekday())] {
 				webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
