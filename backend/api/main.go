@@ -32,6 +32,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/email/login", WithState(state, auth.AuthenticateEmail))
 	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
 	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
+	router.Post("/parse/schedule", WithState(state, parse.HandleSchedule))
 	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
 	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
 
@@ -41,9 +42,9 @@ func SetupRouter(state *state.State) *chi.Mux {
 func main() {
 	state, err := state.Initialize()
 	if err != nil {
-		log.Fatal("Error: %v", err)
+		log.Fatalf("Error: %v", err)
 	}
 
 	router := SetupRouter(state)
-	log.Fatal("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
+	log.Fatalf("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
 }

@@ -1,0 +1,144 @@
+
+GO!
+Student 1
+My Academics
+Course Selection (Undergrad only)
+Search for Classes
+Enroll
+ 	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information	 
+Add Classes
+Step 1
+Step 2
+Step 3
+1.  Select classes to add
+To select classes for another term, select the term and select Change.  When you are satisfied with your class selections, proceed to step 2 of 3.
+Fall 2019 | Undergraduate | University of Waterloo
+Descr
+Open
+Open
+Closed
+Closed
+Details
+Add to Cart
+Enter Class Nbr
+ 
+Find Classes
+Class Search
+Fall 2019 Shopping Cart
+ 
+Your enrollment shopping cart is empty.
+Collapse section My Fall 2019 Class Schedule My Fall 2019 Class Schedule 
+Descr
+Enrolled
+Dropped
+Enrolled
+Dropped
+Class	Description	Days/Times	Room	Instructor	Units	Status
+ME 235-001
+(4896)
+Materials Science & Eng (LEC)
+TTh 2:30PM - 3:50PM
+MC 2038
+M. Yavuz
+0.50
+Enrolled
+ME 235-101
+(4897)
+Materials Science & Eng (TUT)
+W 9:30AM - 10:20AM
+F 9:30AM - 10:20AM
+MC 4064
+DWE 2527
+Staff
+ 
+Enrolled
+ME 235-201
+(4899)
+Materials Science & Eng (LAB)
+F 8:30AM - 11:20AM
+E3 2119
+Staff
+ 
+Enrolled
+ME 250-002
+(4741)
+Thermodynamics 1 (LEC)
+TTh 11:30AM - 12:50PM
+CPH 3681
+J. Wen
+0.50
+Enrolled
+ME 250-103
+(4742)
+Thermodynamics 1 (TUT)
+M 2:30PM - 3:20PM
+CPH 3681
+Staff
+ 
+Enrolled
+MSCI 200A-001
+(5003)
+Seminar (LEC)
+W 11:30AM - 12:20PM
+CPH 3681
+M. Smucker
+ 
+Enrolled
+MSCI 240-001
+(4747)
+Algorithms & Data Structures (LEC)
+MWF 1:30PM - 2:20PM
+CPH 3681
+M. Hancock
+0.50
+Enrolled
+MSCI 240-101
+(4748)
+Algorithms & Data Structures (TUT)
+M 3:30PM - 4:20PM
+CPH 3681
+Staff
+ 
+Enrolled
+MSCI 251-001
+(7993)
+Probability and Statistics 1 (LEC)
+TTh 1:00PM - 2:20PM
+MC 2034
+H. Mahmoudzadeh
+0.50
+Enrolled
+MSCI 251-101
+(7994)
+Probability and Statistics 1 (TUT)
+F 2:30PM - 3:20PM
+CPH 3681
+Staff
+ 
+Enrolled
+MSCI 251-201
+(7995)
+Probability and Statistics 1 (LAB)
+M 10:00AM - 11:20AM
+CPH 1346
+H. Mahmoudzadeh
+ 
+Enrolled
+MSCI 271-001
+(4751)
+Advanced Calc. & Num. Methods (LEC)
+MWF 12:30PM - 1:20PM
+CPH 3681
+F. Beylunioglu,
+Q. He
+0.50
+Enrolled
+MSCI 271-101
+(4752)
+Advanced Calc. & Num. Methods (TUT)
+W 2:30PM - 4:20PM
+CPH 3681
+Staff
+ 
+Enrolled
+Go to top iconGo to top

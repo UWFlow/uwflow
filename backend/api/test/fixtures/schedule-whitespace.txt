@@ -1,0 +1,413 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ My Academics Student Center go to ... 
+
+
+
+Student 2
+
+
+
+My Academics
+Course Selection (Undergrad only)
+Search for Classes
+Enroll
+
+
+
+ 
+My Class Schedule
+ 
+ 
+|
+ 
+ 
+Shopping Cart
+ 
+ 
+|
+ 
+ 
+Add
+ 
+ 
+|
+ 
+ 
+Drop
+ 
+ 
+|
+ 
+ 
+Swap
+ 
+ 
+|
+ 
+ 
+Edit
+ 
+ 
+|
+ 
+ 
+Term Information
+ 
+ 
+|
+ 
+ 
+Exam Information
+ 
+
+
+Add Classes
+
+
+
+
+
+
+
+
+
+
+
+1.  Select classes to add
+
+
+
+
+
+To select classes for another term, select the term and select Change.  When you are satisfied with your class selections, proceed to step 2 of 3.
+
+
+
+
+
+
+
+Fall 2019 | Undergraduate | University of Waterloo
+
+
+
+
+
+
+
+
+
+Descr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Open
+
+
+
+Closed
+
+
+
+Details
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Add to Cart
+
+Enter Class Nbr
+
+
+
+
+
+
+
+
+
+Find Classes
+
+
+
+
+Class Search
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fall 2019 Shopping Cart
+ 
+Your enrollment shopping cart is empty.
+
+
+
+
+
+
+ My Fall 2019 Class Schedule 
+
+
+
+
+
+Descr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Enrolled
+
+
+Dropped
+
+
+
+
+Class
+Description
+Days/Times
+Room
+Instructor
+Units
+Status
+MTE 200B-001
+(4669)
+Seminar (SEM)
+T 3:30PM - 4:20PM
+Th 11:30AM - 12:20PM
+F 8:30AM - 9:20AM
+E5 3102
+E5 3102
+E5 3101
+W. Melek
+ 
+
+MTE 203-001
+(4658)
+Advanced Calculus (LEC)
+M 11:30AM - 12:20PM
+W 11:30AM - 12:20PM
+F 10:30AM - 11:20AM
+E5 3101
+E5 3101
+E5 3101
+P. Nieva
+0.50
+
+MTE 203-102
+(4660)
+Advanced Calculus (TUT)
+T 9:30AM - 10:20AM
+DWE 3518
+Staff
+ 
+
+MTE 203-201
+(4699)
+Advanced Calculus (LAB)
+Th 5:30PM - 8:20PM
+CPH 1346
+Staff
+ 
+
+MTE 204-001
+(4655)
+Numerical Methods (LEC)
+T 2:30PM - 3:20PM
+W 8:30AM - 9:20AM
+Th 9:30AM - 10:20AM
+E5 3102
+E5 3101
+E5 3101
+H. Pourmohammadali
+0.50
+
+MTE 204-101
+(4656)
+Numerical Methods (TUT)
+T 10:30AM - 11:20AM
+MC 4063
+Staff
+ 
+
+MTE 220-001
+(4661)
+Sensors and Instrumentation (LEC)
+M 10:30AM - 11:20AM
+Th 1:30PM - 2:20PM
+W 9:30AM - 10:20AM
+E5 3101
+E5 3102
+E5 3101
+J. Barby
+0.50
+
+MTE 220-101
+(4662)
+Sensors and Instrumentation (TUT)
+W 10:30AM - 11:20AM
+E5 3101
+Staff
+ 
+
+MTE 220-202
+(4850)
+Sensors and Instrumentation (LAB)
+W 1:30PM - 4:20PM
+E3 3164
+Staff
+ 
+
+MTE 241-001
+(4664)
+Intro:CompStruct&Real-TimeSys (LEC)
+M 8:30AM - 9:20AM
+Th 2:30PM - 4:20PM
+E5 3101
+E5 3102
+A. Morton
+0.50
+
+MTE 241-102
+(4666)
+Intro:CompStruct&Real-TimeSys (TUT)
+T 11:30AM - 12:20PM
+MC 4060
+Staff
+ 
+
+MTE 241-203
+(4936)
+Intro:CompStruct&Real-TimeSys (LAB)
+F 1:30PM - 4:20PM
+F 1:30PM - 4:20PM
+F 1:30PM - 4:20PM
+F 1:30PM - 4:20PM
+F 1:30PM - 4:20PM
+E2 2363
+E2 2363
+E2 2363
+E2 2363
+E2 2363
+Staff
+ 
+
+SYDE 252-002
+(4639)
+Linear Systems & Signals (LEC)
+M 9:30AM - 10:20AM
+Th 10:30AM - 11:20AM
+F 11:30AM - 12:20PM
+E5 3101
+E5 3101
+E5 3101
+N. Maftoon
+0.50
+
+SYDE 252-103
+(4668)
+Linear Systems & Signals (TUT)
+T 8:30AM - 9:20AM
+EV3 4412
+N. Maftoon
+ 
+
+WKRPT 200-006
+(7634)
+Work-term Report (PRJ)
+ 
+TBA
+W. Melek
+0.13
+
+
+
+
+
+
+
+
+
+
+
+
+Go to top
+
