@@ -6,19 +6,13 @@ This is the Flow API server for handling non-CRUD tasks.
 
 - Authentication:
   - [x] email
-  - [ ] OpenID
+  - [x] openID
 - Parsing:
-  - [ ] schedule
+  - [x] schedule
   - [x] transcript
+- [x] Webcal generation
 
 ## How to run this
 
-Ensure that Docker-compose is up and run
-
-```sh
-go build
-export (cat ../.env | xargs)
-./api
-```
-
-You will need at least `go v1.12`.
+As per `Dockerfile`, this is containerized and managed by `docker-compose`.
+If you wish to run this on the host, do so at your peril.
