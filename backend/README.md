@@ -64,6 +64,8 @@ cd uwflow2.0/backend
 cp .env.sample .env
 docker-compose up -d
 # Wait ~1min for containers to stabilize
+cd uwapi-import
+go run .
 cd mongo-import
 go run . $PATH_TO_MONGO_DUMP
 ```
