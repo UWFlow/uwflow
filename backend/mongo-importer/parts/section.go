@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/cheggaaa/pb.v1"
 
-	"github.com/AyushK1/uwflow2.0/backend/mongo-import/convert"
+	"github.com/AyushK1/uwflow2.0/backend/mongo-importer/convert"
 )
 
 type MongoMeeting struct {
