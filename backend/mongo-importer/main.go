@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/AyushK1/uwflow2.0/backend/mongo-import/parts"
+	"github.com/AyushK1/uwflow2.0/backend/mongo-importer/parts"
 	"github.com/jackc/pgx"
 )
 

@@ -4,9 +4,9 @@ This serves as a Postgres -> GraphQL adapter.
 
 ## Interface
 
-Hasura listens on `API_PORT` as specified in `.env`.
+Hasura listens on `HASURA_PORT` as specified in `.env`.
 It exposes a single endpoint expecting _only POSTs with JSON bodies_:
-`http://HOST:API_PORT/v1/graphql`.
+`http://HOST:HASURA_PORT/v1/graphql`.
 
 A sample JSON body posted to this endpoint might look like the following:
 ```json
@@ -48,8 +48,7 @@ or of the form
 
 ## Authentication
 
-In the future, a role-based model will exist.
-Currently, only the admin role is available.
+For development, an admin role is available.
 Send an `x-hasura-admin-secret` header set to the secret from `.env`.
 
 For example, with curl:

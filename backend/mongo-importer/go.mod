@@ -1,4 +1,4 @@
-module github.com/AyushK1/uwflow2.0/backend/mongo-import
+module github.com/AyushK1/uwflow2.0/backend/mongo-importer
 
 go 1.12
 
