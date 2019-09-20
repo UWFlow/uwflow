@@ -16,7 +16,7 @@ The following packages are required for anything at all to work:
 The following packages are required by optional components:
 
 - [`hasura-cli`](https://docs.hasura.io/1.0/graphql/manual/hasura-cli/install-hasura-cli.html#install): Hasura web interface
-- `golang`: Mongo importer
+- `golang`: Mongo and UW API importers
 
 The following packages are neat to have:
 
@@ -28,6 +28,9 @@ The above list is intended as an unambiguous guideline for humans
 and is not necessarily consistent with any single distribution.
 
 ## How to run this
+
+**TL;DR**: run `restart.sh` to have everything done for you.
+Study it to figure out what is expected, as the following docs may be outdated.
 
 1. Ensure the required packages are installed (see above).
 2. Copy `.env.sample` to `.env` and optionally edit the latter as needed.
@@ -55,32 +58,20 @@ will spawn a Postgres shell connected to the database container.
 
 Various recipes for getting commonly desired things done follow.
 
-### Bring everything up and import Mongo data
+### First-time setup
 
-Frontend will mostly be interested in doing just this.
 ```sh
 sudo apt install docker.io docker-compose golang-go  # Amend as appropriate
 cd uwflow2.0/backend
 cp .env.sample .env
-docker-compose up -d
-# Wait ~1min for containers to stabilize
-cd uwapi-import
-go run .
-cd mongo-import
-go run . $PATH_TO_MONGO_DUMP
+# Edit .env to reflect your MONGO_DUMP_PATH and UW_API_KEY etc
 ```
-Voilà, now you have an endpoint to query at `http://localhost:8080/v1/graphql`.
-Remember that Hasura requires auth; see the relevant [README](hasura/README.md).
 
-### Reset database state
+### Rebuild everything after new changes are pulled
 
-If one desires to re-import data from Mongo (say, because one is developing `mongo-import`),
-it is necessary to first purge Postgres state, which is most easily achieved as below:
-
-```sh
-docker-compose down
-docker volume rm backend_postgres
-docker-compose up -d
+Frontend will mostly be interested in doing just this:
+```
+./restart.sh
 ```
 
 ### Open Hasura console

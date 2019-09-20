@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/AyushK1/uwflow2.0/backend/mongo-import/convert"
+	"github.com/AyushK1/uwflow2.0/backend/mongo-importer/convert"
 )
 
 type MongoSchedule struct {
