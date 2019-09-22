@@ -1,15 +1,18 @@
 #!/bin/sh
+# Restart 
 
-# Bail on errors and unset variables
-set -eu
+DIR="$(dirname $(realpath $0))"
+. "$DIR/common.sh"
+# Ensure basic assumptions hold
+"$DIR/sanity-check.sh"
 
-# Bring environment variables into this script's scope
+# Bring backend environment variables into this script's scope
+cd "$BACKEND_DIR"
 export $(cat .env | xargs)
-# Necessary outside of Docker
-export POSTGRES_HOST=localhost
 
 # Prefix docker commands with sudo if the user is not in the `docker` group
-if ! $(groups | grep docker)
+# If there is no `sudo` executable, then assume we don't need it anyway
+if ! $(groups 2>/dev/null | grep docker) && $(which sudo 2>/dev/null >&2)
 then
   PREFIX="sudo"
 else
@@ -18,8 +21,10 @@ fi
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down
-$PREFIX docker volume rm backend_postgres
+$PREFIX docker volume rm -f backend_postgres
 $PREFIX docker-compose up -d --build
+# Remove outdated API images
+$PREFIX docker system prune -f
 
 # Wait for migrations to be applied by selecting from a random table
 while ! $PREFIX docker exec postgres \
@@ -30,6 +35,8 @@ do
   sleep 10
 done
 
+# Necessary outside of Docker
+export POSTGRES_HOST=localhost
 # Run import jobs
 (cd uwapi-importer && go run .)
 (cd mongo-importer && go run . $MONGO_DUMP_PATH)
