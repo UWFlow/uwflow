@@ -37,22 +37,22 @@ and apply common sense, as the following docs may be outdated.
 3. Copy `.env.sample` to `.env` and edit the latter as needed. In particular:
   - `MONGO_DUMP_PATH` should point at the directory obtained at the end of (2)
   - `UW_API_KEY` should be set as instructed in the
-    [uwapi-importer README](backend/uwapi-importer/README.md)
+    [uwapi-importer README](uwapi-importer/README.md)
   - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems
-    and `0.0.0.0` on Windows (which is incidentally otherwise unsupported
+    and `0.0.0.0` on Windows (which is incidentally otherwise unsupported)
 
 ## How to run this
 
 If you have not run the backend before, refer to the preceding section first.
-That being done, simply run `script/start.sh` to have everything done for you.
+That being done, **simply run `script/start.sh`**.
 
 As dependencies between containers exist that cannot be explicitly specified,
 the system will take a while to reach a stable (all services up) state.
 The script will wait as this happens, but it should not take more than a minute.
-If it does, then something went wrong. Ping #backend-dev.
+If it does, then something went wrong. Ping `#backend-dev`.
 
-It is instructive to study the script, as it does not need to be re-run
-in its entirety in many cases. For example, when developing `api`, it is
+It is instructive to study the script, as it often does not need to be re-run
+in its entirety. For example, when developing `api`, it is
 not necessary clear database state, so the following command suffices:
 ```sh
 docker-compose up -d --build
