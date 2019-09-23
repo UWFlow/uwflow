@@ -2,9 +2,15 @@ package util
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
+
+func LogApiBug(message string, args ...interface{}) {
+	formatted := fmt.Sprintf(message, args)
+	log.Println("API bug:", formatted)
+}
 
 func TermNameToId(name string) (int, error) {
 	components := strings.Split(name, " ")

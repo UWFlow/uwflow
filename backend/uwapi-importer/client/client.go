@@ -1,23 +1,25 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
 const ApiTimeout = time.Second * 10
+const ConnectTimeout = time.Second * 5
 const BaseUrl = "https://openapi.data.uwaterloo.ca/v3"
 
 type ApiClient struct {
-	Conn   *pgx.Conn
-	client *http.Client
-	key    string
+	Context context.Context
+	Conn    *pgx.Conn
+	client  *http.Client
+	key     string
 }
 
 func mustGetenv(key string) string {
@@ -28,30 +30,31 @@ func mustGetenv(key string) string {
 	return val
 }
 
-func connectPostgres() (*pgx.Conn, error) {
+func connectPostgres(ctx context.Context) (*pgx.Conn, error) {
+	database := mustGetenv("POSTGRES_DB")
+	host := mustGetenv("POSTGRES_HOST")
+	password := mustGetenv("POSTGRES_PASSWORD")
 	port := mustGetenv("POSTGRES_PORT")
-	portNumber, err := strconv.Atoi(port)
-	if err != nil {
-		return nil, fmt.Errorf("invalid port: %v", err)
-	}
-	config := pgx.ConnConfig{
-		Database: mustGetenv("POSTGRES_DB"),
-		Host:     mustGetenv("POSTGRES_HOST"),
-		Password: mustGetenv("POSTGRES_PASSWORD"),
-		Port:     uint16(portNumber),
-		User:     mustGetenv("POSTGRES_USER"),
-	}
-	return pgx.Connect(config)
+	user := mustGetenv("POSTGRES_USER")
+
+	uri := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, password, host, port, database,
+	)
+	connectCtx, cancel := context.WithTimeout(ctx, ConnectTimeout)
+	defer cancel()
+	return pgx.Connect(connectCtx, uri)
 }
 
-func New() (*ApiClient, error) {
-	conn, err := connectPostgres()
+func New(ctx context.Context) (*ApiClient, error) {
+	conn, err := connectPostgres(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ApiClient{
-		Conn: conn,
+		Conn:    conn,
+		Context: ctx,
 		client: &http.Client{
 			Timeout: ApiTimeout,
 		},
@@ -61,7 +64,8 @@ func New() (*ApiClient, error) {
 
 func (api *ApiClient) Get(endpoint string) (*http.Response, error) {
 	url := fmt.Sprintf("%s/%s", BaseUrl, endpoint)
-	req, err := http.NewRequest("GET", url, nil)
+	// We do not need to add .WithTimeout here: client.Timeout is respected
+	req, err := http.NewRequestWithContext(api.Context, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

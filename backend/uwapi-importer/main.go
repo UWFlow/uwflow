@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/client"
@@ -8,7 +9,9 @@ import (
 )
 
 func main() {
-	apiClient, err := client.New()
+	// TODO: set sane time limit?
+	ctx := context.Background()
+	apiClient, err := client.New(ctx)
 	if err != nil {
 		log.Fatalf("API client creation failed: %v\n", err)
 	}
