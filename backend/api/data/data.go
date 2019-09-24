@@ -78,7 +78,7 @@ func dump(state *state.State) (*Response, error) {
 	return &response, nil
 }
 
-func HandleSearchData(state *state.State, w http.ResponseWriter, r *http.Request) {
+func HandleSearch(state *state.State, w http.ResponseWriter, r *http.Request) {
 	res, err := dump(state)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusInternalServerError)

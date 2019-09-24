@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/AyushK1/uwflow2.0/backend/api/auth"
-	"github.com/AyushK1/uwflow2.0/backend/api/dump"
+	"github.com/AyushK1/uwflow2.0/backend/api/data"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse"
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
 	"github.com/AyushK1/uwflow2.0/backend/api/webcal"
@@ -38,7 +38,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
 	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
 
-	router.Get("/data/search", WithState(state, dump.HandleSearchData))
+	router.Get("/data/search", WithState(state, data.HandleSearch))
 	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
 
 	return router
