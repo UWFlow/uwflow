@@ -38,7 +38,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
 	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
 
-	router.Get("/dump", WithState(state, dump.HandleDump))
+	router.Get("/data/search", WithState(state, dump.HandleSearchData))
 	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
 
 	return router

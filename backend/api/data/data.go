@@ -28,7 +28,7 @@ type Response struct {
 }
 
 const CourseQuery = `
-SELECT c.id, c.name, c.code, ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL)
+SELECT c.id, c.code, c.name, ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL)
 FROM course c
  LEFT JOIN prof_course pc ON pc.course_id = c.id
  LEFT JOIN prof p ON p.id = pc.prof_id
@@ -78,7 +78,7 @@ func dump(state *state.State) (*Response, error) {
 	return &response, nil
 }
 
-func HandleDump(state *state.State, w http.ResponseWriter, r *http.Request) {
+func HandleSearchData(state *state.State, w http.ResponseWriter, r *http.Request) {
 	res, err := dump(state)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusInternalServerError)
