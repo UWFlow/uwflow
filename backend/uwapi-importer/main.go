@@ -4,18 +4,18 @@ import (
 	"context"
 	"log"
 
-	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/client"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
 )
 
 func main() {
 	// TODO: set sane time limit?
 	ctx := context.Background()
-	apiClient, err := client.New(ctx)
+	state, err := state.New(ctx)
 	if err != nil {
-		log.Fatalf("API client creation failed: %v\n", err)
+		log.Fatalf("Initialization failed: %v\n", err)
 	}
-	err = parts.ImportantDates(apiClient)
+	err = parts.ImportantDates(state)
 	if err != nil {
 		log.Fatalf("UW API import failed: %v\n", err)
 	}
