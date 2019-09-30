@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/course"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/exam"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/section"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/term"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
@@ -34,6 +35,8 @@ func main() {
 	switch os.Args[1] {
 	case "courses":
 		Run(course.ImportAll)
+	case "exams":
+		Run(exam.ImportAll)
 	case "sections":
 		Run(section.ImportAll)
 	case "terms":
