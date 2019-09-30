@@ -30,9 +30,9 @@ func New(ctx context.Context, env *env.Environment, logger *zap.Logger) *Api {
 		client: &http.Client{
 			Timeout: ApiTimeout,
 		},
-    logger: logger,
-		keyv2: env.UWApiKeyv2,
-		keyv3: env.UWApiKeyv3,
+		logger: logger,
+		keyv2:  env.UWApiKeyv2,
+		keyv3:  env.UWApiKeyv3,
 	}
 }
 

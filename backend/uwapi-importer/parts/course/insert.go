@@ -9,10 +9,10 @@ ON CONFLICT (code) DO NOTHING
 `
 
 func Insert(conn *db.Conn, course *Course) error {
-  _, err := conn.Exec(
-    InsertQuery,
-    course.Code, course.Name, course.Description,
-    course.Prereqs, course.Coreqs, course.Antireqs,
-  )
-  return err
+	_, err := conn.Exec(
+		InsertQuery,
+		course.Code, course.Name, course.Description,
+		course.Prereqs, course.Coreqs, course.Antireqs,
+	)
+	return err
 }

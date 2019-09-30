@@ -18,7 +18,7 @@ const (
 )
 
 func ImportAll(state *state.State) error {
-  state.Log.StartImport("term")
+	state.Log.StartImport("term")
 
 	res, err := state.Api.Getv3("ImportantDates")
 	if err != nil {
@@ -33,12 +33,12 @@ func ImportAll(state *state.State) error {
 
 	var startDetails, endDetails []ApiEventDetail
 	for _, event := range events {
-    switch event.Name {
-    case StartEventName:
+		switch event.Name {
+		case StartEventName:
 			startDetails = append(startDetails, event.Details...)
-    case EndEventName:
+		case EndEventName:
 			endDetails = append(endDetails, event.Details...)
-    }
+		}
 	}
 
 	termEndDate := make(map[int]string)
@@ -56,21 +56,21 @@ func ImportAll(state *state.State) error {
 		termId, err := util.TermNameToId(detail.TermName)
 		if err != nil {
 			state.Log.ApiBug("invalid term name in start event", detail.TermName)
-      failed++
+			failed++
 			continue
 		}
 
 		endDate, found := termEndDate[termId]
 		if !found {
 			state.Log.ApiBug("unmatched term in start event", detail.TermName)
-      failed++
+			failed++
 			continue
 		}
 
-    term := Term{TermId: termId, StartDate: detail.Date, EndDate: endDate}
-    err = Insert(state.Db, &term)
-    if err != nil {
-      return fmt.Errorf("inserting term failed: %w", err)
+		term := Term{TermId: termId, StartDate: detail.Date, EndDate: endDate}
+		err = Insert(state.Db, &term)
+		if err != nil {
+			return fmt.Errorf("inserting term failed: %w", err)
 		}
 		succeeded++
 	}
@@ -78,4 +78,3 @@ func ImportAll(state *state.State) error {
 	state.Log.EndImport("term", succeeded, failed)
 	return nil
 }
-

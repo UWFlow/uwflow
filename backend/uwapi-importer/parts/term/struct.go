@@ -16,9 +16,9 @@ package term
 // In this script, we only ever need the string representations,
 // so no need to bother with time.Time conversions.
 type Term struct {
-  TermId    int
-  StartDate string
-  EndDate   string
+	TermId    int
+	StartDate string
+	EndDate   string
 }
 
 // In UW API v3 spec, these are called ImportantDates,

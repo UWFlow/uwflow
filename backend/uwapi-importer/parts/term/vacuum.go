@@ -1,7 +1,7 @@
 package term
 
 import (
-  "fmt"
+	"fmt"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
@@ -15,5 +15,5 @@ func Vacuum(conn *db.Conn) error {
 	if err != nil {
 		return fmt.Errorf("database write failed: %w", err)
 	}
-  return nil
+	return nil
 }
