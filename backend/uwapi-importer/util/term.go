@@ -19,6 +19,12 @@ func PreviousTermId() int {
 	return DateToTermId(time.Now().AddDate(0, -4, 0))
 }
 
+// Quest id of the next term according to system time.
+func NextTermId() int {
+	// Conveniently, the next term is the term that will be current in 4 months
+	return DateToTermId(time.Now().AddDate(0, 4, 0))
+}
+
 // Quest id of the term that was current at the point in time given by date.
 func DateToTermId(date time.Time) int {
 	var seasonId int

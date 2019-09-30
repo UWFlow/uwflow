@@ -2,35 +2,23 @@ package util
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
-// Map prof name to prof code: "Last,First Middle" => "first_middle_last"
-func ProfNameToCode(profName string) (string, error) {
-	splits := strings.Split(profName, ",")
+// Map name in "Last,First..." format to "First...Last" format
+func LastFirstToFirstLast(name string) (string, error) {
+	splits := strings.Split(name, ",")
 	if len(splits) != 2 {
-		return "", fmt.Errorf("expected: Last,First( Middle)?; got: %s", profName)
+		return "", fmt.Errorf("expected: Last,First; got: %s", name)
 	}
-	firstMiddle := strings.ToLower(strings.TrimSpace(splits[1]))
-	firstMiddleCode := strings.Join(strings.Split(firstMiddle, " "), "_")
-	last := strings.ToLower(strings.TrimSpace(splits[0]))
-	return fmt.Sprintf("%s_%s", firstMiddleCode, last), nil
+	return fmt.Sprintf("%s %s", splits[1], splits[0]), nil
 }
 
-// Map time string to seconds since midnight: "hh:mm" => hh * 3600 + mm * 60
-func TimeStringToSeconds(time string) (int, error) {
-	splits := strings.Split(time, ":")
-	if len(splits) != 2 {
-		return -1, fmt.Errorf("expected: hours:minutes; got: %s", time)
+// Map prof name to prof code: "First Middle Last" => "first_middle_last"
+func ProfNameToCode(profName string) string {
+	splits := strings.Split(profName, " ")
+	for i := range splits {
+		splits[i] = strings.ToLower(strings.TrimSpace(splits[i]))
 	}
-	hours, err := strconv.Atoi(splits[0])
-	if err != nil {
-		return -1, fmt.Errorf("hours component is not an integer: %s", splits[0])
-	}
-	minutes, err := strconv.Atoi(splits[1])
-	if err != nil {
-		return -1, fmt.Errorf("minutes component is not an integer: %s", splits[0])
-	}
-	return hours*3600 + minutes*60, nil
+	return strings.Join(splits, "_")
 }

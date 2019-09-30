@@ -15,8 +15,14 @@ package term
 
 import "time"
 
-// In this script, we only ever need the string representations,
-// so no need to bother with time.Time conversions.
+// For inserts, it is much easier to let Postgres handle string => date conversion,
+// avoiding the text (JSON) => time => text (SQL) => time conversion overhead.
+type termInsertItem struct {
+	TermId    int
+	StartDate string
+	EndDate   string
+}
+
 type Term struct {
 	TermId    int
 	StartDate time.Time
@@ -37,5 +43,5 @@ type ApiEventDetail struct {
 	TermName string
 	// In our case, start and end dates conincide,
 	// so EndDate is nil and this is simply the date.
-	Date time.Time `json:"StartDate"`
+	Date string `json:"StartDate"`
 }

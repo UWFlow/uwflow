@@ -3,7 +3,6 @@ package term
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
@@ -42,7 +41,7 @@ func ImportAll(state *state.State) error {
 		}
 	}
 
-	termEndDate := make(map[int]time.Time)
+	termEndDate := make(map[int]string)
 	for _, detail := range endDetails {
 		termId, err := util.TermNameToId(detail.TermName)
 		if err != nil {
@@ -68,7 +67,7 @@ func ImportAll(state *state.State) error {
 			continue
 		}
 
-		term := Term{TermId: termId, StartDate: detail.Date, EndDate: endDate}
+		term := termInsertItem{TermId: termId, StartDate: detail.Date, EndDate: endDate}
 		err = Insert(state.Db, &term)
 		if err != nil {
 			return fmt.Errorf("inserting term failed: %w", err)

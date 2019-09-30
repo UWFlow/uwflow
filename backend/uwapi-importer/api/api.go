@@ -51,7 +51,8 @@ func (api *Api) Getv2(endpoint string) (*http.Response, error) {
 	clearUrl := fmt.Sprintf("%s/%s.json", BaseUrlv2, endpoint)
 	api.logger.Info("v2 GET", zap.String("url", clearUrl))
 
-	url := fmt.Sprintf("%s?key=%s", clearUrl, api.keyv2)
+	// ?dump=true is necessary for very large (>6MB) results
+	url := fmt.Sprintf("%s?dump=true&key=%s", clearUrl, api.keyv2)
 	req, err := http.NewRequestWithContext(api.ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

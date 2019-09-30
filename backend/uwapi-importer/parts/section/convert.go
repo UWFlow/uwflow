@@ -9,9 +9,37 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
 )
 
-func ConvertSection(apiSection *ApiSection) *Section {
-	return &Section{
-		CourseCode:         strings.ToLower(apiSection.Subject + apiSection.CatalogNumber),
+func ConvertAll(
+	apiSections []ApiSection, term *term.Term,
+) ([]Section, []Meeting, []Prof, error) {
+	sections := make([]Section, len(apiSections))
+	meetings := make([]Meeting, 0, len(apiSections))
+	profs := make([]Prof, 0, len(apiSections))
+	seenProfCodes := make(map[string]bool)
+
+	for i, apiSection := range apiSections {
+		section, curMeetings, curProfs, err := Convert(&apiSection, term)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to convert section: %w", err)
+		}
+		sections[i] = *section
+		meetings = append(meetings, curMeetings...)
+		for _, prof := range curProfs {
+			if !seenProfCodes[prof.Code] {
+				profs = append(profs, prof)
+				seenProfCodes[prof.Code] = true
+			}
+		}
+	}
+	return sections, meetings, profs, nil
+}
+
+func Convert(
+	apiSection *ApiSection, term *term.Term,
+) (*Section, []Meeting, []Prof, error) {
+	code := strings.ToLower(apiSection.Subject + apiSection.CatalogNumber)
+	section := &Section{
+		CourseCode:         code,
 		ClassNumber:        apiSection.ClassNumber,
 		SectionName:        apiSection.SectionName,
 		Campus:             apiSection.Campus,
@@ -19,14 +47,32 @@ func ConvertSection(apiSection *ApiSection) *Section {
 		EnrollmentTotal:    apiSection.EnrollmentTotal,
 		TermId:             apiSection.TermId,
 	}
+
+	var profs []Prof
+	meetings := make([]Meeting, len(apiSection.Meetings))
+	for i, apiMeeting := range apiSection.Meetings {
+		meeting, prof, err := convertMeeting(&apiMeeting, section, term)
+		meetings[i] = *meeting
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to convert meeting: %w", err)
+		}
+		if prof != nil {
+			profs = append(profs, *prof)
+		}
+	}
+
+	return section, meetings, profs, nil
 }
 
-func ConvertMeeting(
+func convertMeeting(
 	apiMeeting *ApiMeeting, section *Section, term *term.Term,
-) (*Meeting, error) {
+) (*Meeting, *Prof, error) {
 	var err error
-	meeting := Meeting{
-		SectionId:   section.Id,
+	var prof *Prof
+	meeting := &Meeting{
+		ClassNumber: section.ClassNumber,
+		TermId:      section.TermId,
+		Days:        make([]string, 0),
 		IsCancelled: apiMeeting.Date.IsCancelled,
 		IsClosed:    apiMeeting.Date.IsClosed,
 		IsTba:       apiMeeting.Date.IsTba,
@@ -39,11 +85,13 @@ func ConvertMeeting(
 		// However, this does not happen with undergrad courses,
 		// and having an array column of foreign keys is not possible.
 		// This may well be a reasonable compromise in the end.
-		code, err := util.ProfNameToCode(apiMeeting.Instructors[0])
+		name, err := util.LastFirstToFirstLast(apiMeeting.Instructors[0])
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert name: %w", err)
+			return nil, nil, fmt.Errorf("failed to convert name: %w", err)
 		}
+		code := util.ProfNameToCode(name)
 		meeting.ProfCode = &code
+		prof = &Prof{Name: name, Code: code}
 	}
 
 	if apiMeeting.Location.Building != nil && apiMeeting.Location.Room != nil {
@@ -54,14 +102,14 @@ func ConvertMeeting(
 	if apiMeeting.Date.StartTime != nil {
 		startSeconds, err := util.TimeStringToSeconds(*apiMeeting.Date.StartTime)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert time: %w", err)
+			return nil, nil, fmt.Errorf("failed to convert time: %w", err)
 		}
 		meeting.StartSeconds = &startSeconds
 	}
 	if apiMeeting.Date.EndTime != nil {
 		endSeconds, err := util.TimeStringToSeconds(*apiMeeting.Date.EndTime)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert time: %w", err)
+			return nil, nil, fmt.Errorf("failed to convert time: %w", err)
 		}
 		meeting.EndSeconds = &endSeconds
 	}
@@ -70,7 +118,7 @@ func ConvertMeeting(
 		// month/day (Go reference date is January 2nd)
 		meeting.StartDate, err = time.Parse("01/02", *apiMeeting.Date.StartDate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert date: %w", err)
+			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}
 	} else {
 		meeting.StartDate = term.StartDate
@@ -79,7 +127,7 @@ func ConvertMeeting(
 		// month/day (Go reference date is January 2nd)
 		meeting.EndDate, err = time.Parse("01/02", *apiMeeting.Date.EndDate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert date: %w", err)
+			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}
 	} else {
 		meeting.EndDate = term.EndDate
@@ -96,5 +144,5 @@ func ConvertMeeting(
 		}
 	}
 
-	return &meeting, nil
+	return meeting, prof, nil
 }

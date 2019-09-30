@@ -7,8 +7,8 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/api"
 )
 
-func FetchByTermSubject(api *api.Api, termId int, subject string) ([]ApiSection, error) {
-	endpoint := fmt.Sprintf("terms/%d/%s/schedule", termId, subject)
+func FetchByTerm(api *api.Api, termId int) ([]ApiSection, error) {
+	endpoint := fmt.Sprintf("terms/%d/schedule", termId)
 	res, err := api.Getv2(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
