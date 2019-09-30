@@ -37,6 +37,9 @@ func SetupRouter(state *state.State) *chi.Mux {
 	router.Post("/parse/schedule", WithState(state, parse.HandleSchedule))
 	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
 	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
+	router.Post("/auth/forgot-password/send-email", WithState(state, auth.SendEmail))
+	router.Post("/auth/forgot-password/verify", WithState(state, auth.VerifyResetCode))
+	router.Post("/auth/forgot-password/reset", WithState(state, auth.ResetPassword))
 
 	router.Get("/data/search", WithState(state, data.HandleSearch))
 	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))

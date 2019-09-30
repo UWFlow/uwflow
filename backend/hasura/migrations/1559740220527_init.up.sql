@@ -305,3 +305,13 @@ CREATE TABLE secret.user_google (
     ON DELETE CASCADE,
   google_id TEXT
 );
+
+CREATE TABLE secret.password_reset (
+  user_id INT
+    REFERENCES "user"(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+  verify_key TEXT
+    CONSTRAINT key_length CHECK (LENGTH(verify_key) = 6),
+  expiry TEXT
+);
