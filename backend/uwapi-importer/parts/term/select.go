@@ -26,7 +26,7 @@ func SelectAll(conn *db.Conn) ([]Term, error) {
 		}
 		terms = append(
 			terms,
-			Term{TermId: termId, StartDate: startDate, EndDate: endDate},
+			Term{Id: termId, StartDate: startDate, EndDate: endDate},
 		)
 	}
 

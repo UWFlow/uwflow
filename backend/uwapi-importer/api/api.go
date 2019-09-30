@@ -42,7 +42,7 @@ func (api *Api) do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("bad status: %v", res.Status)
+		return res, fmt.Errorf("bad status: %v", res.Status)
 	}
 	return res, nil
 }

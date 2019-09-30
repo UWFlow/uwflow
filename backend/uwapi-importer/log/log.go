@@ -27,11 +27,31 @@ func (log *Logger) StartImport(kind string) {
 	log.Zap.Info("start import", zap.String("kind", kind))
 }
 
-func (log *Logger) EndImport(kind string, succeeded, failed int) {
+func (log *Logger) EndImport(kind string, inserted, updated, rejected int) {
 	log.Zap.Info(
 		"end import",
 		zap.String("kind", kind),
-		zap.Int("succeeded", succeeded),
-		zap.Int("failed", failed),
+		zap.Int("inserted", inserted),
+		zap.Int("updated", updated),
+		zap.Int("rejected", rejected),
+	)
+}
+
+func (log *Logger) StartTermImport(kind string, termId int) {
+	log.Zap.Info(
+		"start import",
+		zap.String("kind", kind),
+		zap.Int("term", termId),
+	)
+}
+
+func (log *Logger) EndTermImport(kind string, termId, inserted, updated, rejected int) {
+	log.Zap.Info(
+		"end import",
+		zap.String("kind", kind),
+		zap.Int("term", termId),
+		zap.Int("inserted", inserted),
+		zap.Int("updated", updated),
+		zap.Int("rejected", rejected),
 	)
 }

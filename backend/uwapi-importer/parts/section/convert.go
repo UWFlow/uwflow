@@ -3,7 +3,6 @@ package section
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/term"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
@@ -100,14 +99,14 @@ func convertMeeting(
 	}
 
 	if apiMeeting.Date.StartTime != nil {
-		startSeconds, err := util.TimeStringToSeconds(*apiMeeting.Date.StartTime)
+		startSeconds, err := util.TimeString24HToSeconds(*apiMeeting.Date.StartTime)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert time: %w", err)
 		}
 		meeting.StartSeconds = &startSeconds
 	}
 	if apiMeeting.Date.EndTime != nil {
-		endSeconds, err := util.TimeStringToSeconds(*apiMeeting.Date.EndTime)
+		endSeconds, err := util.TimeString24HToSeconds(*apiMeeting.Date.EndTime)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert time: %w", err)
 		}
@@ -116,7 +115,7 @@ func convertMeeting(
 
 	if apiMeeting.Date.StartDate != nil {
 		// month/day (Go reference date is January 2nd)
-		meeting.StartDate, err = time.Parse("01/02", *apiMeeting.Date.StartDate)
+		meeting.StartDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.StartDate)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}
@@ -125,7 +124,7 @@ func convertMeeting(
 	}
 	if apiMeeting.Date.EndDate != nil {
 		// month/day (Go reference date is January 2nd)
-		meeting.EndDate, err = time.Parse("01/02", *apiMeeting.Date.EndDate)
+		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.StartDate)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}

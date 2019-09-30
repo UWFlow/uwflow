@@ -142,7 +142,8 @@ CREATE TABLE section_meeting (
   location TEXT,
   -- We could store these as TIMETZ, but that is a waste of space:
   -- seconds do not require 12 bytes of storage.
-  -- Another advantage of this format is ease of serialization.
+  -- Another advantage of this format is ease of serialization
+  -- and simplicity (no need to involve timezones).
   start_seconds INT,
   end_seconds INT,
   -- Date must always be filled. When UW API returns null,
