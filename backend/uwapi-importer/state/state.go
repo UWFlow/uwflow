@@ -7,15 +7,14 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/api"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/env"
-
-	"go.uber.org/zap"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/log"
 )
 
 type State struct {
 	Api *api.Api
 	Db  *db.Conn
 	Env *env.Environment
-	Log *zap.Logger
+	Log *log.Logger
 }
 
 func New(ctx context.Context) (*State, error) {
@@ -24,7 +23,7 @@ func New(ctx context.Context) (*State, error) {
 		return nil, fmt.Errorf("loading environment failed: %w", err)
 	}
 	// Skip immediate caller: our logging statements are all wrapped
-	log, err := zap.NewProduction(zap.AddCallerSkip(1))
+	log, err := log.New()
 	if err != nil {
 		return nil, fmt.Errorf("initializing logger failed: %w", err)
 	}
@@ -32,7 +31,7 @@ func New(ctx context.Context) (*State, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connecting to database failed: %w", err)
 	}
-	api := api.New(ctx, env, log)
+	api := api.New(ctx, env, log.Zap)
 
 	return &State{Api: api, Db: db, Env: env, Log: log}, nil
 }
