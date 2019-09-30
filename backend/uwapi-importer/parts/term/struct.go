@@ -13,12 +13,14 @@
 // though it is not ergonomic as start and end dates must be manually matched.
 package term
 
+import "time"
+
 // In this script, we only ever need the string representations,
 // so no need to bother with time.Time conversions.
 type Term struct {
 	TermId    int
-	StartDate string
-	EndDate   string
+	StartDate time.Time
+	EndDate   time.Time
 }
 
 // In UW API v3 spec, these are called ImportantDates,
@@ -35,5 +37,5 @@ type ApiEventDetail struct {
 	TermName string
 	// In our case, start and end dates conincide,
 	// so EndDate is nil and this is simply the date.
-	Date string `json:"StartDate"`
+	Date time.Time `json:"StartDate"`
 }

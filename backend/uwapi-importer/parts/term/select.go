@@ -1,13 +1,17 @@
 package term
 
-import "github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
+import (
+	"time"
 
-const SelectTimeframeQuery = `SELECT term, start_date, end_date FROM term_date`
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
+)
+
+const SelectQuery = `SELECT term, start_date, end_date FROM term_date`
 
 func SelectAll(conn *db.Conn) ([]Term, error) {
 	var terms []Term
 
-	rows, err := conn.Query(SelectTimeframeQuery)
+	rows, err := conn.Query(SelectQuery)
 	if err != nil {
 		return terms, err
 	}
@@ -15,7 +19,7 @@ func SelectAll(conn *db.Conn) ([]Term, error) {
 
 	for rows.Next() {
 		var termId int
-		var startDate, endDate string
+		var startDate, endDate time.Time
 		err = rows.Scan(&termId, &startDate, &endDate)
 		if err != nil {
 			return terms, err

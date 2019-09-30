@@ -4,11 +4,8 @@ import (
 	"fmt"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
 )
-
-type empty struct{}
-
-const RateLimit = 10
 
 func ImportById(state *state.State, id string) error {
 	course, err := FetchById(state.Api, id)
@@ -22,13 +19,6 @@ func ImportById(state *state.State, id string) error {
 	return nil
 }
 
-func importOneConcurrently(state *state.State, id string,
-	ctlch chan empty, errch chan error) {
-	ctlch <- empty{}
-	errch <- ImportById(state, id)
-	<-ctlch
-}
-
 func ImportAll(state *state.State) error {
 	state.Log.StartImport("course")
 
@@ -37,23 +27,19 @@ func ImportAll(state *state.State) error {
 		return fmt.Errorf("fetching course list failed: %w", err)
 	}
 
-	ctlch := make(chan empty, RateLimit)
-	errch := make(chan error, len(list))
-	for _, item := range list {
-		go importOneConcurrently(state, item.CourseId, ctlch, errch)
+	closures := make([]util.FallibleClosure, len(list))
+	for i, item := range list {
+		// Note:
+		//  func() error { return ImportById(state, item.CourseId) }
+		// would be *incorrect*: item is bound by reference,
+		// so would be captured by reference in the closure.
+		// item.CourseId would evaluate to that of the last item in all closures.
+		// The line below fixes id before capturing it.
+		id := item.CourseId
+		closures[i] = func() error { return ImportById(state, id) }
 	}
 
-	succeeded, failed, N := 0, 0, len(list)
-	for succeeded+failed < N {
-		err := <-errch
-		if err != nil {
-			state.Log.Zap.Error(err.Error())
-			failed++
-		} else {
-			succeeded++
-		}
-	}
-
+	succeeded, failed := util.RunConcurrently(closures)
 	state.Log.EndImport("course", succeeded, failed)
 	return nil
 }

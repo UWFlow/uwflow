@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"log"
-  "os"
+	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/course"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/section"
@@ -20,25 +20,25 @@ func Run(importer ImportFunc) {
 	if err != nil {
 		log.Fatalf("Initialization failed: %v\n", err)
 	}
-  err = importer(state)
+	err = importer(state)
 	if err != nil {
 		log.Fatalf("API import failed: %v\n", err)
 	}
 }
 
 func main() {
-  if len(os.Args) != 2 {
-    log.Fatalf("Usage: %s ACTION", os.Args[0])
-  }
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %s ACTION", os.Args[0])
+	}
 
-  switch os.Args[1] {
-  case "courses":
-    Run(course.ImportAll)
-  case "sections":
-    Run(section.ImportAll)
-  case "terms":
-    Run(term.ImportAll)
-  default:
-    log.Fatalf("Not an action: %s", os.Args[1])
-  }
+	switch os.Args[1] {
+	case "courses":
+		Run(course.ImportAll)
+	case "sections":
+		Run(section.ImportAll)
+	case "terms":
+		Run(term.ImportAll)
+	default:
+		log.Fatalf("Not an action: %s", os.Args[1])
+	}
 }
