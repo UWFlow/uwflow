@@ -27,7 +27,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Transcript parsing pulls in these runtime dependencies
-RUN apk add --no-cache poppler
+RUN apk add --no-cache poppler ca-certificates
 
 COPY --from=builder /app/api .
 
