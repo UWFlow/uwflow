@@ -24,6 +24,8 @@ type Environment struct {
 	PostgresUser     string `from:"POSTGRES_USER"`
 	FbAppID          string `from:"FB_APP_ID"`
 	FbAppSecret      string `from:"FB_APP_SECRET"`
+	GmailUser        string `from:"GMAIL_USER"`
+	GmailAppPassword string `from:"GMAIL_APP_PASSWORD"`
 }
 
 // State is the collection of all conceptually "global" data in the API.
