@@ -4,7 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/term"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/course"
+	//"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/parts/term"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
 )
 
@@ -15,7 +16,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Initialization failed: %v\n", err)
 	}
-	err = term.ImportAll(state)
+	err = course.ImportAll(state)
 	if err != nil {
 		log.Fatalf("UW API import failed: %v\n", err)
 	}
