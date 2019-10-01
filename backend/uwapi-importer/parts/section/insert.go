@@ -6,7 +6,7 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 )
 
-const InsertSectionPrelude = `
+const SetupSectionQuery = `
 DROP TABLE IF EXISTS _course_selection_delta;
 
 CREATE TEMPORARY TABLE _course_section_delta(
@@ -20,7 +20,7 @@ CREATE TEMPORARY TABLE _course_section_delta(
 );
 `
 
-const InsertSectionQuery = `
+const UpdateSectionQuery = `
 UPDATE course_section SET
   course_id = c.id,
   section = delta.section,
@@ -30,8 +30,10 @@ UPDATE course_section SET
 FROM _course_section_delta delta
   JOIN course c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
-  AND course_section.term = delta.term;
+  AND course_section.term = delta.term
+`
 
+const InsertSectionQuery = `
 INSERT INTO course_section(
   class_number, course_id, section, campus,
   term, enrollment_capacity, enrollment_total
@@ -44,21 +46,21 @@ FROM _course_section_delta d
   LEFT JOIN course_section cs
    ON cs.class_number = d.class_number
   AND cs.term = d.term
-WHERE cs.id IS NULL;
-
-DROP TABLE _course_section_delta;
+WHERE cs.id IS NULL
 `
 
-func InsertAllSections(conn *db.Conn, sections []Section) error {
+const TeardownSectionQuery = `DROP TABLE _course_section_delta`
+
+func InsertAllSections(conn *db.Conn, sections []Section) (int, int, int, error) {
 	tx, err := conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to open transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(InsertSectionPrelude)
+	_, err = tx.Exec(SetupSectionQuery)
 	if err != nil {
-		return fmt.Errorf("failed to create temporary table: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedSections := make([][]interface{}, len(sections))
@@ -78,22 +80,35 @@ func InsertAllSections(conn *db.Conn, sections []Section) error {
 		preparedSections,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	_, err = tx.Exec(InsertSectionQuery)
+	tag, err := tx.Exec(UpdateSectionQuery)
 	if err != nil {
-		return fmt.Errorf("failed to apply update: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to apply update: %w", err)
+	}
+	updated := int(tag.RowsAffected())
+
+	tag, err = tx.Exec(InsertSectionQuery)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+	}
+	inserted := int(tag.RowsAffected())
+
+	_, err = tx.Exec(TeardownSectionQuery)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return nil
+
+	return inserted, updated, len(sections) - inserted - updated, nil
 }
 
-const InsertMeetingPrelude = `
+const SetupMeetingQuery = `
 DROP TABLE IF EXISTS _section_meeting_delta;
 
 CREATE TEMPORARY TABLE _section_meeting_delta(
@@ -112,12 +127,12 @@ CREATE TEMPORARY TABLE _section_meeting_delta(
 );
 `
 
-const InsertMeetingQuery = `
--- No use trying to keep track of what's being updated:
--- nothing references meetings (no primary key),
--- so we might as well overwrite them fully.
-TRUNCATE section_meeting;
+// No use trying to keep track of what's being updated:
+// nothing references meetings (no primary key),
+// so we might as well overwrite them fully.
+const TruncateMeetingQuery = `TRUNCATE section_meeting`
 
+const InsertMeetingQuery = `
 INSERT INTO section_meeting(
   section_id, prof_id,
   location, start_seconds, end_seconds,
@@ -136,21 +151,21 @@ FROM _section_meeting_delta d
    AND s.term = d.term
   -- may not have a matching prof
   LEFT JOIN prof p
-    ON p.code = d.prof_code;
-
-DROP TABLE _section_meeting_delta;
+    ON p.code = d.prof_code
 `
 
-func InsertAllMeetings(conn *db.Conn, meetings []Meeting) error {
+const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
+
+func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (int, int, int, error) {
 	tx, err := conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to open transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(InsertMeetingPrelude)
+	_, err = tx.Exec(SetupMeetingQuery)
 	if err != nil {
-		return fmt.Errorf("failed to create temporary table: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedMeetings := make([][]interface{}, len(meetings))
@@ -174,22 +189,34 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) error {
 		preparedMeetings,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	_, err = tx.Exec(InsertMeetingQuery)
+	_, err = tx.Exec(TruncateMeetingQuery)
 	if err != nil {
-		return fmt.Errorf("failed to apply update: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to truncate: %w", err)
+	}
+
+	tag, err := tx.Exec(InsertMeetingQuery)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+	}
+	inserted := int(tag.RowsAffected())
+
+	_, err = tx.Exec(TeardownMeetingQuery)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return nil
+
+	return inserted, 0, len(meetings) - inserted, nil
 }
 
-const InsertProfPrelude = `
+const SetupProfQuery = `
 DROP TABLE IF EXISTS _prof_delta;
 
 CREATE TEMPORARY TABLE _prof_delta(
@@ -198,26 +225,27 @@ CREATE TEMPORARY TABLE _prof_delta(
 );
 `
 
+// Profs have nothing to update: name and code are their identifiers
 const InsertProfQuery = `
 INSERT INTO prof(name, code)
 SELECT d.name, d.code
 FROM _prof_delta d
   LEFT JOIN prof p ON p.code = d.code
-WHERE p.id IS NULL;
-
-DROP TABLE _prof_delta;
+WHERE p.id IS NULL
 `
 
-func InsertAllProfs(conn *db.Conn, profs []Prof) error {
+const TeardownProfQuery = `DROP TABLE _prof_delta`
+
+func InsertAllProfs(conn *db.Conn, profs []Prof) (int, int, int, error) {
 	tx, err := conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to open transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(InsertProfPrelude)
+	_, err = tx.Exec(SetupProfQuery)
 	if err != nil {
-		return fmt.Errorf("failed to create temporary table: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedProfs := make([][]interface{}, len(profs))
@@ -227,17 +255,24 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) error {
 
 	_, err = tx.CopyFrom("_prof_delta", []string{"name", "code"}, preparedProfs)
 	if err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	_, err = tx.Exec(InsertProfQuery)
+	tag, err := tx.Exec(InsertProfQuery)
 	if err != nil {
-		return fmt.Errorf("failed to apply update: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+	}
+	inserted := int(tag.RowsAffected())
+
+	_, err = tx.Exec(TeardownProfQuery)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-	return nil
+
+	return inserted, 0, len(profs) - inserted, nil
 }

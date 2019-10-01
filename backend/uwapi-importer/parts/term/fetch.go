@@ -1,4 +1,4 @@
-package section
+package term
 
 import (
 	"encoding/json"
@@ -7,19 +7,18 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/api"
 )
 
-func FetchByTerm(api *api.Api, termId int) ([]ApiSection, error) {
-	endpoint := fmt.Sprintf("terms/%d/schedule", termId)
-	res, err := api.Getv2(endpoint)
+func FetchAll(api *api.Api) ([]ApiEvent, error) {
+	res, err := api.Getv3("ImportantDates")
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
 	defer res.Body.Close()
 
-	var response ApiSectionResponse
-	err = json.NewDecoder(res.Body).Decode(&response)
+	var events []ApiEvent
+	err = json.NewDecoder(res.Body).Decode(&events)
 	if err != nil {
 		return nil, fmt.Errorf("decoding response failed: %w", err)
 	}
 
-	return response.Data, nil
+	return events, nil
 }

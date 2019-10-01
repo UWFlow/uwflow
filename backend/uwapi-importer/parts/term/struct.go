@@ -15,16 +15,8 @@ package term
 
 import "time"
 
-// For inserts, it is much easier to let Postgres handle string => date conversion,
-// avoiding the text (JSON) => time => text (SQL) => time conversion overhead.
-type termInsertItem struct {
-	TermId    int
-	StartDate string
-	EndDate   string
-}
-
 type Term struct {
-	TermId    int
+	Id        int
 	StartDate time.Time
 	EndDate   time.Time
 }

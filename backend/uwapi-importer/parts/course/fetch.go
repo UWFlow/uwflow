@@ -13,6 +13,7 @@ func FetchById(api *api.Api, id string) (*Course, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
+	defer res.Body.Close()
 
 	var response ApiCourseDetailResponse
 	err = json.NewDecoder(res.Body).Decode(&response)
@@ -38,6 +39,7 @@ func FetchList(api *api.Api) ([]ApiCourseListItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
+	defer res.Body.Close()
 
 	var response ApiCourseListResponse
 	err = json.NewDecoder(res.Body).Decode(&response)

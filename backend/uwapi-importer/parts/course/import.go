@@ -40,6 +40,6 @@ func ImportAll(state *state.State) error {
 	}
 
 	succeeded, failed := util.RunConcurrently(closures)
-	state.Log.EndImport("course", succeeded, failed)
+	state.Log.EndImport("course", succeeded, 0, failed)
 	return nil
 }

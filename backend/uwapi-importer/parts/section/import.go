@@ -9,7 +9,9 @@ import (
 )
 
 func ImportByTerm(state *state.State, term *term.Term) error {
-	apiSections, err := FetchByTerm(state.Api, term.TermId)
+	var inserted, updated, failed int
+
+	apiSections, err := FetchByTerm(state.Api, term.Id)
 	if err != nil {
 		return fmt.Errorf("failed to fetch sections: %w", err)
 	}
@@ -19,18 +21,27 @@ func ImportByTerm(state *state.State, term *term.Term) error {
 		return fmt.Errorf("failed to convert sections: %w", err)
 	}
 
-	err = InsertAllProfs(state.Db, profs)
+	state.Log.StartTermImport("prof", term.Id)
+	inserted, updated, failed, err = InsertAllProfs(state.Db, profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
-	err = InsertAllSections(state.Db, sections)
+	state.Log.EndTermImport("prof", term.Id, inserted, updated, failed)
+
+	state.Log.StartTermImport("section", term.Id)
+	inserted, updated, failed, err = InsertAllSections(state.Db, sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
-	err = InsertAllMeetings(state.Db, meetings)
+	state.Log.EndTermImport("section", term.Id, inserted, updated, failed)
+
+	state.Log.StartTermImport("meeting", term.Id)
+	inserted, updated, failed, err = InsertAllMeetings(state.Db, meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}
+	state.Log.EndTermImport("meeting", term.Id, inserted, updated, failed)
+
 	return nil
 }
 
@@ -44,7 +55,7 @@ func ImportAll(state *state.State) error {
 
 	for _, term := range terms {
 		// Don't bother with terms that have passed
-		if term.TermId >= currentTermId && term.TermId <= nextTermId {
+		if term.Id >= currentTermId && term.Id <= nextTermId {
 			err := ImportByTerm(state, &term)
 			if err != nil {
 				return fmt.Errorf("failed to import sections: %w", err)

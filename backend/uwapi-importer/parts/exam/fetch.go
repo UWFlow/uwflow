@@ -13,6 +13,7 @@ func FetchByTerm(api *api.Api, termId int) ([]ApiExam, error) {
 	if err != nil {
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
+	defer res.Body.Close()
 
 	var response ApiExamResponse
 	err = json.NewDecoder(res.Body).Decode(&response)
