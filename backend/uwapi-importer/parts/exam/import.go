@@ -21,12 +21,11 @@ func ImportByTerm(state *state.State, termId int) error {
 		}
 		exams = append(exams, newExams...)
 	}
-	fmt.Println(exams)
 	return nil
 }
 
 func ImportAll(state *state.State) error {
-	currentTermId := util.PreviousTermId()
+	currentTermId := util.CurrentTermId()
 	err := ImportByTerm(state, currentTermId)
 	if err != nil {
 		return fmt.Errorf("failed to import exams: %w", err)

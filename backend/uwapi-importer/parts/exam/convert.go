@@ -29,7 +29,8 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 			Term:           termId,
 			LectureSection: apiSection.LectureSection,
 		}
-		if apiSection.Date == "" {
+    // Pointless to fill out if date and time are not set
+		if apiSection.Date == "" || apiSection.StartTime == "" {
 			exams[i].IsTba = true
 			continue
 		}
@@ -38,7 +39,7 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert date: %w", err)
 		}
-		day := util.DateToWeekdayCode(date)
+		_ = util.DateToWeekdayCode(date)
 		exams[i].StartSeconds, err = util.TimeString12HToSeconds(apiSection.StartTime)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert time: %w", err)
@@ -46,11 +47,6 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 		exams[i].EndSeconds, err = util.TimeString12HToSeconds(apiSection.EndTime)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert time: %w", err)
-		}
-		exams[i] = Exam{
-			Date:     apiSection.Date,
-			Location: apiSection.Location,
-			Day:      day,
 		}
 	}
 	return exams, nil
