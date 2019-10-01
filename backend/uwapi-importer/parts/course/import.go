@@ -9,12 +9,12 @@ import (
 func ImportAll(state *state.State) error {
 	state.Log.StartImport("course")
 
-  courses, err := FetchAll(state.Api)
+	courses, err := FetchAll(state.Api)
 	if err != nil {
 		return fmt.Errorf("failed to fetch courses: %w", err)
 	}
 
-  result, err := InsertAll(state.Db, courses)
+	result, err := InsertAll(state.Db, courses)
 	if err != nil {
 		return fmt.Errorf("failed to insert courses: %w", err)
 	}

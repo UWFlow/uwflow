@@ -3,7 +3,7 @@ package log
 import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 
-  "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 type Logger struct {

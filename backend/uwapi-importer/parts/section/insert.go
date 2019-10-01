@@ -52,7 +52,7 @@ WHERE cs.id IS NULL
 const TeardownSectionQuery = `DROP TABLE _course_section_delta`
 
 func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
-  var result db.Result
+	var result db.Result
 
 	tx, err := conn.Begin()
 	if err != nil {
@@ -107,9 +107,9 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-  // We did not exclude any rows deliberately,
-  // so the remainder was rejected (most likely no matching course exists).
-  result.Rejected = len(sections) - result.Inserted - result.Updated
+	// We did not exclude any rows deliberately,
+	// so the remainder was rejected (most likely no matching course exists).
+	result.Rejected = len(sections) - result.Inserted - result.Updated
 	return &result, nil
 }
 
@@ -162,7 +162,7 @@ FROM _section_meeting_delta d
 const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
 
 func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
-  var result db.Result
+	var result db.Result
 
 	tx, err := conn.Begin()
 	if err != nil {
@@ -220,8 +220,8 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-  // Like with sections, we did not deliberately exclude anything
-  result.Rejected = len(meetings) - result.Inserted
+	// Like with sections, we did not deliberately exclude anything
+	result.Rejected = len(meetings) - result.Inserted
 	return &result, nil
 }
 
@@ -248,7 +248,7 @@ const TeardownProfQuery = `DROP TABLE _prof_delta`
 func InsertAllProfs(conn *db.Conn, profs []Prof) (*db.Result, error) {
 	var result db.Result
 
-  tx, err := conn.Begin()
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
@@ -285,8 +285,8 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-  // In this case, we do deliberately refuse to update existing profs
-  // and there is no mechanism for rejection, so the remainder is untouched.
-  result.Untouched = len(profs) - result.Inserted
+	// In this case, we do deliberately refuse to update existing profs
+	// and there is no mechanism for rejection, so the remainder is untouched.
+	result.Untouched = len(profs) - result.Inserted
 	return &result, nil
 }

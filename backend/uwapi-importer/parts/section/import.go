@@ -20,7 +20,7 @@ func ImportByTerm(state *state.State, term *term.Term) error {
 	}
 
 	state.Log.StartTermImport("prof", term.Id)
-  result, err := InsertAllProfs(state.Db, profs)
+	result, err := InsertAllProfs(state.Db, profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
@@ -34,7 +34,7 @@ func ImportByTerm(state *state.State, term *term.Term) error {
 	state.Log.EndTermImport("section", term.Id, result)
 
 	state.Log.StartTermImport("meeting", term.Id)
-  result, err = InsertAllMeetings(state.Db, meetings)
+	result, err = InsertAllMeetings(state.Db, meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}

@@ -29,7 +29,7 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 			Term:           termId,
 			LectureSection: apiSection.LectureSection,
 		}
-    // Pointless to fill out if date and time are not set
+		// Pointless to fill out if date and time are not set
 		if apiSection.Date == "" || apiSection.StartTime == "" {
 			exams[i].IsTba = true
 			continue

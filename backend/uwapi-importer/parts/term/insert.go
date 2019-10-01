@@ -9,7 +9,7 @@ SET start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date
 `
 
 func InsertAll(conn *db.Conn, terms []Term) (*db.Result, error) {
-  var result db.Result
+	var result db.Result
 
 	for _, term := range terms {
 		_, err := conn.Exec(InsertQuery, term.Id, term.StartDate, term.EndDate)

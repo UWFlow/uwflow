@@ -1,10 +1,10 @@
 package course
 
 import (
-  "fmt"
-  "strings"
+	"fmt"
+	"strings"
 
-  "github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 )
 
 const SetupCourseQuery = `
@@ -43,9 +43,9 @@ WHERE c.id IS NULL
 const TeardownCourseQuery = `DROP TABLE _course_delta`
 
 func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
-  var result db.Result
+	var result db.Result
 
-  tx, err := conn.Begin()
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
@@ -58,18 +58,18 @@ func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
 
 	var preparedCourses [][]interface{}
 	for _, course := range courses {
-    courseCode := strings.ToLower(course.Subject + course.Number)
-    if courseCode == "" {
-      result.Rejected++
-      continue
-    }
+		courseCode := strings.ToLower(course.Subject + course.Number)
+		if courseCode == "" {
+			result.Rejected++
+			continue
+		}
 		preparedCourses = append(
-      preparedCourses,
-      []interface{}{
-        courseCode, course.Name, course.Description,
-        course.Prereqs, course.Coreqs, course.Antireqs,
-      },
-    )
+			preparedCourses,
+			[]interface{}{
+				courseCode, course.Name, course.Description,
+				course.Prereqs, course.Coreqs, course.Antireqs,
+			},
+		)
 	}
 
 	_, err = tx.CopyFrom(
@@ -103,6 +103,6 @@ func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-  result.Untouched = len(courses) - result.Inserted - result.Updated
-  return &result, nil
+	result.Untouched = len(courses) - result.Inserted - result.Updated
+	return &result, nil
 }
