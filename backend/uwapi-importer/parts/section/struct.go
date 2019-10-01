@@ -35,10 +35,6 @@ type Prof struct {
 	Name string
 }
 
-type ApiSectionResponse struct {
-	Data []ApiSection `json:"data"`
-}
-
 type ApiSection struct {
 	Subject            string       `json:"subject"`
 	CatalogNumber      string       `json:"catalog_number"`

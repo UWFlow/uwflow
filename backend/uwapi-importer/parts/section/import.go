@@ -9,8 +9,6 @@ import (
 )
 
 func ImportByTerm(state *state.State, term *term.Term) error {
-	var inserted, updated, failed int
-
 	apiSections, err := FetchByTerm(state.Api, term.Id)
 	if err != nil {
 		return fmt.Errorf("failed to fetch sections: %w", err)
@@ -22,25 +20,25 @@ func ImportByTerm(state *state.State, term *term.Term) error {
 	}
 
 	state.Log.StartTermImport("prof", term.Id)
-	inserted, updated, failed, err = InsertAllProfs(state.Db, profs)
+  result, err := InsertAllProfs(state.Db, profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
-	state.Log.EndTermImport("prof", term.Id, inserted, updated, failed)
+	state.Log.EndTermImport("prof", term.Id, result)
 
 	state.Log.StartTermImport("section", term.Id)
-	inserted, updated, failed, err = InsertAllSections(state.Db, sections)
+	result, err = InsertAllSections(state.Db, sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
-	state.Log.EndTermImport("section", term.Id, inserted, updated, failed)
+	state.Log.EndTermImport("section", term.Id, result)
 
 	state.Log.StartTermImport("meeting", term.Id)
-	inserted, updated, failed, err = InsertAllMeetings(state.Db, meetings)
+  result, err = InsertAllMeetings(state.Db, meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}
-	state.Log.EndTermImport("meeting", term.Id, inserted, updated, failed)
+	state.Log.EndTermImport("meeting", term.Id, result)
 
 	return nil
 }

@@ -7,12 +7,15 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
 )
 
+// This is *almost* ISO8601, but ever so slightly off (no timezone)
+// Unfortunately, this forces us to reify the parsing process.
+const DateLayout     = "2006-01-02T15:04:05"
+
 // We would like to use persistent ids here, but none are available.
 // As per UW API v3 documentation:
 //  id: [...] unique, *non-persistent* Api Id [...]
 // As long as this remains the case, string comparisons will be necessary.
 const (
-	DateLayout     = "2006-01-02T15:04:05"
 	StartEventName = "Classes begin"
 	EndEventName   = "Classes end"
 )

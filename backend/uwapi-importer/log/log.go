@@ -1,6 +1,10 @@
 package log
 
-import "go.uber.org/zap"
+import (
+	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
+
+  "go.uber.org/zap"
+)
 
 type Logger struct {
 	// Export this: callers should have the liberty log one-off messages directly
@@ -27,13 +31,14 @@ func (log *Logger) StartImport(kind string) {
 	log.Zap.Info("start import", zap.String("kind", kind))
 }
 
-func (log *Logger) EndImport(kind string, inserted, updated, rejected int) {
+func (log *Logger) EndImport(kind string, result *db.Result) {
 	log.Zap.Info(
 		"end import",
 		zap.String("kind", kind),
-		zap.Int("inserted", inserted),
-		zap.Int("updated", updated),
-		zap.Int("rejected", rejected),
+		zap.Int("inserted", result.Inserted),
+		zap.Int("updated", result.Updated),
+		zap.Int("untouched", result.Untouched),
+		zap.Int("rejected", result.Rejected),
 	)
 }
 
@@ -45,13 +50,14 @@ func (log *Logger) StartTermImport(kind string, termId int) {
 	)
 }
 
-func (log *Logger) EndTermImport(kind string, termId, inserted, updated, rejected int) {
+func (log *Logger) EndTermImport(kind string, termId int, result *db.Result) {
 	log.Zap.Info(
 		"end import",
 		zap.String("kind", kind),
 		zap.Int("term", termId),
-		zap.Int("inserted", inserted),
-		zap.Int("updated", updated),
-		zap.Int("rejected", rejected),
+		zap.Int("inserted", result.Inserted),
+		zap.Int("updated", result.Updated),
+		zap.Int("untouched", result.Untouched),
+		zap.Int("rejected", result.Rejected),
 	)
 }

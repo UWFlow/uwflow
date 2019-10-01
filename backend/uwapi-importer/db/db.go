@@ -20,6 +20,7 @@ type Conn struct {
 	pool *pgxpool.Pool
 }
 
+// Context-aware database transaction
 type Tx struct {
 	ctx context.Context
 	tx  pgx.Tx

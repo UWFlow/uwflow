@@ -51,16 +51,18 @@ WHERE cs.id IS NULL
 
 const TeardownSectionQuery = `DROP TABLE _course_section_delta`
 
-func InsertAllSections(conn *db.Conn, sections []Section) (int, int, int, error) {
+func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
+  var result db.Result
+
 	tx, err := conn.Begin()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
+		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	_, err = tx.Exec(SetupSectionQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
+		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedSections := make([][]interface{}, len(sections))
@@ -80,32 +82,35 @@ func InsertAllSections(conn *db.Conn, sections []Section) (int, int, int, error)
 		preparedSections,
 	)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
+		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
 	tag, err := tx.Exec(UpdateSectionQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to apply update: %w", err)
+		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
-	updated := int(tag.RowsAffected())
+	result.Updated = int(tag.RowsAffected())
 
 	tag, err = tx.Exec(InsertSectionQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
-	inserted := int(tag.RowsAffected())
+	result.Inserted = int(tag.RowsAffected())
 
 	_, err = tx.Exec(TeardownSectionQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
+		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
+		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return inserted, updated, len(sections) - inserted - updated, nil
+  // We did not exclude any rows deliberately,
+  // so the remainder was rejected (most likely no matching course exists).
+  result.Rejected = len(sections) - result.Inserted - result.Updated
+	return &result, nil
 }
 
 const SetupMeetingQuery = `
@@ -156,16 +161,18 @@ FROM _section_meeting_delta d
 
 const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
 
-func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (int, int, int, error) {
+func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
+  var result db.Result
+
 	tx, err := conn.Begin()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
+		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	_, err = tx.Exec(SetupMeetingQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
+		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedMeetings := make([][]interface{}, len(meetings))
@@ -189,31 +196,33 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (int, int, int, error)
 		preparedMeetings,
 	)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
+		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
 	_, err = tx.Exec(TruncateMeetingQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to truncate: %w", err)
+		return &result, fmt.Errorf("failed to truncate: %w", err)
 	}
 
 	tag, err := tx.Exec(InsertMeetingQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
-	inserted := int(tag.RowsAffected())
+	result.Inserted = int(tag.RowsAffected())
 
 	_, err = tx.Exec(TeardownMeetingQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
+		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
+		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return inserted, 0, len(meetings) - inserted, nil
+  // Like with sections, we did not deliberately exclude anything
+  result.Rejected = len(meetings) - result.Inserted
+	return &result, nil
 }
 
 const SetupProfQuery = `
@@ -236,16 +245,18 @@ WHERE p.id IS NULL
 
 const TeardownProfQuery = `DROP TABLE _prof_delta`
 
-func InsertAllProfs(conn *db.Conn, profs []Prof) (int, int, int, error) {
-	tx, err := conn.Begin()
+func InsertAllProfs(conn *db.Conn, profs []Prof) (*db.Result, error) {
+	var result db.Result
+
+  tx, err := conn.Begin()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to open transaction: %w", err)
+		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	_, err = tx.Exec(SetupProfQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to create temporary table: %w", err)
+		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
 	preparedProfs := make([][]interface{}, len(profs))
@@ -255,24 +266,27 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (int, int, int, error) {
 
 	_, err = tx.CopyFrom("_prof_delta", []string{"name", "code"}, preparedProfs)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to copy data: %w", err)
+		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
 	tag, err := tx.Exec(InsertProfQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to insert: %w", err)
+		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
-	inserted := int(tag.RowsAffected())
+	result.Inserted = int(tag.RowsAffected())
 
 	_, err = tx.Exec(TeardownProfQuery)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to tear down table: %w", err)
+		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("failed to commit transaction: %w", err)
+		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return inserted, 0, len(profs) - inserted, nil
+  // In this case, we do deliberately refuse to update existing profs
+  // and there is no mechanism for rejection, so the remainder is untouched.
+  result.Untouched = len(profs) - result.Inserted
+	return &result, nil
 }

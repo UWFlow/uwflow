@@ -19,11 +19,11 @@ func ImportAll(state *state.State) error {
 		return fmt.Errorf("failed to convert terms: %w", err)
 	}
 
-	inserted, updated, rejected, err := InsertAll(state.Db, terms)
+	result, err := InsertAll(state.Db, terms)
 	if err != nil {
 		return fmt.Errorf("failed to insert terms: %w", err)
 	}
 
-	state.Log.EndImport("term", inserted, updated, rejected)
+	state.Log.EndImport("term", result)
 	return nil
 }
