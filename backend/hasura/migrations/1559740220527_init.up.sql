@@ -130,6 +130,18 @@ CREATE TABLE course_section (
   CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term)
 );
 
+CREATE TABLE course_exam (
+  section_id INT NOT NULL
+    REFERENCES course_section(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  location TEXT NOT NULL,
+  start_seconds INT NOT NULL,
+  end_seconds INT NOT NULL,
+  "date" DATE NOT NULL,
+  day TEXT NOT NULL
+);
+
 CREATE TABLE section_meeting (
   section_id INT NOT NULL
     REFERENCES course_section(id)

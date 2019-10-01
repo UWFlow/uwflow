@@ -80,25 +80,36 @@ func WriteCalendar(w io.Writer, events []*WebcalEvent) {
 	io.WriteString(w, "END:VCALENDAR\n")
 }
 
+const SelectEventQuery = `
+WITH src AS (
+  SELECT
+    section_id, location, start_date, end_date,
+    start_seconds, end_seconds, days
+  FROM section_meeting
+  UNION ALL
+  SELECT
+    section_id, location, date, date,
+    start_seconds, end_seconds, ARRAY[day]
+  FROM course_exam
+)
+SELECT
+  c.code, cs.section, c.name, src.location,
+  src.start_date, src.end_date, src.start_seconds, src.end_seconds, src.days
+FROM
+  user_schedule us
+  JOIN course_section cs ON cs.id = us.section_id
+  JOIN src ON src.section_id = us.section_id
+  JOIN course c ON c.id = cs.course_id
+WHERE us.user_id = 332
+	-- Fetch meetings where start_seconds and end_seconds are present.
+	-- Otherwise, we cannot say anything useful about when they take place.
+  AND src.start_seconds IS NOT NULL
+  AND src.end_seconds IS NOT NULL
+`
+
 func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
 	var events []*PostgresEvent
-	// Fetch meetings where start_seconds and end_seconds are present.
-	// Otherwise, we cannot say anything useful about when they take place.
-	rows, err := state.Conn.Query(
-		`SELECT
-      c.code, cs.section, c.name, sm.location,
-      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds, sm.days
-     FROM
-      user_schedule us
-      JOIN course_section cs ON cs.id = us.section_id
-      JOIN section_meeting sm ON sm.section_id = us.section_id
-      JOIN course c ON c.id = cs.course_id
-     WHERE
-      us.user_id = $1
-      AND sm.start_seconds IS NOT NULL
-      AND sm.end_seconds IS NOT NULL`,
-		userId,
-	)
+	rows, err := state.Conn.Query(SelectEventQuery, userId)
 	if err != nil {
 		return nil, err
 	}
