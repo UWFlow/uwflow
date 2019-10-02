@@ -1,14 +1,16 @@
 package exam
 
+import "time"
+
 type Exam struct {
 	CourseCode     string
+	SectionName    string
 	Term           int
-	LectureSection string
-	Day            string
-	Date           string
-	StartSeconds   int
-	EndSeconds     int
-	Location       string
+	Location       *string
+	StartSeconds   *int
+	EndSeconds     *int
+	Day            *string
+	Date           *time.Time
 	IsTba          bool
 }
 
@@ -19,13 +21,9 @@ type ApiExam struct {
 }
 
 type ApiExamSection struct {
-	LectureSection string `json:"section"`
+	SectionName    string `json:"section"`
 	Date           string `json:"date"`
 	StartTime      string `json:"start_time"`
 	EndTime        string `json:"end_time"`
 	Location       string `json:"location"`
-}
-
-type ApiExamResponse struct {
-	Data []ApiExam `json:"data"`
 }

@@ -14,8 +14,9 @@ func InsertAll(conn *db.Conn, terms []Term) (*db.Result, error) {
 	for _, term := range terms {
 		_, err := conn.Exec(InsertQuery, term.Id, term.StartDate, term.EndDate)
 		if err != nil {
-			return &result, err
+			return nil, err
 		}
 	}
+  result.Inserted = len(terms)
 	return &result, nil
 }
