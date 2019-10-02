@@ -103,7 +103,7 @@ func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-  touched := result.Inserted + result.Updated + result.Rejected
+	touched := result.Inserted + result.Updated + result.Rejected
 	result.Untouched = len(courses) - touched
 	return &result, nil
 }

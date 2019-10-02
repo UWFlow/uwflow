@@ -17,6 +17,6 @@ func InsertAll(conn *db.Conn, terms []Term) (*db.Result, error) {
 			return nil, err
 		}
 	}
-  result.Inserted = len(terms)
+	result.Inserted = len(terms)
 	return &result, nil
 }
