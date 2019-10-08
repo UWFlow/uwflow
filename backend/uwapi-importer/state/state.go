@@ -22,7 +22,6 @@ func New(ctx context.Context) (*State, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading environment failed: %w", err)
 	}
-	// Skip immediate caller: our logging statements are all wrapped
 	log, err := log.New()
 	if err != nil {
 		return nil, fmt.Errorf("initializing logger failed: %w", err)

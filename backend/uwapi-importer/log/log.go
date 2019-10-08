@@ -7,11 +7,12 @@ import (
 )
 
 type Logger struct {
-	// Export this: callers should have the liberty log one-off messages directly
+	// Export this: callers should be able to log one-off messages directly
 	Zap *zap.Logger
 }
 
 func New() (*Logger, error) {
+	// Skip immediate caller: our logging statements are all wrapped
 	zap, err := zap.NewProduction(zap.AddCallerSkip(1))
 	if err != nil {
 		return nil, err
