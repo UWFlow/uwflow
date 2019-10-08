@@ -17,15 +17,15 @@ func DateToWeekdayCode(date time.Time) string {
 // Convert a "month/day" string to full date,
 // given that it occurs during the term identified by termId
 func MonthDayToDate(monthDay string, termId int) (time.Time, error) {
-  date, err := time.Parse("01/02", monthDay)
-  if err != nil {
-    return date, err
-  }
-  year := TermIdToYear(termId)
-  if year < 1980 || year > 2100 {
-    return date, fmt.Errorf("not a sane year: %d", year)
-  }
-  return date.AddDate(year, 0, 0), nil
+	date, err := time.Parse("01/02", monthDay)
+	if err != nil {
+		return date, err
+	}
+	year := TermIdToYear(termId)
+	if year < 1980 || year > 2100 {
+		return date, fmt.Errorf("not a sane year: %d", year)
+	}
+	return date.AddDate(year, 0, 0), nil
 }
 
 // Map 24h time string to seconds since midnight: "hh:mm" => hh * 3600 + mm * 60

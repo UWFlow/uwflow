@@ -40,7 +40,7 @@ func DateToTermId(date time.Time) int {
 
 // Year of a term given by its Quest id, e.g. 1195
 func TermIdToYear(termId int) int {
-  return (termId / 10) + 1900
+	return (termId / 10) + 1900
 }
 
 // Quest id of a term given by its English name, e.g. "Fall 2019".
