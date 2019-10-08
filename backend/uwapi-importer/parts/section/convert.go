@@ -115,7 +115,7 @@ func convertMeeting(
 
 	if apiMeeting.Date.StartDate != nil {
 		// month/day (Go reference date is January 2nd)
-		meeting.StartDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.StartDate)
+		meeting.StartDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.Id)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}
@@ -124,7 +124,7 @@ func convertMeeting(
 	}
 	if apiMeeting.Date.EndDate != nil {
 		// month/day (Go reference date is January 2nd)
-		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.StartDate)
+		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.Id)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert date: %w", err)
 		}
