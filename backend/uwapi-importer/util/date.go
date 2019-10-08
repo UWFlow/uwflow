@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var WeekdayCodes = []string{"M", "T", "W", "Th", "F", "S", "Su"}
+var WeekdayCodes = []string{"Su", "M", "T", "W", "Th", "F", "S"}
 
 // Convert date to UW-style weekday abbreviation
 func DateToWeekdayCode(date time.Time) string {
@@ -15,10 +15,17 @@ func DateToWeekdayCode(date time.Time) string {
 }
 
 // Convert a "month/day" string to full date,
-// given that it occurs during the term starting at termStart
-func MonthDayToDate(monthDay string, termStart time.Time) (time.Time, error) {
-	fullDate := fmt.Sprintf("%s/%d", monthDay, termStart.Year())
-	return time.Parse("01/02/2006", fullDate)
+// given that it occurs during the term identified by termId
+func MonthDayToDate(monthDay string, termId int) (time.Time, error) {
+  date, err := time.Parse("01/02", monthDay)
+  if err != nil {
+    return date, err
+  }
+  year := TermIdToYear(termId)
+  if year < 1980 || year > 2100 {
+    return date, fmt.Errorf("not a sane year: %d", year)
+  }
+  return date.AddDate(year, 0, 0), nil
 }
 
 // Map 24h time string to seconds since midnight: "hh:mm" => hh * 3600 + mm * 60
