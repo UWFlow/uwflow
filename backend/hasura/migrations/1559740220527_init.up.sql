@@ -313,5 +313,5 @@ CREATE TABLE secret.password_reset (
     ON DELETE CASCADE,
   verify_key TEXT
     CONSTRAINT key_length CHECK (LENGTH(verify_key) = 6),
-  expiry TEXT
+  expiry TIMESTAMP
 );
