@@ -17,6 +17,7 @@ type PostgresEvent struct {
 	CourseCode   string
 	SectionName  string
 	CourseName   string
+  IsExam       bool
 	Location     *string
 	StartDate    time.Time
 	EndDate      time.Time
@@ -80,25 +81,36 @@ func WriteCalendar(w io.Writer, events []*WebcalEvent) {
 	io.WriteString(w, "END:VCALENDAR\n")
 }
 
+const SelectEventQuery = `
+WITH src AS (
+  SELECT
+    FALSE as is_exam, section_id, location, start_date, end_date,
+    start_seconds, end_seconds, days
+  FROM section_meeting
+  UNION ALL
+  SELECT
+    TRUE AS is_exam, section_id, location, date, date,
+    start_seconds, end_seconds, ARRAY[day]
+  FROM section_exam
+)
+SELECT
+  c.code, cs.section, c.name, src.is_exam, src.location,
+  src.start_date, src.end_date, src.start_seconds, src.end_seconds, src.days
+FROM
+  user_schedule us
+  JOIN course_section cs ON cs.id = us.section_id
+  JOIN src ON src.section_id = us.section_id
+  JOIN course c ON c.id = cs.course_id
+WHERE us.user_id = $1
+	-- Fetch meetings where start_seconds and end_seconds are present.
+	-- Otherwise, we cannot say anything useful about when they take place.
+  AND src.start_seconds IS NOT NULL
+  AND src.end_seconds IS NOT NULL
+`
+
 func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
 	var events []*PostgresEvent
-	// Fetch meetings where start_seconds and end_seconds are present.
-	// Otherwise, we cannot say anything useful about when they take place.
-	rows, err := state.Conn.Query(
-		`SELECT
-      c.code, cs.section, c.name, sm.location,
-      sm.start_date, sm.end_date, sm.start_seconds, sm.end_seconds, sm.days
-     FROM
-      user_schedule us
-      JOIN course_section cs ON cs.id = us.section_id
-      JOIN section_meeting sm ON sm.section_id = us.section_id
-      JOIN course c ON c.id = cs.course_id
-     WHERE
-      us.user_id = $1
-      AND sm.start_seconds IS NOT NULL
-      AND sm.end_seconds IS NOT NULL`,
-		userId,
-	)
+	rows, err := state.Conn.Query(SelectEventQuery, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +120,7 @@ func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error)
 		var ev PostgresEvent
 
 		err = rows.Scan(
-			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.Location,
+			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.IsExam, &ev.Location,
 			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
@@ -135,6 +147,9 @@ func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
 		"%s - %s - %s",
 		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
 	)
+  if event.IsExam {
+    summary = "Final exam for " + summary
+  }
 	return &WebcalEvent{
 		Summary:   summary,
 		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
