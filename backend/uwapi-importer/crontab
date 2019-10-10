@@ -1,0 +1,9 @@
+# Redirect stdout and stderr to Docker stdout/stderr respectively
+
+# Fetch important updates (e.g. sections) hourly on the hour
+00 * * * * /app/uwapi-importer hourly >/proc/1/fd/1 2>/proc/1/fd/2
+# Fetch heavy updates (e.g. all courses) daily at 12:30
+30 12 * * * /app/uwapi-importer daily >/proc/1/fd/1 2>/proc/1/fd/2
+# Vacuum daily at 00:30
+20 00 * * * /app/uwapi-importer vacuum >/proc/1/fd/1 2>/proc/1/fd/2
+
