@@ -159,9 +159,7 @@ FROM _section_meeting_delta d
     ON p.code = d.prof_code
 `
 
-// materialized.prof_course is linked together via section_meeting.
-// Therefore, its update should trigger after we're done inserting.
-const FinalizeMeetingQuery = `DROP TABLE _section_meeting_delta`
+const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
 
 func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
 	var result db.Result
@@ -212,9 +210,9 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(FinalizeMeetingQuery)
+	_, err = tx.Exec(TeardownMeetingQuery)
 	if err != nil {
-		return &result, fmt.Errorf("failed to finalize: %w", err)
+		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	err = tx.Commit()
