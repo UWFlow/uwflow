@@ -59,16 +59,6 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
-CREATE TABLE prof_course (
-  prof_id INT NOT NULL
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  course_id INT NOT NULL
-    REFERENCES course(id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  PRIMARY KEY(prof_id, course_id)
-);
-
 CREATE TABLE term_date (
   term INT PRIMARY KEY,
   start_date DATE NOT NULL,
@@ -275,6 +265,25 @@ FROM prof_review GROUP BY prof_id, clear;
 CREATE VIEW aggregate.prof_engaging_buckets AS
 SELECT prof_id, engaging, COUNT(*) AS count
 FROM prof_review GROUP BY prof_id, engaging;
+
+-- Materialized views for exposing complex joins.
+-- This schema is a hack: Hasura does not support materialized views yet,
+-- but there is essentially no performance penalty for proxying as below.
+-- FIXME: remove this when Hasura support is added (v1).
+CREATE SCHEMA materialized;
+
+-- Prof-teaches-course relationship through current sections
+CREATE MATERIALIZED VIEW materialized.prof_course AS
+SELECT DISTINCT c.id AS course_id, p.id AS prof_id
+FROM course c
+  JOIN course_section cs ON cs.course_id = c.id
+  JOIN section_meeting sm ON sm.section_id = cs.id
+  JOIN prof p ON p.id = sm.prof_id;
+
+CREATE UNIQUE INDEX prof_teaches_course_uniquely
+  ON materialized.prof_course(course_id, prof_id);
+
+CREATE VIEW prof_course AS SELECT * FROM materialized.prof_course;
 
 -- Credentials
 CREATE SCHEMA secret;
