@@ -42,7 +42,7 @@
           manual_configuration:
             column_mapping:
               id: course_id
-            remote_table: prof_course
+            remote_table: prof_teaches_course
       - comment: null
         name: sections
         using:
@@ -411,7 +411,7 @@
           manual_configuration:
             column_mapping:
               id: prof_id
-            remote_table: prof_course
+            remote_table: prof_teaches_course
       delete_permissions: []
       event_triggers: []
       insert_permissions: []
@@ -495,7 +495,7 @@
           - course_id
           filter: {}
         role: user
-      table: prof_course
+      table: prof_teaches_course
       update_permissions: []
     - array_relationships: []
       delete_permissions: []
