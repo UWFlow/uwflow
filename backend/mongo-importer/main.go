@@ -36,6 +36,7 @@ func Run(rootPath string) {
 		parts.ImportUsers,
 		parts.ImportReviews,
 		parts.ImportSchedules,
+		parts.PostImport,
 	}
 	for _, operation := range operations {
 		err = operation(conn, rootPath, idMap)
