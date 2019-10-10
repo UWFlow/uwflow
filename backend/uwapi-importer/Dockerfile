@@ -28,7 +28,6 @@ WORKDIR /app
 COPY crontab /etc/cron.d/crontab
 COPY --from=builder /app/uwapi-importer .
 
-RUN chmod 0644 /etc/cron.d/crontab
 RUN crontab /etc/cron.d/crontab
 
 CMD ["crond", "-f"]
