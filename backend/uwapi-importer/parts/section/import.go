@@ -14,27 +14,28 @@ func ImportByTerm(state *state.State, term *term.Term) error {
 		return fmt.Errorf("failed to fetch sections: %w", err)
 	}
 
-	sections, meetings, profs, err := ConvertAll(apiSections, term)
+	var converted ConvertResult
+	err = ConvertAll(&converted, apiSections, term)
 	if err != nil {
 		return fmt.Errorf("failed to convert sections: %w", err)
 	}
 
 	state.Log.StartTermImport("prof", term.Id)
-	result, err := InsertAllProfs(state.Db, profs)
+	result, err := InsertAllProfs(state.Db, converted.Profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
 	state.Log.EndTermImport("prof", term.Id, result)
 
 	state.Log.StartTermImport("section", term.Id)
-	result, err = InsertAllSections(state.Db, sections)
+	result, err = InsertAllSections(state.Db, converted.Sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
 	state.Log.EndTermImport("section", term.Id, result)
 
 	state.Log.StartTermImport("meeting", term.Id)
-	result, err = InsertAllMeetings(state.Db, meetings)
+	result, err = InsertAllMeetings(state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}

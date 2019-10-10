@@ -1,9 +1,7 @@
 package exam
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/state"
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
@@ -20,7 +18,6 @@ func ImportByTerm(state *state.State, termId int) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert exams: %w", err)
 	}
-	json.NewEncoder(os.Stdout).Encode(exams)
 
 	result, err := InsertAll(state.Db, exams)
 	if err != nil {

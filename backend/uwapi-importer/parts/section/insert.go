@@ -7,7 +7,7 @@ import (
 )
 
 const SetupSectionQuery = `
-DROP TABLE IF EXISTS _course_selection_delta;
+DROP TABLE IF EXISTS _course_section_delta;
 
 CREATE TEMPORARY TABLE _course_section_delta(
   class_number INT NOT NULL,
@@ -259,9 +259,14 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*db.Result, error) {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
 
-	preparedProfs := make([][]interface{}, len(profs))
-	for i, prof := range profs {
-		preparedProfs[i] = []interface{}{prof.Name, prof.Code}
+	var preparedProfs [][]interface{}
+	// Filter duplicates before going to database: this is faster
+	seenProfCode := make(map[string]bool)
+	for _, prof := range profs {
+		if !seenProfCode[prof.Code] {
+			preparedProfs = append(preparedProfs, []interface{}{prof.Name, prof.Code})
+			seenProfCode[prof.Code] = true
+		}
 	}
 
 	_, err = tx.CopyFrom("_prof_delta", []string{"name", "code"}, preparedProfs)
@@ -286,7 +291,7 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*db.Result, error) {
 	}
 
 	// In this case, we do deliberately refuse to update existing profs
-	// and there is no mechanism for rejection, so the remainder is untouched.
-	result.Untouched = len(profs) - result.Inserted
+	// so the remainder after deduplication is untouched.
+	result.Untouched = len(preparedProfs) - result.Inserted
 	return &result, nil
 }

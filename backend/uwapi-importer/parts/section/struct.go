@@ -2,6 +2,12 @@ package section
 
 import "time"
 
+type ConvertResult struct {
+	Sections []Section
+	Meetings []Meeting
+	Profs    []Prof
+}
+
 type Section struct {
 	Id                 int
 	CourseCode         string

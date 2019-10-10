@@ -62,3 +62,18 @@ func (log *Logger) EndTermImport(kind string, termId int, result *db.Result) {
 		zap.Int("rejected", result.Rejected),
 	)
 }
+
+func (log *Logger) StartVacuum(kind string) {
+	log.Zap.Info(
+		"start vacuum",
+		zap.String("kind", kind),
+	)
+}
+
+func (log *Logger) EndVacuum(kind string, deleted int) {
+	log.Zap.Info(
+		"end vacuum",
+		zap.String("kind", kind),
+		zap.Int("deleted", deleted),
+	)
+}
