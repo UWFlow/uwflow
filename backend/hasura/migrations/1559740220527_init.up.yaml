@@ -92,7 +92,6 @@
           - prereqs
           - coreqs
           - antireqs
-          - textbooks
           filter: {}
         role: anonymous
       - comment: null
@@ -100,7 +99,6 @@
           allow_aggregations: false
           columns:
           - id
-          - textbooks
           - antireqs
           - code
           - coreqs
@@ -441,6 +439,7 @@
           allow_aggregations: false
           columns:
           - id
+          - code
           - name
           - picture_url
           filter: {}
@@ -450,6 +449,7 @@
           allow_aggregations: false
           columns:
           - id
+          - code
           - name
           - picture_url
           filter: {}

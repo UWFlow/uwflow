@@ -50,12 +50,12 @@ func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		bar.Increment()
 		profName := strings.TrimSpace(prof.FirstName + " " + prof.LastName)
 		idMap.Prof[prof.Id] = i + 1
-		preparedProfs[i] = []interface{}{profName}
+		preparedProfs[i] = []interface{}{profName, prof.Id}
 	}
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"prof"},
-		[]string{"name"},
+		[]string{"name", "code"},
 		pgx.CopyFromRows(preparedProfs),
 	)
 	if err != nil {

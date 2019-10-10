@@ -14,7 +14,16 @@ export $(cat ../.env | xargs)
 
 You will need at least `go v1.13`.
 
-## How to obtain a `UW_API_KEY`?
+## How to obtain a `UW_API_KEY_V2`?
+
+It is [claimed](https://uwaterloo.ca/api/register-api-key) that it cannot be done:
+
+> Registration of API keys is currently disabled [...]
+
+The claim is false due to what is likely an oversight.
+Get your key through [this page](https://uwaterloo.ca/api/register).
+
+## How to obtain a `UW_API_KEY_V3`?
 
 The official instructions require a proprietary VPN. They are therefore duplicated here.
 
@@ -44,4 +53,4 @@ Note the lack of the `boundary` header.
 
 You should hereupon be told that your account has been activated.
 You should now save the API key from the activation email in a secure place.
-In addition, add it under `UW_API_KEY` in `.env`.
+In addition, add it under `UW_API_KEY_V3` in `.env`.
