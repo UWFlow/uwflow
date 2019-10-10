@@ -161,10 +161,7 @@ FROM _section_meeting_delta d
 
 // materialized.prof_course is linked together via section_meeting.
 // Therefore, its update should trigger after we're done inserting.
-const FinalizeMeetingQuery = `
-DROP TABLE _section_meeting_delta;
-REFRESH MATERIALIZED VIEW CONCURRENTLY materialized.prof_course;
-`
+const FinalizeMeetingQuery = `DROP TABLE _section_meeting_delta`
 
 func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*db.Result, error) {
 	var result db.Result

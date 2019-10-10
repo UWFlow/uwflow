@@ -283,6 +283,19 @@ FROM course c
 CREATE UNIQUE INDEX prof_teaches_course_uniquely
   ON materialized.prof_course(course_id, prof_id);
 
+CREATE FUNCTION materialized.refresh_prof_course()
+RETURNS TRIGGER LANGUAGE PLPGSQL
+AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW materialized.prof_course;
+  RETURN NULL;
+END $$;
+
+CREATE TRIGGER refresh_prof_course
+AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+ON section_meeting FOR EACH STATEMENT
+EXECUTE PROCEDURE materialized.refresh_prof_course();
+
 CREATE VIEW prof_course AS SELECT * FROM materialized.prof_course;
 
 -- Credentials
