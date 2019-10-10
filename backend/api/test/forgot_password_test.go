@@ -46,8 +46,8 @@ func TestVerifyResetCodeInvalid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if res.StatusCode != 400 {
-		t.Fatalf("Expected 400 error, got %d", res.StatusCode)
+	if res.StatusCode != 403 {
+		t.Fatalf("Expected 403 error, got %d", res.StatusCode)
 	}
 }
 

@@ -129,7 +129,7 @@ func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request)
 		key[0], time.Now(),
 	).Scan(&keyExists)
 	if err != nil || !keyExists {
-		serde.Error(w, "Provided key not found or is expired", http.StatusInternalServerError)
+		serde.Error(w, "Provided key not found or is expired", http.StatusForbidden)
 		return
 	}
 
