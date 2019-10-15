@@ -100,7 +100,8 @@ CREATE TABLE user_shortlist (
   user_id INT
     REFERENCES "user"(id)
     ON DELETE CASCADE
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT course_uniquely_shortlisted UNIQUE(course_id, user_id)
 );
 
 CREATE TABLE course_section (
