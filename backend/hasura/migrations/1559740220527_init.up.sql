@@ -89,7 +89,7 @@ CREATE TABLE user_course_taken (
   level TEXT,
   -- It is possible to re-take a course in a different term.
   -- However, it is not possible to take a course twice in the same term.
-  CONSTRAINT course_uniquely_taken UNIQUE(course_id, user_id, term)
+  CONSTRAINT course_uniquely_taken UNIQUE(user_id, term, course_id)
 );
 
 CREATE TABLE user_shortlist (
@@ -101,7 +101,7 @@ CREATE TABLE user_shortlist (
     REFERENCES "user"(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT course_uniquely_shortlisted UNIQUE(course_id, user_id)
+  CONSTRAINT course_uniquely_shortlisted UNIQUE(user_id, course_id)
 );
 
 CREATE TABLE course_section (
