@@ -59,16 +59,6 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
-CREATE TABLE prof_course (
-  prof_id INT NOT NULL
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  course_id INT NOT NULL
-    REFERENCES course(id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  PRIMARY KEY(prof_id, course_id)
-);
-
 CREATE TABLE term_date (
   term INT PRIMARY KEY,
   start_date DATE NOT NULL,
@@ -180,6 +170,11 @@ CREATE TABLE user_schedule (
     ON UPDATE CASCADE,
   CONSTRAINT section_uniquely_taken UNIQUE(user_id, section_id)
 );
+
+CREATE VIEW prof_teaches_course AS
+SELECT DISTINCT cs.course_id, sm.prof_id
+FROM course_section cs
+  JOIN section_meeting sm ON sm.section_id = cs.id;
 
 CREATE TABLE course_review (
   id INT

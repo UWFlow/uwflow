@@ -30,7 +30,7 @@ type Response struct {
 const CourseQuery = `
 SELECT c.id, c.code, c.name, ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL)
 FROM course c
- LEFT JOIN prof_course pc ON pc.course_id = c.id
+ LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
  LEFT JOIN prof p ON p.id = pc.prof_id
 GROUP BY c.id
 `
@@ -38,7 +38,7 @@ GROUP BY c.id
 const ProfQuery = `
 SELECT p.id, p.name, ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL)
 FROM prof p
- LEFT JOIN prof_course pc ON pc.prof_id = p.id
+ LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
  LEFT JOIN course c ON c.id = pc.course_id
 GROUP BY p.id
 `

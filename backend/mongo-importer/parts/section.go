@@ -142,12 +142,10 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	mongoSections := readMongoSections(rootPath)
 	// We do not know where the data is missing, but pre-allocate in any case
 	preparedSections := make([][]interface{}, 0, len(mongoSections))
-	preparedProfCourse := make([][]interface{}, 0, len(mongoSections))
 	// It is plausible that each section has on average 3 meetings or more
 	preparedMeetings := make([][]interface{}, 0, 3*len(mongoSections))
 
 	idMap.Section = make(map[SectionKey]int)
-	seenProfCourse := make(map[IntPair]bool)
 	terms := make(map[int]Timeframe)
 
 	rows, err := tx.Query(
@@ -210,18 +208,6 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					meeting.IsTba,
 				},
 			)
-
-			if meeting.ProfId != nil {
-				profId := *meeting.ProfId
-				if seenProfCourse[IntPair{profId, courseId}] {
-					continue
-				}
-				preparedProfCourse = append(
-					preparedProfCourse,
-					[]interface{}{profId, courseId},
-				)
-				seenProfCourse[IntPair{profId, courseId}] = true
-			}
 		}
 		sectionId += 1
 	}
@@ -245,15 +231,6 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			"location", "days", "is_cancelled", "is_closed", "is_tba",
 		},
 		pgx.CopyFromRows(preparedMeetings),
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.CopyFrom(
-		pgx.Identifier{"prof_course"},
-		[]string{"prof_id", "course_id"},
-		pgx.CopyFromRows(preparedProfCourse),
 	)
 	if err != nil {
 		return err
