@@ -105,9 +105,10 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	reviews := readMongoReviews(rootPath)
 
-	preparedCourseReviews := make([][]interface{}, 0, len(reviews))
-	preparedProfReviews := make([][]interface{}, 0, len(reviews))
-	preparedUserCourses := make([][]interface{}, 0, len(reviews))
+	var preparedCourseReviews [][]interface{}
+	var preparedProfReviews [][]interface{}
+	var preparedUserCourses [][]interface{}
+	var preparedUserShortlists [][]interface{}
 
 	bar := pb.StartNew(len(reviews))
 	courseReviewId, profReviewId := 1, 1
@@ -115,6 +116,10 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		bar.Increment()
 
 		courseId, courseFound := idMap.Course[review.CourseId]
+		if !courseFound {
+			continue
+		}
+
 		var profId int
 		var profFound bool
 		if review.ProfId != nil {
@@ -123,7 +128,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			profFound = false
 		}
 
-		if courseFound && !review.CourseReview.Empty() {
+		if !review.CourseReview.Empty() {
 			preparedCourseReviews = append(
 				preparedCourseReviews,
 				[]interface{}{
@@ -140,7 +145,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			courseReviewId += 1
 		}
 
-		if courseFound && profFound && !review.ProfReview.Empty() {
+		if profFound && !review.ProfReview.Empty() {
 			preparedProfReviews = append(
 				preparedProfReviews,
 				[]interface{}{
@@ -156,7 +161,15 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 			profReviewId += 1
 		}
 
-		if courseFound {
+		if review.TermId == "9999_99" {
+			preparedUserShortlists = append(
+				preparedUserShortlists,
+				[]interface{}{
+					courseId,
+					idMap.User[review.UserId],
+				},
+			)
+		} else {
 			termId, _ := convert.MongoToPostgresTerm(review.TermId)
 			preparedUserCourses = append(
 				preparedUserCourses,
@@ -190,6 +203,14 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		pgx.Identifier{"user_course_taken"},
 		[]string{"course_id", "user_id", "term", "level"},
 		pgx.CopyFromRows(preparedUserCourses),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.CopyFrom(
+		pgx.Identifier{"user_shortlist"},
+		[]string{"course_id", "user_id"},
+		pgx.CopyFromRows(preparedUserShortlists),
 	)
 	if err != nil {
 		return err
