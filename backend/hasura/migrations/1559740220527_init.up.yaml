@@ -39,9 +39,10 @@
       - comment: null
         name: profs_teaching
         using:
-          foreign_key_constraint_on:
-            column: course_id
-            table: prof_course
+          manual_configuration:
+            column_mapping:
+              id: course_id
+            remote_table: prof_teaches_course
       - comment: null
         name: sections
         using:
@@ -407,9 +408,10 @@
       - comment: null
         name: prof_courses
         using:
-          foreign_key_constraint_on:
-            column: prof_id
-            table: prof_course
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table: prof_teaches_course
       delete_permissions: []
       event_triggers: []
       insert_permissions: []
@@ -465,11 +467,17 @@
       - comment: null
         name: prof
         using:
-          foreign_key_constraint_on: prof_id
+          manual_configuration:
+            column_mapping:
+              prof_id: id
+            remote_table: prof
       - comment: null
         name: course
         using:
-          foreign_key_constraint_on: course_id
+          manual_configuration:
+            column_mapping:
+              course_id: id
+            remote_table: course
       select_permissions:
       - comment: null
         permission:
@@ -487,7 +495,7 @@
           - course_id
           filter: {}
         role: user
-      table: prof_course
+      table: prof_teaches_course
       update_permissions: []
     - array_relationships: []
       delete_permissions: []
