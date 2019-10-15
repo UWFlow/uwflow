@@ -1,5 +1,15 @@
 version: '3.6'
 services:
+  reverseproxy:
+    container_name: reverseproxy
+    build: ./reverse-proxy
+    env_file: .env
+    image: reverseproxy
+    ports:
+      - $API_PORT:$API_PORT
+      - $POSTGRES_PORT:$POSTGRES_PORT
+      - $HASURA_PORT:$HASURA_PORT
+    restart: always
   api:
     build: ./api
     container_name: api
@@ -12,6 +22,8 @@ services:
     restart: always
   postgres:
     container_name: postgres
+    depends_on:
+      - reverseproxy
     env_file: .env
     image: postgres:12-alpine
     ports:
