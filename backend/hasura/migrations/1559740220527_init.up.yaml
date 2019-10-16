@@ -84,7 +84,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: false
+          allow_aggregations: true
           columns:
           - id
           - code
@@ -97,7 +97,7 @@
         role: anonymous
       - comment: null
         permission:
-          allow_aggregations: false
+          allow_aggregations: true
           columns:
           - id
           - antireqs
@@ -438,7 +438,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: false
+          allow_aggregations: true
           columns:
           - id
           - code
@@ -448,7 +448,7 @@
         role: anonymous
       - comment: null
         permission:
-          allow_aggregations: false
+          allow_aggregations: true
           columns:
           - id
           - code
