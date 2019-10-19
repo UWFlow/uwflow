@@ -192,10 +192,9 @@ CREATE TABLE course_review (
     ON UPDATE CASCADE ON DELETE SET NULL,
   text TEXT
     CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
+  liked BOOLEAN,
   easy SMALLINT
     CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
-  liked SMALLINT,
-    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
   useful SMALLINT
     CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5)
 );
@@ -253,23 +252,19 @@ CREATE TABLE prof_review_vote (
 CREATE SCHEMA aggregate;
 
 CREATE VIEW aggregate.course_easy_buckets AS
-SELECT course_id, easy, COUNT(*) AS count
+SELECT course_id, easy AS value, COUNT(*) AS count
 FROM course_review GROUP BY course_id, easy;
 
-CREATE VIEW aggregate.course_liked_buckets AS
-SELECT course_id, liked, COUNT(*) AS count
-FROM course_review GROUP BY course_id, liked;
-
 CREATE VIEW aggregate.course_useful_buckets AS
-SELECT course_id, useful, COUNT(*) AS count
+SELECT course_id, useful AS value, COUNT(*) AS count
 FROM course_review GROUP BY course_id, useful;
 
 CREATE VIEW aggregate.prof_clear_buckets AS
-SELECT prof_id, clear, COUNT(*) AS count
+SELECT prof_id, clear AS value, COUNT(*) AS count
 FROM prof_review GROUP BY prof_id, clear;
 
 CREATE VIEW aggregate.prof_engaging_buckets AS
-SELECT prof_id, engaging, COUNT(*) AS count
+SELECT prof_id, engaging AS value, COUNT(*) AS count
 FROM prof_review GROUP BY prof_id, engaging;
 
 -- Credentials

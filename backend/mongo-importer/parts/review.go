@@ -60,6 +60,20 @@ func convertRating(value *float64) interface{} {
 	}
 }
 
+func convertBoolean(value *float64) interface{} {
+  if value == nil {
+    return nil
+  }
+	switch *value {
+	case 0.0:
+		return false
+	case 1.0:
+		return true
+	default:
+		return nil // unreachable
+	}
+}
+
 func nilIfZero(value int) *int {
 	if value == 0 {
 		return nil
@@ -136,8 +150,8 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					nilIfZero(profId),
 					idMap.User[review.UserId],
 					nilIfEmpty(review.CourseReview.Comment),
+					convertBoolean(review.CourseReview.Interest),
 					convertRating(review.CourseReview.Easiness),
-					convertRating(review.CourseReview.Interest),
 					convertRating(review.CourseReview.Usefulness),
 				},
 			)
@@ -185,7 +199,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"course_review"},
-		[]string{"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful"},
+		[]string{"course_id", "prof_id", "user_id", "text", "liked", "easy", "useful"},
 		pgx.CopyFromRows(preparedCourseReviews),
 	)
 	if err != nil {

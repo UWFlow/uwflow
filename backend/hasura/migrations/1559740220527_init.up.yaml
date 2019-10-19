@@ -6,6 +6,24 @@
     tables:
     - array_relationships:
       - comment: null
+        name: course_easy_buckets
+        using:
+          manual_configuration:
+            column_mapping:
+              id: course_id
+            remote_table:
+              name: course_easy_buckets
+              schema: aggregate
+      - comment: null
+        name: course_useful_buckets
+        using:
+          manual_configuration:
+            column_mapping:
+              id: course_id
+            remote_table:
+              name: course_useful_buckets
+              schema: aggregate
+      - comment: null
         name: course_reviews
         using:
           foreign_key_constraint_on:
@@ -53,34 +71,7 @@
       event_triggers: []
       insert_permissions: []
       is_enum: false
-      object_relationships:
-      - comment: null
-        name: course_easy_buckets
-        using:
-          manual_configuration:
-            column_mapping:
-              id: course_id
-            remote_table:
-              name: course_easy_buckets
-              schema: aggregate
-      - comment: null
-        name: course_liked_buckets
-        using:
-          manual_configuration:
-            column_mapping:
-              id: course_id
-            remote_table:
-              name: course_liked_buckets
-              schema: aggregate
-      - comment: null
-        name: course_useful_buckets
-        using:
-          manual_configuration:
-            column_mapping:
-              id: course_id
-            remote_table:
-              name: course_useful_buckets
-              schema: aggregate
+      object_relationships: []
       select_permissions:
       - comment: null
         permission:
@@ -400,24 +391,6 @@
             column: prof_id
             table: course_review
       - comment: null
-        name: prof_reviews
-        using:
-          foreign_key_constraint_on:
-            column: prof_id
-            table: prof_review
-      - comment: null
-        name: prof_courses
-        using:
-          manual_configuration:
-            column_mapping:
-              id: prof_id
-            remote_table: prof_teaches_course
-      delete_permissions: []
-      event_triggers: []
-      insert_permissions: []
-      is_enum: false
-      object_relationships:
-      - comment: null
         name: prof_clear_buckets
         using:
           manual_configuration:
@@ -435,6 +408,24 @@
             remote_table:
               name: prof_engaging_buckets
               schema: aggregate
+      - comment: null
+        name: prof_reviews
+        using:
+          foreign_key_constraint_on:
+            column: prof_id
+            table: prof_review
+      - comment: null
+        name: prof_courses
+        using:
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table: prof_teaches_course
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
       select_permissions:
       - comment: null
         permission:
@@ -534,7 +525,7 @@
           allow_aggregations: true
           columns:
           - prof_id
-          - clear
+          - value
           - count
           filter: {}
         role: anonymous
@@ -542,8 +533,8 @@
         permission:
           allow_aggregations: true
           columns:
-          - clear
           - prof_id
+          - value
           - count
           filter: {}
         role: user
@@ -719,7 +710,7 @@
           allow_aggregations: true
           columns:
           - course_id
-          - easy
+          - value
           - count
           filter: {}
         role: anonymous
@@ -727,8 +718,8 @@
         permission:
           allow_aggregations: true
           columns:
-          - easy
           - course_id
+          - value
           - count
           filter: {}
         role: user
@@ -789,7 +780,7 @@
           allow_aggregations: true
           columns:
           - prof_id
-          - engaging
+          - value
           - count
           filter: {}
         role: anonymous
@@ -797,8 +788,8 @@
         permission:
           allow_aggregations: true
           columns:
-          - engaging
           - prof_id
+          - value
           - count
           filter: {}
         role: user
@@ -853,7 +844,7 @@
           allow_aggregations: true
           columns:
           - course_id
-          - useful
+          - value
           - count
           filter: {}
         role: user
@@ -861,8 +852,8 @@
         permission:
           allow_aggregations: true
           columns:
-          - useful
           - course_id
+          - value
           - count
           filter: {}
         role: anonymous
@@ -1048,33 +1039,4 @@
               _eq: X-Hasura-User-Id
           set: {}
         role: user
-    - array_relationships: []
-      delete_permissions: []
-      event_triggers: []
-      insert_permissions: []
-      is_enum: false
-      object_relationships: []
-      select_permissions:
-      - comment: null
-        permission:
-          allow_aggregations: true
-          columns:
-          - course_id
-          - liked
-          - count
-          filter: {}
-        role: anonymous
-      - comment: null
-        permission:
-          allow_aggregations: true
-          columns:
-          - liked
-          - course_id
-          - count
-          filter: {}
-        role: user
-      table:
-        name: course_liked_buckets
-        schema: aggregate
-      update_permissions: []
   type: replace_metadata
