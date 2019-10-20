@@ -192,9 +192,10 @@ CREATE TABLE course_review (
     ON UPDATE CASCADE ON DELETE SET NULL,
   text TEXT
     CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
-  liked BOOLEAN,
   easy SMALLINT
     CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
+  liked SMALLINT
+    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
   useful SMALLINT
     CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
   public BOOLEAN NOT NULL,

@@ -70,20 +70,6 @@ func convertRating(value *float64) interface{} {
 	}
 }
 
-func convertBoolean(value *float64) interface{} {
-	if value == nil {
-		return nil
-	}
-	switch *value {
-	case 0.0:
-		return false
-	case 1.0:
-		return true
-	default:
-		return nil // unreachable
-	}
-}
-
 func sortedTimes(first *time.Time, second *time.Time) (*time.Time, *time.Time) {
 	if first == nil {
 		return second, second
@@ -176,8 +162,8 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					nilIfZero(profId),
 					idMap.User[review.UserId],
 					nilIfEmpty(courseReview.Comment),
-					convertBoolean(courseReview.Interest),
 					convertRating(courseReview.Easiness),
+					convertRating(courseReview.Interest),
 					convertRating(courseReview.Usefulness),
 					courseReview.Privacy == Public,
 					created,
@@ -234,7 +220,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"course_review"},
 		[]string{
-			"course_id", "prof_id", "user_id", "text", "liked", "easy", "useful",
+			"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful",
 			"public", "created_at", "updated_at",
 		},
 		pgx.CopyFromRows(preparedCourseReviews),
