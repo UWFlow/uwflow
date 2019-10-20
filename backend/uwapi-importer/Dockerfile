@@ -3,6 +3,9 @@
 FROM golang:alpine as builder
 
 WORKDIR /app
+# Make executable actually static:
+# we don't need CGO features, but without this it will still link again libc
+ENV CGO_ENABLED=0
 
 # Downloading modules requires git, but it is not pre-installed on alpine
 RUN apk add --no-cache git
