@@ -254,6 +254,24 @@ CREATE TABLE prof_review_vote (
   PRIMARY KEY(review_id, user_id)
 );
 
+CREATE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+  BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_course_review_updated_at
+BEFORE UPDATE ON course_review
+FOR EACH ROW
+EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER set_prof_review_updated_at
+BEFORE UPDATE ON prof_review
+FOR EACH ROW
+EXECUTE PROCEDURE set_updated_at();
+
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
 
