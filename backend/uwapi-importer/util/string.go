@@ -44,3 +44,38 @@ func ProfNameToCode(profName string) string {
 		return sb.String()
 	}
 }
+
+func parseNumber(input string) (result int, consumed int) {
+	number := 0
+	i := 0
+	for ; i < len(input) && '0' <= input[i] && input[i] <= '9'; i++ {
+		number = number*10 + int(input[i]-'0')
+	}
+	return number, i
+}
+
+// ExpandNumberRange takes a string describing a range of numbers
+// and converts it to a slice containing each number in the range.
+// For example, "LEC 001,003-005,007" becomes [1, 3, 4, 5, 7].
+func ExpandNumberRange(input string) []int {
+	var numbers []int
+	N := len(input)
+	for i := 0; i < N; i++ {
+		currentNumber, consumed := parseNumber(input[i:])
+		i += consumed
+		if consumed > 0 {
+			numbers = append(numbers, currentNumber)
+			if i < N-1 && input[i] == '-' {
+				nextNumber, consumed := parseNumber(input[i+1:])
+				i += consumed + 1
+				if consumed == 0 {
+					continue
+				}
+				for number := currentNumber + 1; number <= nextNumber; number++ {
+					numbers = append(numbers, number)
+				}
+			}
+		}
+	}
+	return numbers
+}

@@ -17,7 +17,7 @@ type PostgresEvent struct {
 	CourseCode   string
 	SectionName  string
 	CourseName   string
-  IsExam       bool
+	IsExam       bool
 	Location     *string
 	StartDate    time.Time
 	EndDate      time.Time
@@ -147,9 +147,9 @@ func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
 		"%s - %s - %s",
 		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
 	)
-  if event.IsExam {
-    summary = "Final exam for " + summary
-  }
+	if event.IsExam {
+		summary = "Final exam for " + summary
+	}
 	return &WebcalEvent{
 		Summary:   summary,
 		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
@@ -162,9 +162,9 @@ func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*Web
 	var webcalEvents []*WebcalEvent
 
 	for _, event := range events {
-    // Walk entire date range for each event. It would be more efficient
-    // to map days to events and walk the union of date ranges for all events simultaneously,
-    // but this is so fast as-is that the difference is negligible.
+		// Walk entire date range for each event. It would be more efficient
+		// to map days to events and walk the union of date ranges for all events simultaneously,
+		// but this is so fast as-is that the difference is negligible.
 		for date := event.StartDate; !date.After(event.EndDate); date = date.AddDate(0, 0, 1) {
 			if event.HasDay[int(date.Weekday())] {
 				webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
