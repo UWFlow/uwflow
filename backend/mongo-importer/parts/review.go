@@ -3,6 +3,7 @@ package parts
 import (
 	"io/ioutil"
 	"path"
+	"time"
 
 	"github.com/jackc/pgx"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,10 +14,13 @@ import (
 )
 
 type MongoCourseReview struct {
-	Comment    string   `bson:"comment"`
-	Easiness   *float64 `bson:"easiness"`
-	Interest   *float64 `bson:"interest"`
-	Usefulness *float64 `bson:"usefulness"`
+	Comment     string     `bson:"comment"`
+	Easiness    *float64   `bson:"easiness"`
+	Interest    *float64   `bson:"interest"`
+	Usefulness  *float64   `bson:"usefulness"`
+	Privacy     int        `bson:"privacy"`
+	CommentDate *time.Time `bson:"comment_date"`
+	RatingDate  *time.Time `bson:"rating_change_date"`
 }
 
 func (r *MongoCourseReview) Empty() bool {
@@ -24,9 +28,12 @@ func (r *MongoCourseReview) Empty() bool {
 }
 
 type MongoProfReview struct {
-	Comment string   `bson:"comment"`
-	Clarity *float64 `bson:"clarity"`
-	Passion *float64 `bson:"passion"`
+	Comment     string     `bson:"comment"`
+	Clarity     *float64   `bson:"clarity"`
+	Passion     *float64   `bson:"passion"`
+	Privacy     int        `bson:"privacy"`
+	CommentDate *time.Time `bson:"comment_date"`
+	RatingDate  *time.Time `bson:"rating_change_date"`
 }
 
 func (r *MongoProfReview) Empty() bool {
@@ -43,6 +50,9 @@ type MongoReview struct {
 	TermId       string             `bson:"term_id"`
 	LevelId      *string            `bson:"program_year_id"`
 }
+
+// This is the only value of Privacy for which the review is public
+const Public = 2
 
 func convertRating(value *float64) interface{} {
 	if value == nil {
@@ -61,9 +71,9 @@ func convertRating(value *float64) interface{} {
 }
 
 func convertBoolean(value *float64) interface{} {
-  if value == nil {
-    return nil
-  }
+	if value == nil {
+		return nil
+	}
 	switch *value {
 	case 0.0:
 		return false
@@ -71,6 +81,20 @@ func convertBoolean(value *float64) interface{} {
 		return true
 	default:
 		return nil // unreachable
+	}
+}
+
+func sortedTimes(first *time.Time, second *time.Time) (*time.Time, *time.Time) {
+	if first == nil {
+		return second, second
+	}
+	if second == nil {
+		return first, first
+	}
+	if (*first).Before(*second) {
+		return first, second
+	} else {
+		return second, first
 	}
 }
 
@@ -143,16 +167,21 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		}
 
 		if !review.CourseReview.Empty() {
+			courseReview := &review.CourseReview
+			created, updated := sortedTimes(courseReview.CommentDate, courseReview.RatingDate)
 			preparedCourseReviews = append(
 				preparedCourseReviews,
 				[]interface{}{
 					courseId,
 					nilIfZero(profId),
 					idMap.User[review.UserId],
-					nilIfEmpty(review.CourseReview.Comment),
-					convertBoolean(review.CourseReview.Interest),
-					convertRating(review.CourseReview.Easiness),
-					convertRating(review.CourseReview.Usefulness),
+					nilIfEmpty(courseReview.Comment),
+					convertBoolean(courseReview.Interest),
+					convertRating(courseReview.Easiness),
+					convertRating(courseReview.Usefulness),
+					courseReview.Privacy == Public,
+					created,
+					updated,
 				},
 			)
 			idMap.CourseReview[review.Id] = courseReviewId
@@ -160,15 +189,20 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		}
 
 		if profFound && !review.ProfReview.Empty() {
+			profReview := &review.ProfReview
+			created, updated := sortedTimes(profReview.CommentDate, profReview.RatingDate)
 			preparedProfReviews = append(
 				preparedProfReviews,
 				[]interface{}{
 					courseId,
 					profId,
 					idMap.User[review.UserId],
-					nilIfEmpty(review.ProfReview.Comment),
-					convertRating(review.ProfReview.Clarity),
-					convertRating(review.ProfReview.Passion),
+					nilIfEmpty(profReview.Comment),
+					convertRating(profReview.Clarity),
+					convertRating(profReview.Passion),
+					profReview.Privacy == Public,
+					created,
+					updated,
 				},
 			)
 			idMap.ProfReview[review.Id] = profReviewId
@@ -199,7 +233,10 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"course_review"},
-		[]string{"course_id", "prof_id", "user_id", "text", "liked", "easy", "useful"},
+		[]string{
+			"course_id", "prof_id", "user_id", "text", "liked", "easy", "useful",
+			"public", "created_at", "updated_at",
+		},
 		pgx.CopyFromRows(preparedCourseReviews),
 	)
 	if err != nil {
@@ -207,7 +244,10 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"prof_review"},
-		[]string{"course_id", "prof_id", "user_id", "text", "clear", "engaging"},
+		[]string{
+			"course_id", "prof_id", "user_id", "text", "clear", "engaging",
+			"public", "created_at", "updated_at",
+		},
 		pgx.CopyFromRows(preparedProfReviews),
 	)
 	if err != nil {

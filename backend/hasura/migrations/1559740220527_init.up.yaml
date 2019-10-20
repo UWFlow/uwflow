@@ -222,6 +222,7 @@
           - prof_id
           - user_id
           - text
+          - public
           set: {}
         role: user
       is_enum: false
@@ -250,6 +251,9 @@
           - text
           - clear
           - engaging
+          - public
+          - created_at
+          - updated_at
           filter: {}
         role: anonymous
       - comment: null
@@ -263,6 +267,9 @@
           - text
           - clear
           - engaging
+          - public
+          - created_at
+          - updated_at
           filter: {}
         role: user
       table: prof_review
@@ -277,6 +284,7 @@
           - prof_id
           - user_id
           - text
+          - public
           filter:
             user_id:
               _eq: X-Hasura-User-Id
@@ -635,6 +643,7 @@
           - prof_id
           - user_id
           - text
+          - public
           set: {}
         role: user
       is_enum: false
@@ -664,6 +673,9 @@
           - easy
           - liked
           - useful
+          - public
+          - created_at
+          - updated_at
           filter: {}
         role: anonymous
       - comment: null
@@ -678,6 +690,9 @@
           - easy
           - liked
           - useful
+          - public
+          - created_at
+          - updated_at
           filter: {}
         role: user
       table: course_review
@@ -693,6 +708,7 @@
           - prof_id
           - user_id
           - text
+          - public
           filter:
             user_id:
               _eq: X-Hasura-User-Id

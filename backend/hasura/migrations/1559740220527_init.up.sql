@@ -196,7 +196,10 @@ CREATE TABLE course_review (
   easy SMALLINT
     CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
   useful SMALLINT
-    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5)
+    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
+  public BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE prof_review (
@@ -217,7 +220,10 @@ CREATE TABLE prof_review (
   clear SMALLINT
     CONSTRAINT clear_range CHECK (0 <= clear AND clear <= 5),
   engaging SMALLINT
-    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5)
+    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5),
+  public BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE course_review_vote (
