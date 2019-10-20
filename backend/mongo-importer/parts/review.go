@@ -54,19 +54,20 @@ type MongoReview struct {
 // This is the only value of Privacy for which the review is public
 const Public = 2
 
-func convertRating(value *float64) interface{} {
+// Translate from binary to binned: (0 1) for liked or (0 1 2 3 4 5) for others.
+// We typically want to make the translation "soft" by mapping
+// to medium intensity ratings and not extremes (e.g. false -> 1, true -> 4).
+func convertRating(value *float64, falseValue, trueValue int16) *int16 {
 	if value == nil {
 		return nil
 	}
-	// Translate from binary to multi-bin (0 1 2 3 4 5)
-	// Make translation "soft": map to medium intensity ratings and not extremes
 	switch *value {
 	case 0.0:
-		return 1
+		return &falseValue
 	case 1.0:
-		return 4
+		return &trueValue
 	default:
-		return -1 // unreachable
+		return nil // unreachable
 	}
 }
 
@@ -162,9 +163,9 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					nilIfZero(profId),
 					idMap.User[review.UserId],
 					nilIfEmpty(courseReview.Comment),
-					convertRating(courseReview.Easiness),
-					convertRating(courseReview.Interest),
-					convertRating(courseReview.Usefulness),
+					convertRating(courseReview.Easiness, 1, 4),
+					convertRating(courseReview.Interest, 0, 1),
+					convertRating(courseReview.Usefulness, 1, 4),
 					courseReview.Privacy == Public,
 					created,
 					updated,
@@ -184,8 +185,8 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 					profId,
 					idMap.User[review.UserId],
 					nilIfEmpty(profReview.Comment),
-					convertRating(profReview.Clarity),
-					convertRating(profReview.Passion),
+					convertRating(profReview.Clarity, 1, 4),
+					convertRating(profReview.Passion, 1, 4),
 					profReview.Privacy == Public,
 					created,
 					updated,

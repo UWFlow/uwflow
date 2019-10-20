@@ -195,7 +195,7 @@ CREATE TABLE course_review (
   easy SMALLINT
     CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
   liked SMALLINT
-    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
+    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 1),
   useful SMALLINT
     CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
   public BOOLEAN NOT NULL,
