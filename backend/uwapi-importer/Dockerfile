@@ -3,6 +3,9 @@
 FROM golang:alpine as builder
 
 WORKDIR /app
+# Make executable actually static:
+# we don't need CGO features, but without this it will still link again libc
+ENV CGO_ENABLED=0
 
 # Downloading modules requires git, but it is not pre-installed on alpine
 RUN apk add --no-cache git
@@ -16,7 +19,7 @@ RUN go mod download
 # Thus we avoid wasting work (especially package installs, which are slow).
 COPY . .
 # Run tests and refuse to proceed if they fail
-RUN go test -v ./test/util
+RUN go test -v ./test/*/
 # Actually build the executable
 RUN go build
 

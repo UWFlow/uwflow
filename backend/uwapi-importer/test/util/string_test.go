@@ -38,3 +38,20 @@ func TestProfNameToCode(t *testing.T) {
 		want[i].Test(t, input, got, nil)
 	}
 }
+
+func TestExpandNumberRange(t *testing.T) {
+	inputs := []string{
+		"001", "001,003,005",
+		"1-3", "000,001-005,007",
+		"001,003-garbage", "LEC 001, 002, 015",
+	}
+	want := []test.Outcome{
+		{Value: []int{1}}, {Value: []int{1, 3, 5}},
+		{Value: []int{1, 2, 3}}, {Value: []int{0, 1, 2, 3, 4, 5, 7}},
+		{Value: []int{1, 3}}, {Value: []int{1, 2, 15}},
+	}
+	for i, input := range inputs {
+		got := util.ExpandNumberRange(input)
+		want[i].Test(t, input, got, nil)
+	}
+}

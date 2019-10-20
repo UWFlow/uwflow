@@ -194,10 +194,13 @@ CREATE TABLE course_review (
     CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
   easy SMALLINT
     CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
-  liked SMALLINT,
-    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 5),
+  liked SMALLINT
+    CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 1),
   useful SMALLINT
-    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5)
+    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
+  public BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE prof_review (
@@ -218,7 +221,10 @@ CREATE TABLE prof_review (
   clear SMALLINT
     CONSTRAINT clear_range CHECK (0 <= clear AND clear <= 5),
   engaging SMALLINT
-    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5)
+    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5),
+  public BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE course_review_vote (
@@ -249,27 +255,41 @@ CREATE TABLE prof_review_vote (
   PRIMARY KEY(review_id, user_id)
 );
 
+CREATE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+  BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_course_review_updated_at
+BEFORE UPDATE ON course_review
+FOR EACH ROW
+EXECUTE PROCEDURE set_updated_at();
+
+CREATE TRIGGER set_prof_review_updated_at
+BEFORE UPDATE ON prof_review
+FOR EACH ROW
+EXECUTE PROCEDURE set_updated_at();
+
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
 
 CREATE VIEW aggregate.course_easy_buckets AS
-SELECT course_id, easy, COUNT(*) AS count
+SELECT course_id, easy AS value, COUNT(*) AS count
 FROM course_review GROUP BY course_id, easy;
 
-CREATE VIEW aggregate.course_liked_buckets AS
-SELECT course_id, liked, COUNT(*) AS count
-FROM course_review GROUP BY course_id, liked;
-
 CREATE VIEW aggregate.course_useful_buckets AS
-SELECT course_id, useful, COUNT(*) AS count
+SELECT course_id, useful AS value, COUNT(*) AS count
 FROM course_review GROUP BY course_id, useful;
 
 CREATE VIEW aggregate.prof_clear_buckets AS
-SELECT prof_id, clear, COUNT(*) AS count
+SELECT prof_id, clear AS value, COUNT(*) AS count
 FROM prof_review GROUP BY prof_id, clear;
 
 CREATE VIEW aggregate.prof_engaging_buckets AS
-SELECT prof_id, engaging, COUNT(*) AS count
+SELECT prof_id, engaging AS value, COUNT(*) AS count
 FROM prof_review GROUP BY prof_id, engaging;
 
 -- Credentials
