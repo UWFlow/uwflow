@@ -16,7 +16,7 @@ RUN go mod download
 # Thus we avoid wasting work (especially package installs, which are slow).
 COPY . .
 # Run tests and refuse to proceed if they fail
-RUN go test -v ./test/util
+RUN go test -v ./test/*/
 # Actually build the executable
 RUN go build
 

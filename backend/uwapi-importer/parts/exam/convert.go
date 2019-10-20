@@ -2,14 +2,11 @@ package exam
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/util"
 )
-
-var sectionNameRegexp = regexp.MustCompile(`\d+`)
 
 func subjectNumberToCode(subjectNumber string) (string, error) {
 	splits := strings.Split(subjectNumber, " ")
@@ -20,11 +17,11 @@ func subjectNumberToCode(subjectNumber string) (string, error) {
 }
 
 func separateSectionNames(sectionString string) []string {
-	matches := sectionNameRegexp.FindAllStringIndex(sectionString, -1)
-	sections := make([]string, len(matches))
-	for i, match := range matches {
+	numbers := util.ExpandNumberRange(sectionString)
+	sections := make([]string, len(numbers))
+	for i, number := range numbers {
 		// All sections are lectures
-		sections[i] = "LEC " + sectionString[match[0]:match[1]]
+		sections[i] = fmt.Sprintf("LEC %03d", number)
 	}
 	return sections
 }
@@ -36,20 +33,16 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 	}
 
 	var exams []Exam
+	var currentExam Exam
 	for _, apiSection := range apiExam.Sections {
-		sectionNames := separateSectionNames(apiSection.SectionName)
-		for _, sectionName := range sectionNames {
-			// Pointless to fill out if date and time are not set
-			if apiSection.Date == "" || apiSection.StartTime == "" {
-				exams = append(exams, Exam{
-					CourseCode:  code,
-					SectionName: sectionName,
-					Term:        termId,
-					IsTba:       true,
-				})
-				continue
+		// Pointless to fill out if date and time are not set
+		if apiSection.Date == "" || apiSection.StartTime == "" {
+			currentExam = Exam{
+				CourseCode: code,
+				Term:       termId,
+				IsTba:      true,
 			}
-
+		} else {
 			date, err := time.Parse("2006-01-02", apiSection.Date)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert date: %w", err)
@@ -63,18 +56,24 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert time: %w", err)
 			}
-
-			exams = append(exams, Exam{
+			// &apiSection.Location will change as apiSection is swapped in-place
+			location := apiSection.Location
+			currentExam = Exam{
 				CourseCode:   code,
-				SectionName:  sectionName,
 				Term:         termId,
-				Location:     &apiSection.Location,
+				Location:     &location,
 				StartSeconds: &startSeconds,
 				EndSeconds:   &endSeconds,
 				Date:         &date,
 				Day:          &day,
 				IsTba:        false,
-			})
+			}
+		}
+
+		sectionNames := separateSectionNames(apiSection.SectionName)
+		for _, sectionName := range sectionNames {
+			currentExam.SectionName = sectionName
+			exams = append(exams, currentExam)
 		}
 	}
 	return exams, nil
