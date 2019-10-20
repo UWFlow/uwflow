@@ -108,6 +108,12 @@
             foreign_key_constraint_on:
               table: section_meeting
               column: section_id
+        - comment: null
+          name: exams
+          using:
+            foreign_key_constraint_on:
+              table: section_exam
+              column: section_id
       delete_permissions: []
       insert_permissions: []
       is_enum: false
@@ -146,6 +152,40 @@
             filter: {}
           role: anonymous
       table: course_section
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - section_id
+            - start_seconds
+            - end_seconds
+            - date
+            - location
+            - day
+            - is_tba
+            filter: {}
+          role: user
+        - comment: null
+          permission:
+            allow_aggregations: false
+            columns:
+            - section_id
+            - start_seconds
+            - end_seconds
+            - date
+            - location
+            - day
+            - is_tba
+            filter: {}
+          role: anonymous
+      table: section_exam
       update_permissions: []
     - array_relationships: []
       delete_permissions: []
