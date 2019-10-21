@@ -11,13 +11,14 @@ import (
 
 type Course struct {
 	Id            int      `json:"id"`
-	Name          string   `json:"name"`
 	Code          string   `json:"code"`
+	Name          string   `json:"name"`
 	ProfsTeaching []string `json:"profs"`
 }
 
 type Prof struct {
 	Id      int      `json:"id"`
+	Code    string   `json:"code"`
 	Name    string   `json:"name"`
 	Courses []string `json:"courses"`
 }
@@ -36,7 +37,7 @@ GROUP BY c.id
 `
 
 const ProfQuery = `
-SELECT p.id, p.name, ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL)
+SELECT p.id, p.code, p.name, ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL)
 FROM prof p
  LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
  LEFT JOIN course c ON c.id = pc.course_id
@@ -68,7 +69,7 @@ func dump(state *state.State) (*Response, error) {
 
 	for rows.Next() {
 		var p Prof
-		err = rows.Scan(&p.Id, &p.Name, &p.Courses)
+		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.Courses)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read rows: %v", err)
 		}
