@@ -311,7 +311,9 @@ CREATE TABLE secret.user_fb (
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  fb_id TEXT
+  fb_id TEXT,
+  email TEXT
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
 );
 
 CREATE TABLE secret.user_google (
@@ -319,7 +321,9 @@ CREATE TABLE secret.user_google (
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  google_id TEXT
+  google_id TEXT,
+  email TEXT
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
 );
 
 CREATE TABLE secret.password_reset (
