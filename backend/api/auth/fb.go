@@ -107,16 +107,16 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 	// insert into "user" table
 	var userID int
 	err = state.Conn.QueryRow(
-		`INSERT INTO "user"(full_name, picture_url) VALUES ($1, $2) RETURNING id`,
-		userInfo["name"].(string), profilePicURL,
+		`INSERT INTO "user"(full_name, picture_url, email, join_source) VALUES ($1, $2, $3, $4) RETURNING id`,
+		userInfo["name"].(string), profilePicURL, userInfo["email"].(string), "facebook",
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
 	// insert into user_fb table
 	_, err = state.Conn.Exec(
-		"INSERT INTO secret.user_fb(user_id, fb_id, email) VALUES ($1, $2, $3)",
-		userID, fbID, userInfo["email"].(string),
+		"INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)",
+		userID, fbID,
 	)
 	if err != nil {
 		return 0, err
