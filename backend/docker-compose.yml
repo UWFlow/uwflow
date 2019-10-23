@@ -1,15 +1,5 @@
-version: '3.6'
+version: '3'
 services:
-  reverseproxy:
-    container_name: reverseproxy
-    build: ./reverse-proxy
-    env_file: .env
-    image: reverseproxy
-    ports:
-      - $API_PORT:$API_PORT
-      - $POSTGRES_PORT:$POSTGRES_PORT
-      - $HASURA_PORT:$HASURA_PORT
-    restart: always
   api:
     build: ./api
     container_name: api
@@ -49,6 +39,16 @@ services:
     restart: always
     volumes:
       - ./hasura/migrations:/hasura-migrations
+  reverse-proxy:
+    container_name: reverse-proxy
+    build: ./reverse-proxy
+    env_file: .env
+    image: reverse-proxy:latest
+    ports:
+      - $API_PORT:$API_PORT
+      - $POSTGRES_PORT:$POSTGRES_PORT
+      - $HASURA_PORT:$HASURA_PORT
+    restart: always
   uwapi-importer:
     build: ./uwapi-importer
     container_name: uwapi-importer
