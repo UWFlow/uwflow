@@ -1,0 +1,2 @@
+# Renew certificate every 12 hours
+00 */12 * * * certbot renew >/proc/1/fd/1 2>/proc/1/fd/2

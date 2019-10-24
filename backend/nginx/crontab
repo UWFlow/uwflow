@@ -1,0 +1,2 @@
+# Reload nginx every six hours
+*/05 * * * * nginx -s reload

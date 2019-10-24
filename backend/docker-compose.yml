@@ -12,10 +12,16 @@ services:
     restart: always
   certbot:
     container_name: certbot
+    entrypoint: /certbot/run.sh
+    env_file: .env
     image: certbot/certbot:latest
+    volumes:
+      - ./certbot:/certbot:ro
+      - certbot-store:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
   nginx:
     container_name: nginx
-    command: /start.sh
+    entrypoint: /nginx/run.sh
     env_file: .env
     image: nginx:alpine
     ports:
@@ -23,8 +29,9 @@ services:
       - $NGINX_HTTPS_PORT:$NGINX_HTTPS_PORT
     restart: always
     volumes:
-      - ./reverse-proxy/nginx.template:/nginx.template:ro
-      - ./reverse-proxy/start.sh:/start.sh:ro
+      - ./nginx:/nginx:ro
+      - certbot-store:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
   postgres:
     container_name: postgres
     env_file: .env
@@ -61,4 +68,6 @@ services:
     image: uwapi-importer:latest
     restart: always
 volumes:
+  certbot-store:
+  certbot-webroot:
   postgres:
