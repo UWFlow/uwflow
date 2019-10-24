@@ -1,0 +1,33 @@
+worker_processes 1;
+worker_rlimit_nofile 8192;
+
+events {
+  worker_connections  4096;
+}
+
+http {
+  upstream api {
+    server api:$API_PORT;
+  }
+
+  upstream hasura {
+    server hasura:$HASURA_PORT;
+  }
+
+  server {
+    listen $NGINX_HTTP_PORT default_server;
+    return 301 https://$server_name$request_uri;
+  }
+
+  server {
+    listen $NGINX_HTTPS_PORT default_server;
+    
+    location /api {
+      proxy_pass http://api/data/search;
+    }
+
+    location /graphql {
+      proxy_pass http://hasura/v1/graphql;
+    }
+  }
+}
