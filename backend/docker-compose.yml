@@ -15,6 +15,7 @@ services:
     entrypoint: /certbot/run.sh
     env_file: .env
     image: certbot/certbot:latest
+    restart: always
     volumes:
       - ./certbot:/certbot:ro
       - certbot-store:/etc/letsencrypt

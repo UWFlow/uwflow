@@ -5,14 +5,21 @@ set -eu
 # Less is not acceptable in $CURRENT_YEAR
 RSA_KEY_SIZE=4096
 
+CERTBOT_REPO_URL="https://raw.githubusercontent.com/certbot/certbot/master"
+CERTBOT_OPTIONS_URL="$CERTBOT_REPO_URL/certbot-nginx/certbot_nginx/tls_configs/options-ssl-nginx.conf"
+CERTBOT_DHPARAMS_URL="$CERTBOT_REPO_URL/certbot/ssl-dhparams.pem"
 CERTIFICATE_DIR="/etc/letsencrypt/live/$NGINX_HOSTNAME"
-DIR="$(dirname $0)"
+CONFIG_DIR="/etc/letsencrypt/conf"
+
 FIRST_RUN=0
 
 # If certificate directory does not exist, then this is a first run.
 if ! test -d "$CERTIFICATE_DIR"
 then
   mkdir -p "$CERTIFICATE_DIR"
+  mkdir -p "$CONFIG_DIR"
+  wget "$CERTBOT_OPTIONS_URL" -O "$CONFIG_DIR/options-ssl-nginx.conf"
+  wget "$CERTBOT_DHPARAMS_URL" -O "$CONFIG_DIR/ssl-dhparams.pem"
   FIRST_RUN=1
   # We create a self-signed certificate for bootstrapping:
   # nginx will refuse to create an ssl endpoint if no certificate is loaded.
@@ -46,5 +53,5 @@ then
 fi
 
 # Block on cron which will manage renewals
-crontab "$DIR/crontab"
+crontab "$(dirname $0)/crontab"
 crond -f

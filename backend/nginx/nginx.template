@@ -18,6 +18,8 @@ http {
 
   ssl_certificate /etc/letsencrypt/live/$NGINX_HOSTNAME/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/$NGINX_HOSTNAME/privkey.pem;
+  include /etc/letsencrypt/conf/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/conf/ssl-dhparams.pem;
 
   server {
     listen $NGINX_HTTP_PORT;
