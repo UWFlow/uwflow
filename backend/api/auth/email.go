@@ -38,14 +38,24 @@ const bcryptCost = 10
 
 func authenticate(state *state.State, email string, password []byte) (int, error) {
 	var id int
+	var join_source string
 	var hash []byte
+
 	err := state.Conn.QueryRow(
-		"SELECT user_id, password_hash FROM secret.user_email WHERE email = $1",
+		"SELECT id, join_source FROM public.user WHERE email = $1",
 		email,
-	).Scan(&id, &hash)
-	if err != nil {
+	).Scan(&id, &join_source)
+	if err != nil || join_source != "email" {
 		// Always attempt auth to prevent enumeration of registered emails
 		bcrypt.CompareHashAndPassword([]byte(fakeHash), password)
+		return id, err
+	}
+
+	err = state.Conn.QueryRow(
+		"SELECT password_hash FROM secret.user_email WHERE user_id = $1",
+		id,
+	).Scan(&hash)
+	if err != nil {
 		return id, err
 	} else {
 		err := bcrypt.CompareHashAndPassword(hash, password)
@@ -91,9 +101,11 @@ func register(state *state.State, name string, email string, password []byte) (i
 	defer tx.Rollback()
 
 	// Check db if email is already being used
+	// Note that email is invalid regardless of which type of user
+	// it's associated with (email | google | facebook)
 	var emailExists bool
 	emailErr := tx.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM secret.user_email WHERE email = $1)`,
+		`SELECT EXISTS(SELECT 1 FROM public.user WHERE email = $1)`,
 		email,
 	).Scan(&emailExists)
 	if emailErr != nil {
@@ -104,8 +116,8 @@ func register(state *state.State, name string, email string, password []byte) (i
 
 	var userId int
 	dbErr := tx.QueryRow(
-		`INSERT INTO "user"(full_name) VALUES ($1) RETURNING id`,
-		name,
+		`INSERT INTO "user"(full_name, email, join_source) VALUES ($1, $2, $3) RETURNING id`,
+		name, email, "email",
 	).Scan(&userId)
 	if dbErr != nil {
 		return 0, fmt.Errorf("failed to create user: %v", dbErr)
@@ -118,8 +130,8 @@ func register(state *state.State, name string, email string, password []byte) (i
 	}
 
 	_, writeErr := tx.Exec(
-		`INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)`,
-		userId, email, passwordHash,
+		`INSERT INTO secret.user_email(user_id, password_hash) VALUES ($1, $2)`,
+		userId, passwordHash,
 	)
 	if writeErr != nil {
 		return 0, fmt.Errorf("failed to insert credentials: %v", writeErr)

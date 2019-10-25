@@ -88,11 +88,17 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 // Registration for new fb user
 func registerFbUser(state *state.State, accessToken string, fbID string) (int, error) {
 	// gets user's name from fb graph API
-	fields := []string{"name"}
+	fields := []string{"name", "email"}
 	userInfo, err := GetFbUserInfo(fbID, accessToken, fields)
 	if err != nil {
 		return 0, err
 	}
+	// fb user could have invalid email field
+	// https://developers.facebook.com/docs/graph-api/reference/user/
+	if _, ok := userInfo["email"]; !ok {
+		return 0, fmt.Errorf("Invalid FB account email")
+	}
+
 	// forms user profile pic url
 	profilePicURL := fmt.Sprintf(
 		"https://graph.facebook.com/%s/picture?type=large", fbID,
@@ -101,8 +107,8 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 	// insert into "user" table
 	var userID int
 	err = state.Conn.QueryRow(
-		`INSERT INTO "user"(full_name, picture_url) VALUES ($1, $2) RETURNING id`,
-		userInfo["name"].(string), profilePicURL,
+		`INSERT INTO "user"(full_name, picture_url, email, join_source) VALUES ($1, $2, $3, $4) RETURNING id`,
+		userInfo["name"].(string), profilePicURL, userInfo["email"].(string), "facebook",
 	).Scan(&userID)
 	if err != nil {
 		return 0, err

@@ -14,6 +14,7 @@ type googleIDTokenClaims struct {
 	// Following fields are provided only if user allows access to profile
 	Name       string `json:"name"`
 	PictureUrl string `json:"picture"`
+	Email      string `json:"email"`
 	jwt.StandardClaims
 }
 
@@ -66,8 +67,8 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 
 	var userID int
 	err = state.Conn.QueryRow(
-		`INSERT INTO "user"(full_name, picture_url) VALUES ($1, $2) RETURNING id`,
-		tokenClaims.Name, tokenClaims.PictureUrl,
+		`INSERT INTO "user"(full_name, picture_url, email, join_source) VALUES ($1, $2, $3, $4) RETURNING id`,
+		tokenClaims.Name, tokenClaims.PictureUrl, tokenClaims.Email, "google",
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
