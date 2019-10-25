@@ -65,22 +65,23 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		if user.ProgramName != nil && len(*user.ProgramName) > 256 {
 			user.ProgramName = nil
 		}
-		preparedUsers[i] = []interface{}{fullName, user.ProgramName}
 
 		// Only add email users with valid email and password
 		// Not sure why there are email users without password?
 		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
-			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Email, user.Password})
+			preparedUsers[i] = []interface{}{fullName, user.ProgramName, user.Email, "email"}
+			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Password})
 		}
 
 		if user.FBId != nil {
+			preparedUsers[i] = []interface{}{fullName, user.ProgramName, user.Email, "facebook"}
 			fbCredentials = append(fbCredentials, []interface{}{i + 1, user.FBId})
 		}
 	}
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"user"},
-		[]string{"full_name", "program"},
+		[]string{"full_name", "program", "email", "join_source"},
 		pgx.CopyFromRows(preparedUsers),
 	)
 	if err != nil {
@@ -89,7 +90,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 
 	_, err = tx.CopyFrom(
 		pgx.Identifier{"secret", "user_email"},
-		[]string{"user_id", "email", "password_hash"},
+		[]string{"user_id", "password_hash"},
 		pgx.CopyFromRows(emailCredentials),
 	)
 	if err != nil {

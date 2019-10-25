@@ -68,11 +68,12 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 
 	// Check db if email exists and get corresponding user_id
 	var userID int
+	var join_source string
 	err = state.Conn.QueryRow(
-		`SELECT user_id FROM secret.user_email WHERE email = $1`,
+		`SELECT id, join_source FROM public.user WHERE email = $1`,
 		*body.Email,
-	).Scan(&userID)
-	if err != nil {
+	).Scan(&userID, &join_source)
+	if err != nil || join_source != "email" {
 		serde.Error(w, "Email not found", http.StatusBadRequest)
 		return
 	}
