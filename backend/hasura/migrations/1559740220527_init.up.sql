@@ -166,6 +166,22 @@ CREATE TABLE section_meeting (
   is_tba BOOLEAN NOT NULL
 );
 
+CREATE TABLE section_subscriptions (
+  user_id INT NOT NULL
+    REFERENCES "user"(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  course_id INT NOT NULL
+    REFERENCES course(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  section_id INT NOT NULL
+    REFERENCES course_section(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT section_subscription_unique UNIQUE(user_id, section_id)
+);
+
 CREATE TABLE user_schedule (
   user_id INT NOT NULL
     REFERENCES "user"(id)

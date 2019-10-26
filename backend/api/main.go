@@ -8,6 +8,7 @@ import (
 	"github.com/AyushK1/uwflow2.0/backend/api/data"
 	"github.com/AyushK1/uwflow2.0/backend/api/parse"
 	"github.com/AyushK1/uwflow2.0/backend/api/state"
+	"github.com/AyushK1/uwflow2.0/backend/api/sub"
 	"github.com/AyushK1/uwflow2.0/backend/api/webcal"
 
 	"github.com/go-chi/chi"
@@ -43,6 +44,9 @@ func SetupRouter(state *state.State) *chi.Mux {
 
 	router.Get("/data/search", WithState(state, data.HandleSearch))
 	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
+
+	router.Post("/section_notify/subscribe", WithState(state, sub.SubscribeToSection))
+	router.Post("/section_notify/unsubscribe", WithState(state, sub.UnsubscribeToSection))
 
 	return router
 }
