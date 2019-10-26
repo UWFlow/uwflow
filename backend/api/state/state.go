@@ -80,7 +80,15 @@ func ConnectToDatabase(env *Environment) (*pgx.Conn, error) {
 		Port:     uint16(port),
 		User:     env.PostgresUser,
 	}
-	return pgx.Connect(config)
+	conn, err := pgx.Connect(config)
+	if err != nil {
+		return nil, err
+	}
+	_, err = conn.Exec(`SELECT TRUE FROM term_date`)
+	if err != nil {
+		return nil, fmt.Errorf("database not ready")
+	}
+	return conn, nil
 }
 
 func Initialize() (*State, error) {

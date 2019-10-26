@@ -38,3 +38,4 @@ export POSTGRES_HOST=localhost
 # Run import jobs
 (cd uwapi-importer && go run . terms)
 (cd mongo-importer && go run . $MONGO_DUMP_PATH)
+(cd uwapi-importer && go run . sections && go run . exams)
