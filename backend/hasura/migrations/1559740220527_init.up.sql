@@ -171,10 +171,6 @@ CREATE TABLE section_subscriptions (
     REFERENCES "user"(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  course_id INT NOT NULL
-    REFERENCES course(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
   section_id INT NOT NULL
     REFERENCES course_section(id)
     ON DELETE CASCADE
