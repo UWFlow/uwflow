@@ -10,6 +10,15 @@ services:
     ports:
       - $API_PORT:$API_PORT
     restart: always
+  frontend:
+    build: ../frontend
+    container_name: frontend
+    image: frontend:latest
+    ports:
+      - $FRONTEND_PORT:$FRONTEND_PORT
+    restart: always
+    volumes:
+      - ../frontend:/app:ro
   nginx:
     container_name: nginx
     entrypoint: /nginx/run.sh
