@@ -58,6 +58,4 @@ services:
     image: uwapi-importer:latest
     restart: always
 volumes:
-  certbot-store:
-  certbot-webroot:
   postgres:
