@@ -12,16 +12,25 @@ export $(cat .env | xargs)
 
 # Prefix docker commands with sudo if the user is not in the `docker` group
 # If there is no `sudo` executable, then assume we don't need it anyway
-if ! $(groups 2>/dev/null | grep docker) && $(which sudo 2>/dev/null >&2)
+if docker info >/dev/null 2>/dev/null
 then
-  PREFIX="sudo"
-else
   PREFIX=""
+else
+  if sudo docker info >/dev/null 2>/dev/null
+  then
+    PREFIX="sudo"
+  else
+    fail "Cannot run docker info: is Docker installed?"
+  fi
 fi
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down
 $PREFIX docker volume rm -f backend_postgres
+
+# Generate self-signed SSL certificate if needed
+"$DIR/generate-ssl-cert.sh"
+
 $PREFIX docker-compose up -d --build
 
 # Wait for migrations to be applied by selecting from a random table

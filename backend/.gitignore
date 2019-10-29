@@ -1,2 +1,4 @@
 # Environment files (contain secrets)
 .env
+# SSL certificates
+.ssl
