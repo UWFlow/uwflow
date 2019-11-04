@@ -266,6 +266,27 @@ CREATE TABLE prof_review (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE VIEW prof_review_author AS
+SELECT
+  pr.id AS review_id,
+  u.program AS program,
+  CASE
+    WHEN pr.public
+    THEN u.full_name
+    ELSE NULL
+  END AS full_name,
+  CASE
+    WHEN pr.public
+    THEN u.picture_url
+    ELSE NULL
+  END AS picture_url
+FROM prof_review pr
+  JOIN "user" u ON pr.user_id = u.id;
+
+CREATE VIEW prof_review_user_id AS
+SELECT id AS review_id, user_id
+FROM prof_review;
+
 CREATE TABLE course_review_vote (
   review_id INT NOT NULL
     REFERENCES course_review(id)
