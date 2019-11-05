@@ -276,9 +276,19 @@
         using:
           foreign_key_constraint_on: prof_id
       - comment: null
+        name: author
+        using:
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table: prof_review_author
+      - comment: null
         name: user
         using:
-          foreign_key_constraint_on: user_id
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table: prof_review_user_id
       select_permissions:
       - comment: null
         permission:
@@ -287,7 +297,6 @@
           - id
           - course_id
           - prof_id
-          - user_id
           - text
           - clear
           - engaging
@@ -303,7 +312,6 @@
           - id
           - course_id
           - prof_id
-          - user_id
           - text
           - clear
           - engaging
@@ -322,7 +330,6 @@
           - course_id
           - id
           - prof_id
-          - user_id
           - text
           - public
           filter:
@@ -330,6 +337,54 @@
               _eq: X-Hasura-User-Id
           set: {}
         role: user
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - full_name
+          - program
+          - picture_url
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - full_name
+          - program
+          - picture_url
+          filter: {}
+        role: user
+      table: prof_review_author
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - user_id
+          filter:
+            user_id:
+              _eq: X-Hasura-User-Id
+        role: user
+      table: prof_review_user_id
+      update_permissions: []
     - array_relationships: []
       delete_permissions:
       - comment: null
@@ -697,9 +752,19 @@
         using:
           foreign_key_constraint_on: prof_id
       - comment: null
+        name: author
+        using:
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table: course_review_author
+      - comment: null
         name: user
         using:
-          foreign_key_constraint_on: user_id
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table: course_review_user_id
       select_permissions:
       - comment: null
         permission:
@@ -708,7 +773,6 @@
           - id
           - course_id
           - prof_id
-          - user_id
           - text
           - easy
           - liked
@@ -725,7 +789,6 @@
           - id
           - course_id
           - prof_id
-          - user_id
           - text
           - easy
           - liked
@@ -746,7 +809,6 @@
           - course_id
           - id
           - prof_id
-          - user_id
           - text
           - public
           filter:
@@ -754,6 +816,54 @@
               _eq: X-Hasura-User-Id
           set: {}
         role: user
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - full_name
+          - program
+          - picture_url
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - full_name
+          - program
+          - picture_url
+          filter: {}
+        role: user
+      table: course_review_author
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: false
+          columns:
+          - review_id
+          - user_id
+          filter:
+            user_id:
+              _eq: X-Hasura-User-Id
+        role: user
+      table: course_review_user_id
+      update_permissions: []
     - array_relationships: []
       delete_permissions: []
       event_triggers: []

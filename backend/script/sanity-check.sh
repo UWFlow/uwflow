@@ -41,7 +41,12 @@ fi
 # does not fail with a possibly cryptic error
 if ! test -d "$MONGO_DUMP_PATH"
 then
-  fail "Mongo dump is not unpacked at $MONDO_DUMP_PATH"
+  fail "Mongo dump is not unpacked at $MONGO_DUMP_PATH"
+fi
+
+if ! test -f "$MONGO_DUMP_PATH/course.bson"
+then
+  fail "Malformed Mongo dump: missing $MONGO_DUMP_PATH/course.bson"
 fi
 
 # Significant changes to ADM-sourced info happen in the span of two months.
