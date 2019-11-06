@@ -2,6 +2,8 @@ package section
 
 import (
 	"fmt"
+	"net/smtp"
+	"os"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 )
@@ -49,7 +51,33 @@ FROM _course_section_delta d
 WHERE cs.id IS NULL
 `
 
+const GetNewlyAvailableSectionsQuery = `
+SELECT 
+  c.id
+FROM course_section c
+  LEFT JOIN _course_section_delta d
+	ON c.class_number = d.class_number
+   AND c.term = d.term
+WHERE d.enrollment_total < d.enrollment_capacity
+  AND c.enrollment_total >= c.enrollment_capacity;
+`
+
 const TeardownSectionQuery = `DROP TABLE _course_section_delta`
+
+func SendNotificationEmail(to string, subject string, body string) error {
+	// Set up authentication information for Gmail server
+	from := os.Getenv("GMAIL_USER")
+	auth := smtp.PlainAuth("", from, os.Getenv("GMAIL_APP_PASSWORD"), "smtp.gmail.com")
+	msg := []byte(fmt.Sprintf("To: %s\r\n", to) +
+		fmt.Sprintf("Subject: %s\r\n", subject) +
+		"\r\n" +
+		fmt.Sprintf("%s\r\n", body))
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send email to %w", to)
+	}
+	return nil
+}
 
 func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 	var result db.Result
@@ -83,6 +111,38 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
+	}
+
+	rows, err := tx.Query(GetNewlyAvailableSectionsQuery)
+	if err != nil {
+		return &result, fmt.Errorf("failed to query newly available sections: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var sectionID int
+		var courseName, section string
+		rows.Scan(&sectionID, &courseName, &section)
+		users, err := tx.Query(
+			`SELECT u.email, c.name, cs.section
+			 FROM section_subscriptions ss
+			   LEFT JOIN public.user u ON ss.user_id = u.id
+			   LEFT JOIN course_section cs ON ss.section_id = cs.id
+			   LEFT JOIN course c ON cs.course_id = c.id
+			 WHERE ss.section_id = $1;
+			`, sectionID)
+
+		if err != nil {
+			return &result, fmt.Errorf("failed to get subscriber emails: %w", err)
+		}
+
+		for users.Next() {
+			var email string
+			users.Scan(&email)
+			go SendNotificationEmail(email, fmt.Sprintf("%s: %s", courseName, section), "Body")
+		}
+
+		users.Close()
 	}
 
 	tag, err := tx.Exec(UpdateSectionQuery)
