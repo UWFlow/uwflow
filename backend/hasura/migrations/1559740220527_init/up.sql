@@ -364,10 +364,71 @@ EXECUTE PROCEDURE set_updated_at();
 
 -- END PUBLIC FUNCTIONS
 
+CREATE SCHEMA materialized;
+
+-- START MATERIALIZED VIEWS
+
+CREATE MATERIALIZED VIEW materialized.course_rating AS
+SELECT
+  course_id,
+  COUNT(*)        AS total_count,
+  COUNT(text)     AS comment_count,
+  AVG(liked)      AS liked,
+  AVG(easy) / 5   AS easy,
+  AVG(useful) / 5 AS useful
+FROM course_review
+GROUP BY course_id;
+
+CREATE MATERIALIZED VIEW materialized.prof_rating AS
+SELECT
+  prof_id,
+  COUNT(*)          AS total_count,
+  COUNT(text)       AS comment_count,
+  AVG(clear) / 5    AS clear,
+  AVG(engaging) / 5 AS engaging
+FROM prof_review
+GROUP BY prof_id;
+
+-- END MATERIALIZED VIEWS
+
+-- START MATERIALIZED FUNCTIONS
+
+CREATE FUNCTION refresh_view()
+RETURNS TRIGGER AS $$
+  DECLARE sql TEXT;
+  BEGIN
+    sql := 'REFRESH MATERIALIZED VIEW ' || TG_ARGV[0];
+    EXECUTE sql;
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+
+-- END MATERIALIZED FUNCTIONS
+
+-- START MATERIALIZED TRIGGERS
+
+CREATE TRIGGER refresh_course_rating
+AFTER INSERT OR UPDATE OR DELETE ON course_review
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.course_rating');
+
+CREATE TRIGGER refresh_prof_rating
+AFTER INSERT OR UPDATE OR DELETE ON prof_review
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.prof_rating');
+
+-- END MATERIALIZED TRIGGERS
+
 -- Aggregations intractable in Hasura
 CREATE SCHEMA aggregate;
 
 -- START AGGREGATE VIEWS
+
+CREATE VIEW aggregate.course_rating AS
+SELECT * FROM materialized.course_rating;
+
+CREATE VIEW aggregate.prof_rating AS
+SELECT * FROM materialized.prof_rating;
 
 CREATE VIEW aggregate.course_easy_buckets AS
 SELECT course_id, easy AS value, COUNT(*) AS count
