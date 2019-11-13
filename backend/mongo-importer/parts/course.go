@@ -91,6 +91,8 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
 	preparedPrereqs := make([][]interface{}, 0, len(courses))
 	preparedAntireqs := make([][]interface{}, 0, len(courses))
+	seenPrereqs := make(map[IntPair]bool)
+	seenAntireqs := make(map[IntPair]bool)
 
 	bar := pb.StartNew(len(courses))
 	courseCodeRegexp := regexp.MustCompile(CourseCodePattern)
@@ -102,10 +104,14 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			prereqCodes := courseCodeRegexp.FindAllString(*course.Prereqs, -1)
 			for _, prereqCode := range prereqCodes {
 				if prereqId, ok := idMap.Course[strings.ToLower(prereqCode)]; ok {
+					if seenPrereqs[IntPair{prereqId, courseId}] {
+						continue
+					}
 					preparedPrereqs = append(
 						preparedPrereqs,
 						[]interface{}{courseId, prereqId, false},
 					)
+					seenPrereqs[IntPair{prereqId, courseId}] = true
 				}
 			}
 		}
@@ -114,10 +120,14 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			coreqCodes := courseCodeRegexp.FindAllString(*course.Coreqs, -1)
 			for _, coreqCode := range coreqCodes {
 				if coreqId, ok := idMap.Course[strings.ToLower(coreqCode)]; ok {
+					if seenPrereqs[IntPair{coreqId, courseId}] {
+						continue
+					}
 					preparedPrereqs = append(
 						preparedPrereqs,
 						[]interface{}{courseId, coreqId, true},
 					)
+					seenPrereqs[IntPair{coreqId, courseId}] = true
 				}
 			}
 		}
@@ -126,10 +136,14 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 			antireqCodes := courseCodeRegexp.FindAllString(*course.Antireqs, -1)
 			for _, antireqCode := range antireqCodes {
 				if antireqId, ok := idMap.Course[strings.ToLower(antireqCode)]; ok {
+					if seenAntireqs[IntPair{antireqId, courseId}] {
+						continue
+					}
 					preparedAntireqs = append(
 						preparedAntireqs,
 						[]interface{}{courseId, antireqId},
 					)
+					seenAntireqs[IntPair{antireqId, courseId}] = true
 				}
 			}
 		}

@@ -24,6 +24,15 @@
               name: course_useful_buckets
               schema: aggregate
       - comment: null
+        name: rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: course_id
+            remote_table:
+              name: course_rating
+              schema: aggregate
+      - comment: null
         name: course_reviews
         using:
           foreign_key_constraint_on:
@@ -512,6 +521,15 @@
               name: prof_engaging_buckets
               schema: aggregate
       - comment: null
+        name: rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table:
+              name: prof_rating
+              schema: aggregate
+      - comment: null
         name: prof_reviews
         using:
           foreign_key_constraint_on:
@@ -643,6 +661,74 @@
         role: user
       table:
         name: prof_clear_buckets
+        schema: aggregate
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - course_id
+          - total_count
+          - comment_count
+          - liked
+          - easy
+          - useful
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - course_id
+          - total_count
+          - comment_count
+          - liked
+          - easy
+          - useful
+          filter: {}
+        role: user
+      table:
+        name: course_rating
+        schema: aggregate
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - prof_id
+          - total_count
+          - comment_count
+          - clear
+          - engaging
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - prof_id
+          - total_count
+          - comment_count
+          - clear
+          - engaging
+          filter: {}
+        role: user
+      table:
+        name: prof_rating
         schema: aggregate
       update_permissions: []
     - array_relationships: []
