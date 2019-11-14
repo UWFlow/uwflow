@@ -7,17 +7,19 @@ import (
 	"net/http"
 	"time"
 
-	"flow/worker/importer/uw/env"
+	"flow/common/env"
+
 	"go.uber.org/zap"
 )
 
+const	ApiTimeout = time.Second * 10
+
 const (
-	ApiTimeout = time.Second * 10
 	BaseUrlv2  = "https://api.uwaterloo.ca/v2"
 	BaseUrlv3  = "https://openapi.data.uwaterloo.ca/v3"
 )
 
-type Api struct {
+type Client struct {
 	ctx    context.Context
 	client *http.Client
 	logger *zap.Logger
@@ -25,8 +27,8 @@ type Api struct {
 	keyv3  string
 }
 
-func New(ctx context.Context, env *env.Environment, logger *zap.Logger) *Api {
-	return &Api{
+func NewClient(ctx context.Context, env *env.Environment, logger *zap.Logger) *Client {
+	return &Client{
 		ctx: ctx,
 		client: &http.Client{
 			Timeout: ApiTimeout,
@@ -37,7 +39,7 @@ func New(ctx context.Context, env *env.Environment, logger *zap.Logger) *Api {
 	}
 }
 
-func (api *Api) do(req *http.Request) (*http.Response, error) {
+func (api *Client) do(req *http.Request) (*http.Response, error) {
 	res, err := api.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send data: %w", err)
@@ -53,7 +55,7 @@ type Apiv2Response struct {
 }
 
 // Issue a GET to a given UWAPIv2 endpoint and decode the response into dst
-func (api *Api) Getv2(endpoint string, dst interface{}) error {
+func (api *Client) Getv2(endpoint string, dst interface{}) error {
 	// Avoid logging API key by templating twice
 	clearUrl := fmt.Sprintf("%s/%s.json", BaseUrlv2, endpoint)
 	api.logger.Info("v2 GET", zap.String("url", clearUrl))
@@ -81,7 +83,7 @@ func (api *Api) Getv2(endpoint string, dst interface{}) error {
 }
 
 // Issue a GET to a given UWAPIv3 endpoint and decode the response into dst
-func (api *Api) Getv3(endpoint string, dst interface{}) error {
+func (api *Client) Getv3(endpoint string, dst interface{}) error {
 	url := fmt.Sprintf("%s/%s", BaseUrlv3, endpoint)
 	api.logger.Info("v3 GET", zap.String("url", url))
 

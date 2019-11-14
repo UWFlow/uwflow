@@ -6,9 +6,9 @@ import (
 	"flow/worker/importer/uw/api"
 )
 
-func FetchByTerm(api *api.Api, termId int) ([]ApiExam, error) {
+func FetchByTerm(client *api.Client, termId int) ([]ApiExam, error) {
 	var exams []ApiExam
 	endpoint := fmt.Sprintf("terms/%d/examschedule", termId)
-	err := api.Getv2(endpoint, &exams)
+	err := client.Getv2(endpoint, &exams)
 	return exams, err
 }

@@ -1,10 +1,14 @@
 package course
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"flow/worker/importer/uw/db"
+	"flow/worker/importer/uw/log"
+
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v4"
 )
 
 const SetupCourseQuery = `
@@ -42,16 +46,16 @@ WHERE c.id IS NULL
 
 const TeardownCourseQuery = `DROP TABLE _course_delta`
 
-func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
-	var result db.Result
+func InsertAll(ctx context.Context, conn *pgxpool.Pool, courses []Course) (*log.DbResult, error) {
+	var result log.DbResult
 
-	tx, err := conn.Begin()
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(SetupCourseQuery)
+	_, err = tx.Exec(ctx, SetupCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -73,32 +77,33 @@ func InsertAll(conn *db.Conn, courses []Course) (*db.Result, error) {
 	}
 
 	_, err = tx.CopyFrom(
-		"_course_delta",
+    ctx,
+		pgx.Identifier{"_course_delta"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
-		preparedCourses,
+		pgx.CopyFromRows(preparedCourses),
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdateCourseQuery)
+	tag, err := tx.Exec(ctx, UpdateCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(InsertCourseQuery)
+	tag, err = tx.Exec(ctx, InsertCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(TeardownCourseQuery)
+	_, err = tx.Exec(ctx, TeardownCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit()
+	err = tx.Commit(ctx)
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}

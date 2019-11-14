@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"flow/worker/importer/uw/util"
+	"flow/common/util"
 )
 
 func subjectNumberToCode(subjectNumber string) (string, error) {

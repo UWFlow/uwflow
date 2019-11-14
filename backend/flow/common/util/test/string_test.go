@@ -1,9 +1,9 @@
-package util_test
+package test
 
 import (
-	"flow/worker/importer/uw/test"
-	"flow/worker/importer/uw/util"
 	"testing"
+
+	"flow/common/util"
 )
 
 func TestLastFirstToFirstLast(t *testing.T) {
@@ -11,7 +11,7 @@ func TestLastFirstToFirstLast(t *testing.T) {
 		"Jao,David", "Marcoux,Laurent W.",
 		"Mansour", "Andrew Kennings", "",
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		{Value: "David Jao"}, {Value: "Laurent W. Marcoux"},
 		{Error: true}, {Error: true}, {Error: true},
 	}
@@ -28,7 +28,7 @@ func TestProfNameToCode(t *testing.T) {
 		"Laurent	W	Marcoux", "Jean-Claude O'Donnel",
 		"Mansour", "3412 Andrew Kennings", "",
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		{Value: "david_jao"}, {Value: "laurent_w_marcoux"}, {Value: "david_mckinnon"},
 		{Value: "laurent_w_marcoux"}, {Value: "jean_claude_o_donnel"},
 		{Value: "mansour"}, {Value: "andrew_kennings"}, {Value: ""},
@@ -45,7 +45,7 @@ func TestExpandNumberRange(t *testing.T) {
 		"1-3", "000,001-005,007",
 		"001,003-garbage", "LEC 001, 002, 015",
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		{Value: []int{1}}, {Value: []int{1, 3, 5}},
 		{Value: []int{1, 2, 3}}, {Value: []int{0, 1, 2, 3, 4, 5, 7}},
 		{Value: []int{1, 3}}, {Value: []int{1, 2, 15}},

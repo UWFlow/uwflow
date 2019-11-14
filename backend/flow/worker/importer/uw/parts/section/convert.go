@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"flow/common/util"
 	"flow/worker/importer/uw/parts/term"
-	"flow/worker/importer/uw/util"
 )
 
 func ConvertAll(dst *ConvertResult, apiSections []ApiSection, term *term.Term) error {

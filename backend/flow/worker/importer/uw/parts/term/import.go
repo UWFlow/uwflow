@@ -3,13 +3,15 @@ package term
 import (
 	"fmt"
 
-	"flow/worker/importer/uw/state"
+	"flow/common/state"
+	"flow/worker/importer/uw/api"
+	"flow/worker/importer/uw/log"
 )
 
-func ImportAll(state *state.State) error {
-	state.Log.StartImport("term")
+func ImportAll(state *state.State, client *api.Client) error {
+	log.StartImport(state.Log, "term")
 
-	events, err := FetchAll(state.Api)
+	events, err := FetchAll(client)
 	if err != nil {
 		return fmt.Errorf("failed to fetch terms: %w", err)
 	}
@@ -19,11 +21,11 @@ func ImportAll(state *state.State) error {
 		return fmt.Errorf("failed to convert terms: %w", err)
 	}
 
-	result, err := InsertAll(state.Db, terms)
+	result, err := InsertAll(state.Ctx, state.Db, terms)
 	if err != nil {
 		return fmt.Errorf("failed to insert terms: %w", err)
 	}
 
-	state.Log.EndImport("term", result)
+	log.EndImport(state.Log, "term", result)
 	return nil
 }

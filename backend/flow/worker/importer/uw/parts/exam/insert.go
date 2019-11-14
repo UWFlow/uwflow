@@ -1,9 +1,13 @@
 package exam
 
 import (
+  "context"
 	"fmt"
 
-	"flow/worker/importer/uw/db"
+  "flow/worker/importer/uw/log"
+
+  "github.com/jackc/pgx/v4"
+  "github.com/jackc/pgx/v4/pgxpool"
 )
 
 const SetupExamQuery = `
@@ -63,16 +67,16 @@ WHERE se.section_id IS NULL
 
 const TeardownExamQuery = `DROP TABLE _section_exam_delta`
 
-func InsertAll(conn *db.Conn, exams []Exam) (*db.Result, error) {
-	var result db.Result
+func InsertAll(ctx context.Context, conn *pgxpool.Pool, exams []Exam) (*log.DbResult, error) {
+	var result log.DbResult
 
-	tx, err := conn.Begin()
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(SetupExamQuery)
+	_, err = tx.Exec(ctx, SetupExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -86,35 +90,36 @@ func InsertAll(conn *db.Conn, exams []Exam) (*db.Result, error) {
 	}
 
 	_, err = tx.CopyFrom(
-		"_section_exam_delta",
+    ctx,
+		pgx.Identifier{"_section_exam_delta"},
 		[]string{
 			"course_code", "section_name", "term", "location",
 			"start_seconds", "end_seconds", "date", "day", "is_tba",
 		},
-		preparedExams,
+		pgx.CopyFromRows(preparedExams),
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdateExamQuery)
+	tag, err := tx.Exec(ctx, UpdateExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(InsertExamQuery)
+	tag, err = tx.Exec(ctx, InsertExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(TeardownExamQuery)
+	_, err = tx.Exec(ctx, TeardownExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit()
+	err = tx.Commit(ctx)
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}

@@ -1,10 +1,13 @@
 package course
 
-import "flow/worker/importer/uw/state"
+import (
+  "flow/common/state"
+  "flow/worker/importer/uw/log"
+)
 
 func Vacuum(state *state.State) error {
-	state.Log.StartVacuum("course")
-	state.Log.EndVacuum("course", 0)
+	log.StartVacuum(state.Log, "course")
 	// Never delete past courses
+	log.EndVacuum(state.Log, "course", 0)
 	return nil
 }

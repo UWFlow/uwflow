@@ -3,19 +3,20 @@ package term
 import (
 	"fmt"
 
-	"flow/worker/importer/uw/state"
-	"flow/worker/importer/uw/util"
+	"flow/common/state"
+	"flow/common/util"
+	"flow/worker/importer/uw/log"
 )
 
 const DeleteQuery = `DELETE FROM term_date WHERE term < $1`
 
 func Vacuum(state *state.State) error {
-	state.Log.StartVacuum("term")
+	log.StartVacuum(state.Log, "term")
 	// Retain only terms starting with the previous one
-	tag, err := state.Db.Exec(DeleteQuery, util.PreviousTermId())
+	tag, err := state.Db.Exec(state.Ctx, DeleteQuery, util.PreviousTermId())
 	if err != nil {
 		return fmt.Errorf("database write failed: %w", err)
 	}
-	state.Log.EndVacuum("term", int(tag.RowsAffected()))
+	log.EndVacuum(state.Log, "term", int(tag.RowsAffected()))
 	return nil
 }

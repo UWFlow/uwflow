@@ -3,19 +3,20 @@ package section
 import (
 	"fmt"
 
-	"flow/worker/importer/uw/state"
-	"flow/worker/importer/uw/util"
+	"flow/common/state"
+	"flow/common/util"
+	"flow/worker/importer/uw/log"
 )
 
 const DeleteQuery = `DELETE FROM course_section WHERE term < $1`
 
 func Vacuum(state *state.State) error {
-	state.Log.StartVacuum("section")
+	log.StartVacuum(state.Log, "section")
 	// Retain only sections starting with the previous term
-	tag, err := state.Db.Exec(DeleteQuery, util.PreviousTermId())
+	tag, err := state.Db.Exec(state.Ctx, DeleteQuery, util.PreviousTermId())
 	if err != nil {
 		return fmt.Errorf("database write failed: %w", err)
 	}
-	state.Log.EndVacuum("section", int(tag.RowsAffected()))
+	log.EndVacuum(state.Log, "section", int(tag.RowsAffected()))
 	return nil
 }

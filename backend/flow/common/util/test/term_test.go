@@ -1,10 +1,10 @@
-package util_test
+package test
 
 import (
-	"flow/worker/importer/uw/test"
-	"flow/worker/importer/uw/util"
 	"testing"
 	"time"
+
+	"flow/common/util"
 )
 
 func TestDateToTermId(t *testing.T) {
@@ -13,7 +13,7 @@ func TestDateToTermId(t *testing.T) {
 		time.Date(2011, 8, 31, 0, 0, 0, 0, time.UTC),
 		time.Date(2011, 9, 1, 0, 0, 0, 0, time.UTC),
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		{Value: 1199}, {Value: 1115}, {Value: 1119},
 	}
 	for i, input := range inputs {
@@ -27,7 +27,7 @@ func TestTermNameToId(t *testing.T) {
 		"Fall 2019", "Spring 2020", "Winter 2001",
 		"Summer 2020", "1195", "Winter", "2015 Spring",
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		{Value: 1199}, {Value: 1205}, {Value: 1011},
 		{Error: true}, {Error: true}, {Error: true}, {Error: true},
 	}

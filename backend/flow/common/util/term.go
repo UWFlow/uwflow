@@ -43,14 +43,10 @@ func TermIdToYear(termId int) int {
 	return (termId / 10) + 1900
 }
 
-// Quest id of a term given by its English name, e.g. "Fall 2019".
-func TermNameToId(name string) (int, error) {
-	components := strings.Split(name, " ")
-	if len(components) != 2 {
-		return 0, fmt.Errorf("not a term name: %s", name)
-	}
+// Quest id of a term given by its season and year, e.g. ("Fall", "2019")
+func TermSeasonYearToId(maybeSeason string, maybeYear string) (int, error) {
 	var month int
-	switch components[0] {
+	switch maybeSeason {
 	case "Fall":
 		month = 9
 	case "Spring":
@@ -58,11 +54,20 @@ func TermNameToId(name string) (int, error) {
 	case "Winter":
 		month = 1
 	default:
-		return 0, fmt.Errorf("not a season: %s", components[0])
+		return 0, fmt.Errorf("not a season: %s", maybeSeason)
 	}
-	year, err := strconv.Atoi(components[1])
+	year, err := strconv.Atoi(maybeYear)
 	if err != nil {
-		return 0, fmt.Errorf("not a year: %s", components[1])
+		return 0, fmt.Errorf("not a year: %s", maybeYear)
 	}
 	return (year-1900)*10 + month, nil
+}
+
+// Quest id of a term given by its English name, e.g. "Fall 2019".
+func TermNameToId(name string) (int, error) {
+	components := strings.Split(name, " ")
+	if len(components) != 2 {
+		return 0, fmt.Errorf("not a term name: %s", name)
+	}
+	return TermSeasonYearToId(components[0], components[1])
 }

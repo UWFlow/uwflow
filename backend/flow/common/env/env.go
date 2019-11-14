@@ -10,6 +10,18 @@ import (
 // Field types must be either `string` or `[]byte`:
 // os.Getenv returns `string`, which can only be trivially cast to `[]byte`.
 type Environment struct {
+	ApiPort string `from:"API_PORT"`
+
+	FbAppID     string `from:"FB_APP_ID"`
+	FbAppSecret string `from:"FB_APP_SECRET"`
+
+	GmailUser        string `from:"GMAIL_USER"`
+	GmailAppPassword string `from:"GMAIL_APP_PASSWORD"`
+
+	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
+
+	MongoDumpPath string `from:"MONGO_DUMP_PATH"`
+
 	PostgresDatabase string `from:"POSTGRES_DB"`
 	PostgresHost     string `from:"POSTGRES_HOST"`
 	PostgresPassword string `from:"POSTGRES_PASSWORD"`

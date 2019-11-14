@@ -1,39 +1,34 @@
 package log
 
-import (
-	"flow/worker/importer/uw/db"
+import "go.uber.org/zap"
 
-	"go.uber.org/zap"
-)
-
-type Logger struct {
-	// Export this: callers should be able to log one-off messages directly
-	Zap *zap.Logger
+// Result of a database operation.
+type DbResult struct {
+	// Rows that were first added to the database during this operation.
+	Inserted int
+	// Rows that were present and got updated.
+	Updated int
+	// Rows that were present and did not merit an update.
+	Untouched int
+	// Rows that were found inadmissible:
+	// broken invariants, missing join dependencies etc.
+	Rejected int
 }
 
-func New() (*Logger, error) {
-	// Skip immediate caller: our logging statements are all wrapped
-	zap, err := zap.NewProduction(zap.AddCallerSkip(1))
-	if err != nil {
-		return nil, err
-	}
-	return &Logger{Zap: zap}, nil
-}
-
-func (log *Logger) ApiBug(description string, cause string) {
-	log.Zap.Warn(
+func ApiBug(log *zap.Logger, description string, cause string) {
+	log.Warn(
 		"api bug",
 		zap.String("description", description),
 		zap.String("cause", cause),
 	)
 }
 
-func (log *Logger) StartImport(kind string) {
-	log.Zap.Info("start import", zap.String("kind", kind))
+func StartImport(log *zap.Logger, kind string) {
+	log.Info("start import", zap.String("kind", kind))
 }
 
-func (log *Logger) EndImport(kind string, result *db.Result) {
-	log.Zap.Info(
+func EndImport(log *zap.Logger, kind string, result *DbResult) {
+	log.Info(
 		"end import",
 		zap.String("kind", kind),
 		zap.Int("inserted", result.Inserted),
@@ -43,16 +38,16 @@ func (log *Logger) EndImport(kind string, result *db.Result) {
 	)
 }
 
-func (log *Logger) StartTermImport(kind string, termId int) {
-	log.Zap.Info(
+func StartTermImport(log *zap.Logger, kind string, termId int) {
+	log.Info(
 		"start import",
 		zap.String("kind", kind),
 		zap.Int("term", termId),
 	)
 }
 
-func (log *Logger) EndTermImport(kind string, termId int, result *db.Result) {
-	log.Zap.Info(
+func EndTermImport(log *zap.Logger, kind string, termId int, result *DbResult) {
+	log.Info(
 		"end import",
 		zap.String("kind", kind),
 		zap.Int("term", termId),
@@ -63,15 +58,15 @@ func (log *Logger) EndTermImport(kind string, termId int, result *db.Result) {
 	)
 }
 
-func (log *Logger) StartVacuum(kind string) {
-	log.Zap.Info(
+func StartVacuum(log *zap.Logger, kind string) {
+	log.Info(
 		"start vacuum",
 		zap.String("kind", kind),
 	)
 }
 
-func (log *Logger) EndVacuum(kind string, deleted int) {
-	log.Zap.Info(
+func EndVacuum(log *zap.Logger, kind string, deleted int) {
+	log.Info(
 		"end vacuum",
 		zap.String("kind", kind),
 		zap.Int("deleted", deleted),

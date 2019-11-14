@@ -1,10 +1,13 @@
 package exam
 
-import "flow/worker/importer/uw/state"
+import (
+  "flow/common/state"
+  "flow/worker/importer/uw/log"
+)
 
 func Vacuum(state *state.State) error {
+	log.StartVacuum(state.Log, "exam")
 	// Exams cascade from sections, so no deletion is necessary
-	state.Log.StartVacuum("exam")
-	state.Log.EndVacuum("exam", 0)
+	log.EndVacuum(state.Log, "exam", 0)
 	return nil
 }

@@ -3,8 +3,8 @@ package course
 import (
 	"fmt"
 
+	"flow/common/util"
 	"flow/worker/importer/uw/api"
-	"flow/worker/importer/uw/util"
 )
 
 type empty struct{}
@@ -12,8 +12,8 @@ type Semaphore chan empty
 
 const RateLimit = 20
 
-func FetchAll(api *api.Api) ([]Course, error) {
-	handles, err := FetchHandles(api)
+func FetchAll(client *api.Client) ([]Course, error) {
+	handles, err := FetchHandles(client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch handles: %w", err)
 	}
@@ -22,7 +22,7 @@ func FetchAll(api *api.Api) ([]Course, error) {
 	datachan := make(chan *Course, len(handles))
 	errorchan := make(chan error, len(handles))
 	for _, handle := range handles {
-		go asyncFetchByHandle(api, handle, sema, datachan, errorchan)
+		go asyncFetchByHandle(client, handle, sema, datachan, errorchan)
 	}
 
 	courses := make([]Course, len(handles))
@@ -38,11 +38,11 @@ func FetchAll(api *api.Api) ([]Course, error) {
 }
 
 func asyncFetchByHandle(
-	api *api.Api, handle CourseHandle,
+	client *api.Client, handle CourseHandle,
 	sema Semaphore, datachan chan *Course, errorchan chan error,
 ) {
 	sema <- empty{}
-	course, err := FetchByHandle(api, handle)
+	course, err := FetchByHandle(client, handle)
 	if err != nil {
 		errorchan <- err
 	} else {
@@ -51,21 +51,21 @@ func asyncFetchByHandle(
 	<-sema
 }
 
-func FetchByHandle(api *api.Api, handle CourseHandle) (*Course, error) {
+func FetchByHandle(client *api.Client, handle CourseHandle) (*Course, error) {
 	var course Course
 	endpoint := fmt.Sprintf("courses/%s/%s", handle.Subject, handle.Number)
-	err := api.Getv2(endpoint, &course)
+	err := client.Getv2(endpoint, &course)
 	return &course, err
 }
 
-func FetchHandles(api *api.Api) ([]CourseHandle, error) {
+func FetchHandles(client *api.Client) ([]CourseHandle, error) {
 	handles := make([]CourseHandle, 0)
 	seenHandle := make(map[string]bool)
 	// We are only intersted in the two upcoming terms
 	termIds := []int{util.CurrentTermId(), util.NextTermId()}
 	// Fetch hanles termwise with deduplication
 	for _, termId := range termIds {
-		termHandles, err := FetchHandlesByTerm(api, termId)
+		termHandles, err := FetchHandlesByTerm(client, termId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
 		}
@@ -79,9 +79,9 @@ func FetchHandles(api *api.Api) ([]CourseHandle, error) {
 	return handles, nil
 }
 
-func FetchHandlesByTerm(api *api.Api, termId int) ([]CourseHandle, error) {
+func FetchHandlesByTerm(client *api.Client, termId int) ([]CourseHandle, error) {
 	var handles []CourseHandle
 	endpoint := fmt.Sprintf("terms/%d/courses", termId)
-	err := api.Getv2(endpoint, &handles)
+	err := client.Getv2(endpoint, &handles)
 	return handles, err
 }

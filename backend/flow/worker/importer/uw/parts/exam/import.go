@@ -3,13 +3,16 @@ package exam
 import (
 	"fmt"
 
-	"flow/worker/importer/uw/state"
-	"flow/worker/importer/uw/util"
+	"flow/common/state"
+	"flow/common/util"
+	"flow/worker/importer/uw/api"
+	"flow/worker/importer/uw/log"
 )
 
-func ImportByTerm(state *state.State, termId int) error {
-	state.Log.StartTermImport("exam", termId)
-	apiExams, err := FetchByTerm(state.Api, termId)
+func ImportByTerm(state *state.State, client *api.Client, termId int) error {
+	log.StartTermImport(state.Log, "exam", termId)
+
+	apiExams, err := FetchByTerm(client, termId)
 	if err != nil {
 		return fmt.Errorf("failed to fetch exams: %w", err)
 	}
@@ -19,15 +22,15 @@ func ImportByTerm(state *state.State, termId int) error {
 		return fmt.Errorf("failed to convert exams: %w", err)
 	}
 
-	result, err := InsertAll(state.Db, exams)
+	result, err := InsertAll(state.Ctx, state.Db, exams)
 	if err != nil {
 		return fmt.Errorf("failed to insert exams: %w", err)
 	}
 
-	state.Log.EndTermImport("exam", termId, result)
+	log.EndTermImport(state.Log, "exam", termId, result)
 	return nil
 }
 
-func ImportAll(state *state.State) error {
-	return ImportByTerm(state, util.CurrentTermId())
+func ImportAll(state *state.State, client *api.Client) error {
+	return ImportByTerm(state, client, util.CurrentTermId())
 }

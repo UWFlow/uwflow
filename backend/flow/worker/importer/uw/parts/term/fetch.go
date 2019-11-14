@@ -2,8 +2,8 @@ package term
 
 import "flow/worker/importer/uw/api"
 
-func FetchAll(api *api.Api) ([]ApiEvent, error) {
+func FetchAll(client *api.Client) ([]ApiEvent, error) {
 	var events []ApiEvent
-	err := api.Getv3("ImportantDates", &events)
+	err := client.Getv3("ImportantDates", &events)
 	return events, err
 }

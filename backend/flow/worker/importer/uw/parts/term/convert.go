@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"flow/worker/importer/uw/util"
+	"flow/common/util"
 )
 
 // This is *almost* ISO8601, but ever so slightly off (no timezone)

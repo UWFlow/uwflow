@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"flow/common/util"
 	"flow/worker/importer/uw/parts/exam"
-	"flow/worker/importer/uw/test"
 )
 
 const emptyExam = `
@@ -69,13 +69,13 @@ const rangeExam = `
 }
 `
 
-func TestConvert(t *testing.T) {
+func TestConvertExam(t *testing.T) {
 	inputStrings := []string{rangeExam, separateExam}
 	inputs := make([]exam.ApiExam, len(inputStrings))
 	for i, inputString := range inputStrings {
 		json.Unmarshal([]byte(inputString), &inputs[i])
 	}
-	want := []test.Outcome{
+	want := []util.Outcome{
 		//{Value: []exam.Exam{}},
 		{
 			Value: []exam.Exam{
@@ -83,22 +83,22 @@ func TestConvert(t *testing.T) {
 					CourseCode:   "cs350",
 					SectionName:  "LEC 001",
 					Term:         1199,
-					Location:     test.StringPointerTo("PAC 1, 2, 3"),
-					StartSeconds: test.IntPointerTo(70200),
-					EndSeconds:   test.IntPointerTo(79200),
-					Day:          test.StringPointerTo("Th"),
-					Date:         test.TimePointerTo(time.Date(2019, 12, 12, 0, 0, 0, 0, time.UTC)),
+					Location:     util.StringToPointer("PAC 1, 2, 3"),
+					StartSeconds: util.IntToPointer(70200),
+					EndSeconds:   util.IntToPointer(79200),
+					Day:          util.StringToPointer("Th"),
+					Date:         util.TimeToPointer(time.Date(2019, 12, 12, 0, 0, 0, 0, time.UTC)),
 					IsTba:        false,
 				},
 				{
 					CourseCode:   "cs350",
 					SectionName:  "LEC 002",
 					Term:         1199,
-					Location:     test.StringPointerTo("PAC 1, 2, 3"),
-					StartSeconds: test.IntPointerTo(70200),
-					EndSeconds:   test.IntPointerTo(79200),
-					Day:          test.StringPointerTo("Th"),
-					Date:         test.TimePointerTo(time.Date(2019, 12, 12, 0, 0, 0, 0, time.UTC)),
+					Location:     util.StringToPointer("PAC 1, 2, 3"),
+					StartSeconds: util.IntToPointer(70200),
+					EndSeconds:   util.IntToPointer(79200),
+					Day:          util.StringToPointer("Th"),
+					Date:         util.TimeToPointer(time.Date(2019, 12, 12, 0, 0, 0, 0, time.UTC)),
 					IsTba:        false,
 				},
 			},
@@ -109,33 +109,33 @@ func TestConvert(t *testing.T) {
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 001",
 					Term:         1199,
-					Location:     test.StringPointerTo("M3 1006"),
-					StartSeconds: test.IntPointerTo(45000),
-					EndSeconds:   test.IntPointerTo(54000),
-					Day:          test.StringPointerTo("T"),
-					Date:         test.TimePointerTo(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
+					Location:     util.StringToPointer("M3 1006"),
+					StartSeconds: util.IntToPointer(45000),
+					EndSeconds:   util.IntToPointer(54000),
+					Day:          util.StringToPointer("T"),
+					Date:         util.TimeToPointer(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
 					IsTba:        false,
 				},
 				{
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 003",
 					Term:         1199,
-					Location:     test.StringPointerTo("M3 1006"),
-					StartSeconds: test.IntPointerTo(45000),
-					EndSeconds:   test.IntPointerTo(54000),
-					Day:          test.StringPointerTo("T"),
-					Date:         test.TimePointerTo(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
+					Location:     util.StringToPointer("M3 1006"),
+					StartSeconds: util.IntToPointer(45000),
+					EndSeconds:   util.IntToPointer(54000),
+					Day:          util.StringToPointer("T"),
+					Date:         util.TimeToPointer(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
 					IsTba:        false,
 				},
 				{
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 002",
 					Term:         1199,
-					Location:     test.StringPointerTo("PAC 1"),
-					StartSeconds: test.IntPointerTo(45000),
-					EndSeconds:   test.IntPointerTo(54000),
-					Day:          test.StringPointerTo("T"),
-					Date:         test.TimePointerTo(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
+					Location:     util.StringToPointer("PAC 1"),
+					StartSeconds: util.IntToPointer(45000),
+					EndSeconds:   util.IntToPointer(54000),
+					Day:          util.StringToPointer("T"),
+					Date:         util.TimeToPointer(time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)),
 					IsTba:        false,
 				},
 			},
