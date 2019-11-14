@@ -3,9 +3,8 @@ package term
 import (
   "context"
 
+	"flow/common/db"
   "flow/worker/importer/uw/log"
-
-  "github.com/jackc/pgx/v4/pgxpool"
 )
 
 const InsertQuery = `
@@ -14,7 +13,7 @@ ON CONFLICT (term) DO UPDATE
 SET start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date
 `
 
-func InsertAll(ctx context.Context, conn *pgxpool.Pool, terms []Term) (*log.DbResult, error) {
+func InsertAll(ctx context.Context, conn db.Conn, terms []Term) (*log.DbResult, error) {
 	var result log.DbResult
 
 	for _, term := range terms {

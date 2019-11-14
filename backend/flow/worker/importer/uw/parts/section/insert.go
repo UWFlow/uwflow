@@ -7,10 +7,10 @@ import (
 	"os"
 	"sync"
 
+	"flow/common/db"
 	"flow/worker/importer/uw/log"
 
   "github.com/jackc/pgx/v4"
-  "github.com/jackc/pgx/v4/pgxpool"
 )
 
 const SetupSectionQuery = `
@@ -122,7 +122,7 @@ func asyncSendBatch(wg sync.WaitGroup, batch []EmailItem) {
 	wg.Done()
 }
 
-func InsertAllSections(ctx context.Context, conn *pgxpool.Pool, sections []Section) (*log.DbResult, error) {
+func InsertAllSections(ctx context.Context, conn db.Conn, sections []Section) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin(ctx)
@@ -284,7 +284,7 @@ FROM _section_meeting_delta d
 
 const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
 
-func InsertAllMeetings(ctx context.Context, conn *pgxpool.Pool, meetings []Meeting) (*log.DbResult, error) {
+func InsertAllMeetings(ctx context.Context, conn db.Conn, meetings []Meeting) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin(ctx)
@@ -369,7 +369,7 @@ WHERE p.id IS NULL
 
 const TeardownProfQuery = `DROP TABLE _prof_delta`
 
-func InsertAllProfs(ctx context.Context, conn *pgxpool.Pool, profs []Prof) (*log.DbResult, error) {
+func InsertAllProfs(ctx context.Context, conn db.Conn, profs []Prof) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin(ctx)

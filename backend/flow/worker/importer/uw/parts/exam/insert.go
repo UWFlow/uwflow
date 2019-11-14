@@ -4,10 +4,10 @@ import (
   "context"
 	"fmt"
 
+  "flow/common/db"
   "flow/worker/importer/uw/log"
 
   "github.com/jackc/pgx/v4"
-  "github.com/jackc/pgx/v4/pgxpool"
 )
 
 const SetupExamQuery = `
@@ -67,7 +67,7 @@ WHERE se.section_id IS NULL
 
 const TeardownExamQuery = `DROP TABLE _section_exam_delta`
 
-func InsertAll(ctx context.Context, conn *pgxpool.Pool, exams []Exam) (*log.DbResult, error) {
+func InsertAll(ctx context.Context, conn db.Conn, exams []Exam) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin(ctx)

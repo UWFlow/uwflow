@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"flow/common/db"
 	"flow/worker/importer/uw/log"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -46,7 +46,7 @@ WHERE c.id IS NULL
 
 const TeardownCourseQuery = `DROP TABLE _course_delta`
 
-func InsertAll(ctx context.Context, conn *pgxpool.Pool, courses []Course) (*log.DbResult, error) {
+func InsertAll(ctx context.Context, conn db.Conn, courses []Course) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin(ctx)

@@ -4,12 +4,12 @@ import (
   "context"
 	"time"
 
-  "github.com/jackc/pgx/v4/pgxpool"
+  "flow/common/db"
 )
 
 const SelectQuery = `SELECT term, start_date, end_date FROM term_date`
 
-func SelectAll(ctx context.Context, conn *pgxpool.Pool) ([]Term, error) {
+func SelectAll(ctx context.Context, conn db.Conn) ([]Term, error) {
 	var terms []Term
 
 	rows, err := conn.Query(ctx, SelectQuery)

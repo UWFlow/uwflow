@@ -7,7 +7,6 @@ import (
 	"flow/common/env"
 	"flow/common/db"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 )
 
@@ -15,11 +14,12 @@ import (
 // The same State object is shared between many goroutines.
 // As such, it must only contain thread-safe entities.
 // - env.Environment is read-only after initialization, thus thread-safe.
-// - context.Context, pgxpool.Pool and zap.Logger are documented as thread-safe.
+// - db.Conn is documented as thread-safe in db.go
+// - context.Context and zap.Logger are documented as thread-safe by vendors.
 type State struct {
   Ctx context.Context
+	Db  db.Conn
 	Env *env.Environment
-	Db  *pgxpool.Pool
 	Log *zap.Logger
 }
 
