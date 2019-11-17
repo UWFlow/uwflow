@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/smtp"
 	"os"
+	"sync"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 )
@@ -64,6 +65,8 @@ WHERE d.enrollment_total < d.enrollment_capacity
 
 const TeardownSectionQuery = `DROP TABLE _course_section_delta`
 
+const MaxNumWorkers = 8
+
 func SendNotificationEmail(to string, subject string, body string) error {
 	// Set up authentication information for Gmail server
 	from := os.Getenv("GMAIL_USER")
@@ -77,6 +80,14 @@ func SendNotificationEmail(to string, subject string, body string) error {
 		return fmt.Errorf("failed to send email to %w", to)
 	}
 	return nil
+}
+
+func asyncSendNotificationEmail(wg sync.WaitGroup, to string, subject string, body string) {
+	err := SendNotificationEmail(to, subject, body)
+	if err != nil {
+		// TODO: Log error
+	}
+	wg.Done()
 }
 
 func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
@@ -136,12 +147,27 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 			return &result, fmt.Errorf("failed to get subscriber emails: %w", err)
 		}
 
-		for users.Next() {
-			var email string
-			users.Scan(&email)
-			go SendNotificationEmail(email, fmt.Sprintf("%s: %s", courseName, section), "Body")
-		}
+		// Ideally we should definitely decouple this from uwapi-importer
+		finished := false
+		var wg sync.WaitGroup
 
+		for !finished {
+			for i := 0; i < MaxNumWorkers; i++ {
+				if users.Next() {
+					wg.Add(1)
+					var email string
+					users.Scan(&email)
+					go asyncSendNotificationEmail(
+						wg,
+						email,
+						fmt.Sprintf("%s: %s", courseName, section),
+						"Insert Body Here")
+				} else {
+					finished = true
+					break
+				}
+			}
+		}
 		users.Close()
 	}
 
