@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/state"
 )
 
 type Course struct {
@@ -45,7 +45,7 @@ GROUP BY p.id
 `
 
 func dump(state *state.State) (*Response, error) {
-	rows, err := state.Conn.Query(CourseQuery)
+	rows, err := state.Db.Query(CourseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query database: %v", err)
 	}
@@ -61,7 +61,7 @@ func dump(state *state.State) (*Response, error) {
 		response.Courses = append(response.Courses, c)
 	}
 
-	rows, err = state.Conn.Query(ProfQuery)
+	rows, err = state.Db.Query(ProfQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query database: %v", err)
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"flow/common/env"
 	"flow/common/db"
+	"flow/common/env"
 
 	"go.uber.org/zap"
 )
@@ -15,10 +15,9 @@ import (
 // As such, it must only contain thread-safe entities.
 // - env.Environment is read-only after initialization, thus thread-safe.
 // - db.Conn is documented as thread-safe in db.go
-// - context.Context and zap.Logger are documented as thread-safe.
+// - zap.Logger is documented as thread-safe by authors.
 type State struct {
-  Ctx context.Context
-	Db  db.Conn
+	Db  *db.Conn
 	Env *env.Environment
 	Log *zap.Logger
 }
@@ -39,5 +38,5 @@ func New(ctx context.Context) (*State, error) {
 		return nil, fmt.Errorf("connecting to database failed: %w", err)
 	}
 
-  return &State{Ctx: ctx, Db: db, Env: env, Log: log}, nil
+	return &State{Db: db, Env: env, Log: log}, nil
 }

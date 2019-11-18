@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/state"
+
 	"github.com/go-chi/chi"
 )
 
@@ -110,7 +111,7 @@ WHERE us.user_id = $1
 
 func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
 	var events []*PostgresEvent
-	rows, err := state.Conn.Query(SelectEventQuery, userId)
+	rows, err := state.Db.Query(SelectEventQuery, userId)
 	if err != nil {
 		return nil, err
 	}

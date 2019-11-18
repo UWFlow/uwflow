@@ -5,10 +5,10 @@ import (
 	"path"
 	"strconv"
 
+	"flow/common/db"
 	"flow/common/state"
 	"flow/common/util"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -38,11 +38,11 @@ func readMongoSchedules(rootPath string) []MongoSchedule {
 }
 
 func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	schedules := readMongoSchedules(state.Env.MongoDumpPath)
 	preparedSchedules := make([][]interface{}, 0)
@@ -77,14 +77,13 @@ func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"user_schedule"},
+		db.Identifier{"user_schedule"},
 		[]string{"user_id", "section_id"},
-		pgx.CopyFromRows(preparedSchedules),
+		preparedSchedules,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

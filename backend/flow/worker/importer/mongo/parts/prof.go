@@ -5,9 +5,9 @@ import (
 	"path"
 	"strings"
 
+	"flow/common/db"
 	"flow/common/state"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -36,11 +36,11 @@ func readMongoProfs(rootPath string) []MongoProf {
 }
 
 func ImportProfs(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	idMap.Prof = make(map[string]int)
 	profs := readMongoProfs(state.Env.MongoDumpPath)
@@ -53,14 +53,13 @@ func ImportProfs(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"prof"},
+		db.Identifier{"prof"},
 		[]string{"name", "code"},
-		pgx.CopyFromRows(preparedProfs),
+		preparedProfs,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

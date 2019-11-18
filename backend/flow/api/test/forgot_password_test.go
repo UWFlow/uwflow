@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"flow/api/auth"
-	"flow/api/state"
+	"flow/common/state"
 )
 
 func TestSendEmailInvalidEmail(t *testing.T) {

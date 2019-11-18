@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/state"
 )
 
 type sendEmailRequest struct {
@@ -69,7 +69,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 	// Check db if email exists and get corresponding user_id
 	var userID int
 	var join_source string
-	err = state.Conn.QueryRow(
+	err = state.Db.QueryRow(
 		`SELECT id, join_source FROM public.user WHERE email = $1`,
 		*body.Email,
 	).Scan(&userID, &join_source)
@@ -93,7 +93,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Attempt to insert generated code and userID into secret.password_reset table
-	_, err = state.Conn.Exec(
+	_, err = state.Db.Exec(
 		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)`,
 		userID, code, expiry,
 	)
@@ -115,7 +115,7 @@ func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request)
 
 	// Check that key exists in secret.password_reset table
 	var keyExists bool
-	err := state.Conn.QueryRow(
+	err := state.Db.QueryRow(
 		`SELECT EXISTS(SELECT 1 FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)`,
 		key[0], time.Now(),
 	).Scan(&keyExists)
@@ -142,7 +142,7 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 	// Check that password reset key is valid and fetch corresponding userID and expiry
 	var expiry time.Time
 	var userID int
-	err = state.Conn.QueryRow(
+	err = state.Db.QueryRow(
 		`SELECT user_id, expiry FROM secret.password_reset WHERE verify_key = $1`,
 		*body.Key,
 	).Scan(&userID, &expiry)
@@ -162,7 +162,7 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 		serde.Error(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
-	_, err = state.Conn.Exec(
+	_, err = state.Db.Exec(
 		`UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2`,
 		passwordHash, userID,
 	)

@@ -6,7 +6,8 @@ import (
 	"net/http"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/state"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -66,14 +67,14 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 	}
 
 	var userID int
-	err = state.Conn.QueryRow(
+	err = state.Db.QueryRow(
 		`INSERT INTO "user"(full_name, picture_url, email, join_source) VALUES ($1, $2, $3, $4) RETURNING id`,
 		tokenClaims.Name, tokenClaims.PictureUrl, tokenClaims.Email, "google",
 	).Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
-	_, err = state.Conn.Exec(
+	_, err = state.Db.Exec(
 		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
 		userID, googleID,
 	)
@@ -106,9 +107,10 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// tokenInfo provides the user's unique Google id as UserId
 	// so we can check if the Google id already exists
 	var userID int
-	state.Conn.QueryRow(
+	state.Db.QueryRow(
 		"SELECT user_id FROM secret.user_google WHERE google_id = $1",
-		googleID).Scan(&userID)
+		googleID,
+	).Scan(&userID)
 
 	// If the Google id is new, we must register the user
 	if userID == 0 {

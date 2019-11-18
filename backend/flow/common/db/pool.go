@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"time"
 
-  "flow/common/env"
+	"flow/common/env"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
-
 
 // Connection to database must complete within this timeframe.
 const ConnectTimeout = time.Second * 10
 
 // Connect to database.
-func ConnectPool(ctx context.Context, env *env.Environment) (Conn, error) {
+func ConnectPool(ctx context.Context, env *env.Environment) (*Conn, error) {
 	uri := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		env.PostgresUser, env.PostgresPassword,
@@ -24,9 +23,9 @@ func ConnectPool(ctx context.Context, env *env.Environment) (Conn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, ConnectTimeout)
 	defer cancel()
 
-  pool, err := pgxpool.Connect(connectCtx, uri)
-  if err != nil {
-    return nil, err
-  }
-  return Conn(pool), nil
+	pool, err := pgxpool.Connect(connectCtx, uri)
+	if err != nil {
+		return nil, err
+	}
+	return &Conn{ctx: ctx, pool: pool}, nil
 }

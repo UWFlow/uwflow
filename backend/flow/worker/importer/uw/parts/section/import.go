@@ -23,21 +23,21 @@ func ImportByTerm(state *state.State, client *api.Client, term *term.Term) error
 	}
 
 	log.StartTermImport(state.Log, "prof", term.Id)
-	result, err := InsertAllProfs(state.Ctx, state.Db, converted.Profs)
+	result, err := InsertAllProfs(state.Db, converted.Profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
 	log.EndTermImport(state.Log, "prof", term.Id, result)
 
 	log.StartTermImport(state.Log, "section", term.Id)
-	result, err = InsertAllSections(state.Ctx, state.Db, converted.Sections)
+	result, err = InsertAllSections(state.Db, converted.Sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
 	log.EndTermImport(state.Log, "section", term.Id, result)
 
 	log.StartTermImport(state.Log, "meeting", term.Id)
-	result, err = InsertAllMeetings(state.Ctx, state.Db, converted.Meetings)
+	result, err = InsertAllMeetings(state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}
@@ -49,7 +49,7 @@ func ImportByTerm(state *state.State, client *api.Client, term *term.Term) error
 func ImportAll(state *state.State, client *api.Client) error {
 	currentTermId := util.CurrentTermId()
 	nextTermId := util.NextTermId()
-	terms, err := term.SelectAll(state.Ctx, state.Db)
+	terms, err := term.SelectAll(state.Db)
 	if err != nil {
 		return fmt.Errorf("failed to load terms: %w", err)
 	}

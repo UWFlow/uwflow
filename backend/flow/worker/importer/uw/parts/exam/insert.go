@@ -1,13 +1,10 @@
 package exam
 
 import (
-	"context"
 	"fmt"
 
 	"flow/common/db"
 	"flow/worker/importer/uw/log"
-
-	"github.com/jackc/pgx/v4"
 )
 
 const SetupExamQuery = `
@@ -67,16 +64,16 @@ WHERE se.section_id IS NULL
 
 const TeardownExamQuery = `DROP TABLE _section_exam_delta`
 
-func InsertAll(ctx context.Context, conn db.Conn, exams []Exam) (*log.DbResult, error) {
+func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 	var result log.DbResult
 
-	tx, err := conn.Begin(ctx)
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
-	_, err = tx.Exec(ctx, SetupExamQuery)
+	_, err = tx.Exec(SetupExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -90,36 +87,35 @@ func InsertAll(ctx context.Context, conn db.Conn, exams []Exam) (*log.DbResult, 
 	}
 
 	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"_section_exam_delta"},
+		db.Identifier{"_section_exam_delta"},
 		[]string{
 			"course_code", "section_name", "term", "location",
 			"start_seconds", "end_seconds", "date", "day", "is_tba",
 		},
-		pgx.CopyFromRows(preparedExams),
+		preparedExams,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(ctx, UpdateExamQuery)
+	tag, err := tx.Exec(UpdateExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(ctx, InsertExamQuery)
+	tag, err = tx.Exec(InsertExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(ctx, TeardownExamQuery)
+	_, err = tx.Exec(TeardownExamQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}

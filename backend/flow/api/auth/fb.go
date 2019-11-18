@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/db"
+	"flow/common/state"
 )
 
 type fbAuthLoginRequest struct {
@@ -44,10 +45,10 @@ func GetFbUserInfo(fbID string, accessToken string, fields []string) (map[string
 }
 
 // Fetches the fb app specific token
-func GetFbAppToken(state *state.State) (string, error) {
+func GetFbAppToken(fbAppId string, fbAppSecret string) (string, error) {
 	url := fmt.Sprintf(
 		"https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&grant_type=client_credentials",
-		state.Env.FbAppID, state.Env.FbAppSecret,
+		fbAppId, fbAppSecret,
 	)
 	response, err := http.Get(url)
 	if err != nil {
@@ -86,7 +87,7 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 }
 
 // Registration for new fb user
-func registerFbUser(state *state.State, accessToken string, fbID string) (int, error) {
+func registerFbUser(conn *db.Conn, accessToken string, fbID string) (int, error) {
 	// gets user's name from fb graph API
 	fields := []string{"name", "email"}
 	userInfo, err := GetFbUserInfo(fbID, accessToken, fields)
@@ -106,7 +107,7 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 
 	// insert into "user" table
 	var userID int
-	err = state.Conn.QueryRow(
+	err = conn.QueryRow(
 		`INSERT INTO "user"(full_name, picture_url, email, join_source) VALUES ($1, $2, $3, $4) RETURNING id`,
 		userInfo["name"].(string), profilePicURL, userInfo["email"].(string), "facebook",
 	).Scan(&userID)
@@ -114,7 +115,7 @@ func registerFbUser(state *state.State, accessToken string, fbID string) (int, e
 		return 0, err
 	}
 	// insert into user_fb table
-	_, err = state.Conn.Exec(
+	_, err = conn.Exec(
 		"INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)",
 		userID, fbID,
 	)
@@ -138,7 +139,7 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	// fetch fb app specific token
-	appToken, err := GetFbAppToken(state)
+	appToken, err := GetFbAppToken(state.Env.FbAppId, state.Env.FbAppSecret)
 	if err != nil {
 		serde.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -153,13 +154,14 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 
 	// check if fb user already exists
 	var userID int
-	state.Conn.QueryRow(
+	state.Db.QueryRow(
 		"SELECT user_id FROM secret.user_fb WHERE fb_id = $1",
-		fbID).Scan(&userID)
+		fbID,
+	).Scan(&userID)
 
 	// register new user if doesn't exist in db
 	if userID == 0 {
-		userID, err = registerFbUser(state, body.AccessToken, fbID)
+		userID, err = registerFbUser(state.Db, body.AccessToken, fbID)
 		if err != nil {
 			serde.Error(w, err.Error(), http.StatusInternalServerError)
 			return

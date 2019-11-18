@@ -1,14 +1,11 @@
 package course
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"flow/common/db"
 	"flow/worker/importer/uw/log"
-
-	"github.com/jackc/pgx/v4"
 )
 
 const SetupCourseQuery = `
@@ -46,16 +43,16 @@ WHERE c.id IS NULL
 
 const TeardownCourseQuery = `DROP TABLE _course_delta`
 
-func InsertAll(ctx context.Context, conn db.Conn, courses []Course) (*log.DbResult, error) {
+func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	var result log.DbResult
 
-	tx, err := conn.Begin(ctx)
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
-	_, err = tx.Exec(ctx, SetupCourseQuery)
+	_, err = tx.Exec(SetupCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -77,33 +74,32 @@ func InsertAll(ctx context.Context, conn db.Conn, courses []Course) (*log.DbResu
 	}
 
 	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"_course_delta"},
+		db.Identifier{"_course_delta"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
-		pgx.CopyFromRows(preparedCourses),
+		preparedCourses,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(ctx, UpdateCourseQuery)
+	tag, err := tx.Exec(UpdateCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(ctx, InsertCourseQuery)
+	tag, err = tx.Exec(InsertCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(ctx, TeardownCourseQuery)
+	_, err = tx.Exec(TeardownCourseQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}

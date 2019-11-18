@@ -16,7 +16,7 @@ func ImportAll(state *state.State, client *api.Client) error {
 		return fmt.Errorf("failed to fetch courses: %w", err)
 	}
 
-	result, err := InsertAll(state.Ctx, state.Db, courses)
+	result, err := InsertAll(state.Db, courses)
 	if err != nil {
 		return fmt.Errorf("failed to insert courses: %w", err)
 	}

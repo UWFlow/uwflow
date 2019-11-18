@@ -10,8 +10,8 @@ import (
 	"flow/api/parse/schedule"
 	"flow/api/parse/transcript"
 	"flow/api/serde"
-	"flow/api/state"
-	"flow/api/util"
+	"flow/common/state"
+	"flow/common/util"
 )
 
 type ScheduleParseRequest struct {
@@ -54,7 +54,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	tx, err := state.Conn.Begin()
+	tx, err := state.Db.Begin()
 	if err != nil {
 		serde.Error(
 			w,
@@ -134,7 +134,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 		serde.Error(w, fmt.Sprintf("failed to parse schedule: %v", err), http.StatusBadRequest)
 		return
 	}
-	if scheduleSummary.Term < util.CurrentPostgresTerm() {
+	if scheduleSummary.Term < util.CurrentTermId() {
 		serde.Error(
 			w,
 			fmt.Sprintf("cannot import schedule for past term %d", scheduleSummary.Term),
@@ -143,7 +143,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	tx, err := state.Conn.Begin()
+	tx, err := state.Db.Begin()
 	if err != nil {
 		serde.Error(
 			w,

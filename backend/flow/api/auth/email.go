@@ -7,7 +7,8 @@ import (
 	"net/http"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/db"
+	"flow/common/state"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -36,12 +37,12 @@ const fakeHash = "$2b$12$.6SjO/j0qspENIWCnVAk..34gBq5TGG1FtBsnfMRCzsrKg3Tm7XsG"
 // Default value for bcrypt cost/difficulty
 const bcryptCost = 10
 
-func authenticate(state *state.State, email string, password []byte) (int, error) {
+func authenticate(conn *db.Conn, email string, password []byte) (int, error) {
 	var id int
 	var join_source string
 	var hash []byte
 
-	err := state.Conn.QueryRow(
+	err := conn.QueryRow(
 		"SELECT id, join_source FROM public.user WHERE email = $1",
 		email,
 	).Scan(&id, &join_source)
@@ -51,7 +52,7 @@ func authenticate(state *state.State, email string, password []byte) (int, error
 		return id, err
 	}
 
-	err = state.Conn.QueryRow(
+	err = conn.QueryRow(
 		"SELECT password_hash FROM secret.user_email WHERE user_id = $1",
 		id,
 	).Scan(&hash)
@@ -76,7 +77,7 @@ func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	id, err := authenticate(state, body.Email, []byte(body.Password))
+	id, err := authenticate(state.Db, body.Email, []byte(body.Password))
 	if err != nil {
 		// Do not reveal what went wrong: this could be exploitable.
 		// However, it is still a good idea to retain the error in the logs.
@@ -85,16 +86,15 @@ func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	encoder := json.NewEncoder(w)
 	data := AuthResponse{
 		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
 		ID:    id,
 	}
-	encoder.Encode(data)
+	json.NewEncoder(w).Encode(data)
 }
 
-func register(state *state.State, name string, email string, password []byte) (int, error) {
-	tx, err := state.Conn.Begin()
+func register(conn *db.Conn, name string, email string, password []byte) (int, error) {
+	tx, err := conn.Begin()
 	if err != nil {
 		return 0, fmt.Errorf("failed to open transaction: %v", err)
 	}
@@ -158,15 +158,15 @@ func RegisterEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := register(state, *body.Name, *body.Email, []byte(*body.Password))
+	id, err := register(state.Db, *body.Name, *body.Email, []byte(*body.Password))
 	if err != nil {
 		serde.Error(w, fmt.Sprintf("failed to register: %v", err), http.StatusBadRequest)
 		return
 	}
-	encoder := json.NewEncoder(w)
+
 	data := AuthResponse{
 		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
 		ID:    id,
 	}
-	encoder.Encode(data)
+	json.NewEncoder(w).Encode(data)
 }

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"flow/api/util"
+	"flow/common/util"
 )
 
 type TermSummary struct {
@@ -72,7 +72,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 	for i, j := 0, 0; i < len(terms); i++ {
 		season := text[terms[i][2]:terms[i][3]]
 		year := text[terms[i][4]:terms[i][5]]
-		term, err := util.HumanToPostgresTerm(season, year)
+		term, err := util.TermSeasonYearToId(season, year)
 		if err != nil {
 			return nil, fmt.Errorf("\"%s %s\" is not a term: %v", season, year, err)
 		}

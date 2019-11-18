@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"flow/common/db"
 	"flow/common/state"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -42,11 +42,11 @@ func readMongoCourses(rootPath string) []MongoCourse {
 }
 
 func ImportCourses(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	idMap.Course = make(map[string]int)
 	courses := readMongoCourses(state.Env.MongoDumpPath)
@@ -64,15 +64,14 @@ func ImportCourses(state *state.State, idMap *IdentifierMap) error {
 		}
 	}
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"course"},
+		db.Identifier{"course"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
-		pgx.CopyFromRows(preparedCourses),
+		preparedCourses,
 	)
 	if err != nil {
 		return err
 	}
-	err = tx.Commit(state.Ctx)
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
@@ -80,11 +79,11 @@ func ImportCourses(state *state.State, idMap *IdentifierMap) error {
 }
 
 func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	courses := readMongoCourses(state.Env.MongoDumpPath)
 	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
@@ -147,23 +146,21 @@ func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"course_prerequisite"},
+		db.Identifier{"course_prerequisite"},
 		[]string{"course_id", "prerequisite_id", "is_corequisite"},
-		pgx.CopyFromRows(preparedPrereqs),
+		preparedPrereqs,
 	)
 	if err != nil {
 		return err
 	}
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"course_antirequisite"},
+		db.Identifier{"course_antirequisite"},
 		[]string{"course_id", "antirequisite_id"},
-		pgx.CopyFromRows(preparedAntireqs),
+		preparedAntireqs,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

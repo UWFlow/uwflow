@@ -5,10 +5,10 @@ import (
 	"path"
 	"time"
 
+	"flow/common/db"
 	"flow/common/state"
 	"flow/common/util"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -120,11 +120,11 @@ func readMongoReviews(rootPath string) []MongoReview {
 }
 
 func ImportReviews(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
@@ -216,47 +216,43 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"course_review"},
+		db.Identifier{"course_review"},
 		[]string{
 			"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful",
 			"public", "created_at", "updated_at",
 		},
-		pgx.CopyFromRows(preparedCourseReviews),
+		preparedCourseReviews,
 	)
 	if err != nil {
 		return err
 	}
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"prof_review"},
+		db.Identifier{"prof_review"},
 		[]string{
 			"course_id", "prof_id", "user_id", "text", "clear", "engaging",
 			"public", "created_at", "updated_at",
 		},
-		pgx.CopyFromRows(preparedProfReviews),
+		preparedProfReviews,
 	)
 	if err != nil {
 		return err
 	}
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"user_course_taken"},
+		db.Identifier{"user_course_taken"},
 		[]string{"course_id", "user_id", "term", "level"},
-		pgx.CopyFromRows(preparedUserCourses),
+		preparedUserCourses,
 	)
 	if err != nil {
 		return err
 	}
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"user_shortlist"},
+		db.Identifier{"user_shortlist"},
 		[]string{"course_id", "user_id"},
-		pgx.CopyFromRows(preparedUserShortlists),
+		preparedUserShortlists,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
+	"flow/common/db"
 	"flow/common/state"
 	"flow/common/util"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -134,11 +134,11 @@ func ConvertSection(section MongoSection, idMap *IdentifierMap, terms map[int]Ti
 }
 
 func ImportSections(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	var preparedSections [][]interface{}
 	var preparedMeetings [][]interface{}
@@ -146,10 +146,7 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	idMap.Section = make(map[SectionKey]int)
 	terms := make(map[int]Timeframe)
 
-	rows, err := tx.Query(
-		state.Ctx,
-		`SELECT term, start_date, end_date FROM term_date`,
-	)
+	rows, err := tx.Query(`SELECT term, start_date, end_date FROM term_date`)
 	if err != nil {
 		return nil
 	}
@@ -210,30 +207,28 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"course_section"},
+		db.Identifier{"course_section"},
 		[]string{
 			"class_number", "course_id", "section", "campus",
 			"term", "enrollment_capacity", "enrollment_total",
 		},
-		pgx.CopyFromRows(preparedSections),
+		preparedSections,
 	)
 	if err != nil {
 		return err
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"section_meeting"},
+		db.Identifier{"section_meeting"},
 		[]string{
 			"section_id", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
 			"location", "days", "is_cancelled", "is_closed", "is_tba",
 		},
-		pgx.CopyFromRows(preparedMeetings),
+		preparedMeetings,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

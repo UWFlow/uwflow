@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"flow/api/state"
+	"flow/common/state"
+
 	"github.com/dgrijalva/jwt-go"
 )
 

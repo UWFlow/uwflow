@@ -1,7 +1,6 @@
 package section
 
 import (
-	"context"
 	"fmt"
 	"net/smtp"
 	"os"
@@ -9,8 +8,6 @@ import (
 
 	"flow/common/db"
 	"flow/worker/importer/uw/log"
-
-	"github.com/jackc/pgx/v4"
 )
 
 const SetupSectionQuery = `
@@ -122,16 +119,16 @@ func asyncSendBatch(wg sync.WaitGroup, batch []EmailItem) {
 	wg.Done()
 }
 
-func InsertAllSections(ctx context.Context, conn db.Conn, sections []Section) (*log.DbResult, error) {
+func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error) {
 	var result log.DbResult
 
-	tx, err := conn.Begin(ctx)
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
-	_, err = tx.Exec(ctx, SetupSectionQuery)
+	_, err = tx.Exec(SetupSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -145,13 +142,12 @@ func InsertAllSections(ctx context.Context, conn db.Conn, sections []Section) (*
 	}
 
 	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"_course_section_delta"},
+		db.Identifier{"_course_section_delta"},
 		[]string{
 			"class_number", "course_code", "section", "campus",
 			"term", "enrollment_capacity", "enrollment_total",
 		},
-		pgx.CopyFromRows(preparedSections),
+		preparedSections,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
@@ -208,24 +204,24 @@ func InsertAllSections(ctx context.Context, conn db.Conn, sections []Section) (*
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	tag, err := tx.Exec(ctx, UpdateSectionQuery)
+	tag, err := tx.Exec(UpdateSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(ctx, InsertSectionQuery)
+	tag, err = tx.Exec(InsertSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(ctx, TeardownSectionQuery)
+	_, err = tx.Exec(TeardownSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -284,16 +280,16 @@ FROM _section_meeting_delta d
 
 const TeardownMeetingQuery = `DROP TABLE _section_meeting_delta`
 
-func InsertAllMeetings(ctx context.Context, conn db.Conn, meetings []Meeting) (*log.DbResult, error) {
+func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error) {
 	var result log.DbResult
 
-	tx, err := conn.Begin(ctx)
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
-	_, err = tx.Exec(ctx, SetupMeetingQuery)
+	_, err = tx.Exec(SetupMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -309,37 +305,36 @@ func InsertAllMeetings(ctx context.Context, conn db.Conn, meetings []Meeting) (*
 	}
 
 	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"_section_meeting_delta"},
+		db.Identifier{"_section_meeting_delta"},
 		[]string{
 			"class_number", "term", "prof_code",
 			"location", "start_seconds", "end_seconds",
 			"start_date", "end_date", "days",
 			"is_cancelled", "is_closed", "is_tba",
 		},
-		pgx.CopyFromRows(preparedMeetings),
+		preparedMeetings,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, TruncateMeetingQuery)
+	_, err = tx.Exec(TruncateMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to truncate: %w", err)
 	}
 
-	tag, err := tx.Exec(ctx, InsertMeetingQuery)
+	tag, err := tx.Exec(InsertMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(ctx, TeardownMeetingQuery)
+	_, err = tx.Exec(TeardownMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -369,16 +364,16 @@ WHERE p.id IS NULL
 
 const TeardownProfQuery = `DROP TABLE _prof_delta`
 
-func InsertAllProfs(ctx context.Context, conn db.Conn, profs []Prof) (*log.DbResult, error) {
+func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	var result log.DbResult
 
-	tx, err := conn.Begin(ctx)
+	tx, err := conn.Begin()
 	if err != nil {
 		return &result, fmt.Errorf("failed to open transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Rollback()
 
-	_, err = tx.Exec(ctx, SetupProfQuery)
+	_, err = tx.Exec(SetupProfQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to create temporary table: %w", err)
 	}
@@ -394,27 +389,26 @@ func InsertAllProfs(ctx context.Context, conn db.Conn, profs []Prof) (*log.DbRes
 	}
 
 	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"_prof_delta"},
+		db.Identifier{"_prof_delta"},
 		[]string{"name", "code"},
-		pgx.CopyFromRows(preparedProfs),
+		preparedProfs,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(ctx, InsertProfQuery)
+	tag, err := tx.Exec(InsertProfQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
-	_, err = tx.Exec(ctx, TeardownProfQuery)
+	_, err = tx.Exec(TeardownProfQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return &result, fmt.Errorf("failed to commit transaction: %w", err)
 	}

@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"flow/api/auth"
 	"flow/api/data"
 	"flow/api/parse"
-	"flow/api/state"
 	"flow/api/sub"
 	"flow/api/webcal"
+	"flow/common/state"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -17,9 +18,11 @@ import (
 
 type StatefulHandlerFunc func(*state.State, http.ResponseWriter, *http.Request)
 
-func WithState(state *state.State, handler StatefulHandlerFunc) http.HandlerFunc {
+func WithState(s *state.State, handler StatefulHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		handler(state, w, r)
+		// Put db connection in request context before entering
+		reqState := &state.State{Db: s.Db.With(r.Context()), Env: s.Env, Log: s.Log}
+		handler(reqState, w, r)
 	}
 }
 
@@ -52,11 +55,12 @@ func SetupRouter(state *state.State) *chi.Mux {
 }
 
 func main() {
-	state, err := state.Initialize()
+	ctx := context.Background()
+	state, err := state.New(ctx)
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("Failed to initialize: %v", err)
 	}
 
 	router := SetupRouter(state)
-	log.Fatalf("Error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
+	log.Fatalf("Server error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
 }

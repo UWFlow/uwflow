@@ -22,7 +22,7 @@ func ImportByTerm(state *state.State, client *api.Client, termId int) error {
 		return fmt.Errorf("failed to convert exams: %w", err)
 	}
 
-	result, err := InsertAll(state.Ctx, state.Db, exams)
+	result, err := InsertAll(state.Db, exams)
 	if err != nil {
 		return fmt.Errorf("failed to insert exams: %w", err)
 	}

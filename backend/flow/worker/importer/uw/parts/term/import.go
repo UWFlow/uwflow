@@ -21,7 +21,7 @@ func ImportAll(state *state.State, client *api.Client) error {
 		return fmt.Errorf("failed to convert terms: %w", err)
 	}
 
-	result, err := InsertAll(state.Ctx, state.Db, terms)
+	result, err := InsertAll(state.Db, terms)
 	if err != nil {
 		return fmt.Errorf("failed to insert terms: %w", err)
 	}

@@ -23,11 +23,11 @@ func TestDateToTermId(t *testing.T) {
 }
 
 func TestTermYearMonthToId(t *testing.T) {
-  inputs := []string{
-    "2019_09", "2017_05", "1175", "Fall 2017",
-  }
+	inputs := []string{
+		"2019_09", "2017_05", "1175", "Fall 2017",
+	}
 	want := []util.Outcome{
-    {Value: 1199}, {Value: 1175}, {Error: true}, {Error: true},
+		{Value: 1199}, {Value: 1175}, {Error: true}, {Error: true},
 	}
 	for i, input := range inputs {
 		got, err := util.TermYearMonthToId(input)

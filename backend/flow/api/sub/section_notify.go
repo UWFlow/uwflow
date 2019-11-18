@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"flow/api/serde"
-	"flow/api/state"
+	"flow/common/state"
 )
 
 type sectionNotifyRequest struct {
@@ -33,7 +33,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 
 	// Check section id is valid and fetch course id
 	var courseID int
-	err = state.Conn.QueryRow(
+	err = state.Db.QueryRow(
 		`SELECT course_id FROM course_section WHERE id = $1`,
 		*body.SectionID,
 	).Scan(&courseID)
@@ -75,7 +75,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 	}
 
 	// insert into section_subscriptions table
-	_, err = state.Conn.Exec(
+	_, err = state.Db.Exec(
 		"INSERT INTO section_subscriptions(user_id, section_id) VALUES ($1, $2)",
 		userID, *body.SectionID,
 	)
@@ -107,7 +107,7 @@ func UnsubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Req
 	}
 
 	// insert into section_subscriptions table
-	tag, err := state.Conn.Exec(
+	tag, err := state.Db.Exec(
 		"DELETE FROM section_subscriptions WHERE user_id = $1 AND section_id = $2",
 		userID, *body.SectionID,
 	)

@@ -5,9 +5,9 @@ import (
 	"path"
 	"strings"
 
+	"flow/common/db"
 	"flow/common/state"
 
-	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -41,11 +41,11 @@ func readMongoUsers(rootPath string) []MongoUser {
 }
 
 func ImportUsers(state *state.State, idMap *IdentifierMap) error {
-	tx, err := state.Db.Begin(state.Ctx)
+	tx, err := state.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(state.Ctx)
+	defer tx.Rollback()
 
 	idMap.User = make(map[primitive.ObjectID]int)
 	users := readMongoUsers(state.Env.MongoDumpPath)
@@ -79,34 +79,31 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"user"},
+		db.Identifier{"user"},
 		[]string{"full_name", "program", "email", "join_source"},
-		pgx.CopyFromRows(preparedUsers),
+		preparedUsers,
 	)
 	if err != nil {
 		return err
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"secret", "user_email"},
+		db.Identifier{"secret", "user_email"},
 		[]string{"user_id", "password_hash"},
-		pgx.CopyFromRows(emailCredentials),
+		emailCredentials,
 	)
 	if err != nil {
 		return err
 	}
 
 	_, err = tx.CopyFrom(
-		state.Ctx,
-		pgx.Identifier{"secret", "user_fb"},
+		db.Identifier{"secret", "user_fb"},
 		[]string{"user_id", "fb_id"},
-		pgx.CopyFromRows(fbCredentials),
+		fbCredentials,
 	)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(state.Ctx)
+	return tx.Commit()
 }

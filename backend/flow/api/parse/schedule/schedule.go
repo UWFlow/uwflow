@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"flow/api/util"
+	"flow/common/util"
 )
 
 type ScheduleSummary struct {
@@ -42,7 +42,7 @@ func extractTerm(text string) (int, error) {
 	}
 	season := text[submatches[2]:submatches[3]]
 	year := text[submatches[4]:submatches[5]]
-	term, err := util.HumanToPostgresTerm(season, year)
+	term, err := util.TermSeasonYearToId(season, year)
 	if err != nil {
 		return 0, fmt.Errorf("\"%s %s\" is not a term: %v", season, year, err)
 	} else {
