@@ -77,7 +77,7 @@ func InsertAll(ctx context.Context, conn db.Conn, courses []Course) (*log.DbResu
 	}
 
 	_, err = tx.CopyFrom(
-    ctx,
+		ctx,
 		pgx.Identifier{"_course_delta"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
 		pgx.CopyFromRows(preparedCourses),

@@ -5,12 +5,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/jackc/pgx"
+	"flow/common/state"
+	"flow/common/util"
+
+	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gopkg.in/cheggaaa/pb.v1"
-
-	"flow/worker/importer/mongo/convert"
 )
 
 type MongoCourseReview struct {
@@ -119,27 +119,24 @@ func readMongoReviews(rootPath string) []MongoReview {
 	return reviews
 }
 
-func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportReviews(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
-	reviews := readMongoReviews(rootPath)
+	reviews := readMongoReviews(state.Env.MongoDumpPath)
 
 	var preparedCourseReviews [][]interface{}
 	var preparedProfReviews [][]interface{}
 	var preparedUserCourses [][]interface{}
 	var preparedUserShortlists [][]interface{}
 
-	bar := pb.StartNew(len(reviews))
 	courseReviewId, profReviewId := 1, 1
 	for _, review := range reviews {
-		bar.Increment()
-
 		courseId, courseFound := idMap.Course[review.CourseId]
 		if !courseFound {
 			continue
@@ -205,7 +202,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 				},
 			)
 		} else {
-			termId, _ := convert.MongoToPostgresTerm(review.TermId)
+			termId, _ := util.TermYearMonthToId(review.TermId)
 			preparedUserCourses = append(
 				preparedUserCourses,
 				[]interface{}{
@@ -219,6 +216,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"course_review"},
 		[]string{
 			"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful",
@@ -230,6 +228,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		return err
 	}
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"prof_review"},
 		[]string{
 			"course_id", "prof_id", "user_id", "text", "clear", "engaging",
@@ -241,6 +240,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		return err
 	}
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"user_course_taken"},
 		[]string{"course_id", "user_id", "term", "level"},
 		pgx.CopyFromRows(preparedUserCourses),
@@ -249,6 +249,7 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		return err
 	}
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"user_shortlist"},
 		[]string{"course_id", "user_id"},
 		pgx.CopyFromRows(preparedUserShortlists),
@@ -256,10 +257,6 @@ func ImportReviews(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	bar.FinishPrint("Importing course reviews finished")
-	return nil
+
+	return tx.Commit(state.Ctx)
 }

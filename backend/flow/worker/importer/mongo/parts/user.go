@@ -5,10 +5,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"flow/common/state"
+
+	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 type MongoUser struct {
@@ -39,23 +40,21 @@ func readMongoUsers(rootPath string) []MongoUser {
 	return users
 }
 
-func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportUsers(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
 	idMap.User = make(map[primitive.ObjectID]int)
-	users := readMongoUsers(rootPath)
+	users := readMongoUsers(state.Env.MongoDumpPath)
 	preparedUsers := make([][]interface{}, len(users))
 
 	var emailCredentials [][]interface{}
 	var fbCredentials [][]interface{}
 
-	bar := pb.StartNew(len(users))
 	for i, user := range users {
-		bar.Increment()
 		fullName := strings.TrimSpace(user.FirstName + " " + user.LastName)
 		idMap.User[user.Id] = i + 1
 		// If the program name is longer than 256 characters,
@@ -80,6 +79,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"user"},
 		[]string{"full_name", "program", "email", "join_source"},
 		pgx.CopyFromRows(preparedUsers),
@@ -89,6 +89,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"secret", "user_email"},
 		[]string{"user_id", "password_hash"},
 		pgx.CopyFromRows(emailCredentials),
@@ -98,6 +99,7 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"secret", "user_fb"},
 		[]string{"user_id", "fb_id"},
 		pgx.CopyFromRows(fbCredentials),
@@ -106,10 +108,5 @@ func ImportUsers(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		return err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	bar.FinishPrint("Importing users finished")
-	return nil
+	return tx.Commit(state.Ctx)
 }

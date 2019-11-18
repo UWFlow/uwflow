@@ -1,30 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
-	"os"
 
+	"flow/common/state"
 	"flow/worker/importer/mongo/parts"
-	"github.com/jackc/pgx"
 )
 
-type ImportFunction func(*pgx.Conn, string, *parts.IdentifierMap) error
+type ImportFunction func(*state.State, *parts.IdentifierMap) error
 
-func Connect() (*pgx.Conn, error) {
-	config := pgx.ConnConfig{
-		Database: os.Getenv("POSTGRES_DB"),
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		User:     os.Getenv("POSTGRES_USER"),
-	}
-	return pgx.Connect(config)
-}
-
-func Run(rootPath string) {
-	conn, err := Connect()
-	defer conn.Close()
+func main() {
+	ctx := context.Background()
+	state, err := state.New(ctx)
 	if err != nil {
-		log.Fatalf("Failed to open database connection: %v", err)
+		log.Fatalf("Initialization failed: %v", err)
 	}
 
 	idMap := &parts.IdentifierMap{}
@@ -38,18 +28,9 @@ func Run(rootPath string) {
 		parts.ImportSchedules,
 	}
 	for _, operation := range operations {
-		err = operation(conn, rootPath, idMap)
+		err = operation(state, idMap)
 		if err != nil {
 			log.Fatalf("Import failed: %v", err)
 		}
-	}
-}
-
-func main() {
-	args := os.Args
-	if len(args) == 2 {
-		Run(args[1])
-	} else {
-		fmt.Println("Usage: main.go MONGO_DUMP_PATH")
 	}
 }

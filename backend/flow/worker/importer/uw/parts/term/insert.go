@@ -1,10 +1,10 @@
 package term
 
 import (
-  "context"
+	"context"
 
 	"flow/common/db"
-  "flow/worker/importer/uw/log"
+	"flow/worker/importer/uw/log"
 )
 
 const InsertQuery = `

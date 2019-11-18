@@ -63,6 +63,23 @@ func TermSeasonYearToId(maybeSeason string, maybeYear string) (int, error) {
 	return (year-1900)*10 + month, nil
 }
 
+// Quest id of a term given underscore-separated year and moth, e.g. "2019_09".
+func TermYearMonthToId(yearMonth string) (int, error) {
+	components := strings.Split(yearMonth, "_")
+	if len(components) != 2 {
+    return 0, fmt.Errorf("no underscore: %s", yearMonth)
+	}
+  year, err := strconv.Atoi(components[0])
+	if err != nil {
+		return 0, fmt.Errorf("not a year: %s", components[0])
+	}
+  month, err := strconv.Atoi(components[1])
+	if err != nil {
+		return 0, fmt.Errorf("not a month: %s", components[1])
+	}
+  return 1000 + (year%100)*10 + month, nil
+}
+
 // Quest id of a term given by its English name, e.g. "Fall 2019".
 func TermNameToId(name string) (int, error) {
 	components := strings.Split(name, " ")

@@ -1,7 +1,7 @@
 package section
 
 import (
-  "context"
+	"context"
 	"fmt"
 	"net/smtp"
 	"os"
@@ -10,7 +10,7 @@ import (
 	"flow/common/db"
 	"flow/worker/importer/uw/log"
 
-  "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4"
 )
 
 const SetupSectionQuery = `
@@ -145,7 +145,7 @@ func InsertAllSections(ctx context.Context, conn db.Conn, sections []Section) (*
 	}
 
 	_, err = tx.CopyFrom(
-    ctx,
+		ctx,
 		pgx.Identifier{"_course_section_delta"},
 		[]string{
 			"class_number", "course_code", "section", "campus",
@@ -309,7 +309,7 @@ func InsertAllMeetings(ctx context.Context, conn db.Conn, meetings []Meeting) (*
 	}
 
 	_, err = tx.CopyFrom(
-    ctx,
+		ctx,
 		pgx.Identifier{"_section_meeting_delta"},
 		[]string{
 			"class_number", "term", "prof_code",
@@ -394,11 +394,11 @@ func InsertAllProfs(ctx context.Context, conn db.Conn, profs []Prof) (*log.DbRes
 	}
 
 	_, err = tx.CopyFrom(
-    ctx,
-    pgx.Identifier{"_prof_delta"},
-    []string{"name", "code"},
-    pgx.CopyFromRows(preparedProfs),
-  )
+		ctx,
+		pgx.Identifier{"_prof_delta"},
+		[]string{"name", "code"},
+		pgx.CopyFromRows(preparedProfs),
+	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}

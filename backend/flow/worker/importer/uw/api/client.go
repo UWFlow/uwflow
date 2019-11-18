@@ -12,11 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const	ApiTimeout = time.Second * 10
+const ApiTimeout = time.Second * 10
 
 const (
-	BaseUrlv2  = "https://api.uwaterloo.ca/v2"
-	BaseUrlv3  = "https://openapi.data.uwaterloo.ca/v3"
+	BaseUrlv2 = "https://api.uwaterloo.ca/v2"
+	BaseUrlv3 = "https://openapi.data.uwaterloo.ca/v3"
 )
 
 type Client struct {

@@ -6,9 +6,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"flow/common/state"
+
+	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 const CourseCodePattern = `[A-Z]{2,}[0-9]{3,}[A-Z]*`
@@ -40,20 +41,18 @@ func readMongoCourses(rootPath string) []MongoCourse {
 	return courses
 }
 
-func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportCourses(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
 	idMap.Course = make(map[string]int)
-	courses := readMongoCourses(rootPath)
+	courses := readMongoCourses(state.Env.MongoDumpPath)
 	preparedCourses := make([][]interface{}, len(courses))
 
-	bar := pb.StartNew(len(courses))
 	for i, course := range courses {
-		bar.Increment()
 		idMap.Course[course.Id] = i + 1
 		preparedCourses[i] = []interface{}{
 			course.Id,
@@ -65,6 +64,7 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		}
 	}
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"course"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
 		pgx.CopyFromRows(preparedCourses),
@@ -72,32 +72,29 @@ func ImportCourses(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Commit()
+	err = tx.Commit(state.Ctx)
 	if err != nil {
 		return err
 	}
-	bar.FinishPrint("Courses finished")
 	return nil
 }
 
-func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
-	courses := readMongoCourses(rootPath)
+	courses := readMongoCourses(state.Env.MongoDumpPath)
 	// Reserve len(courses) slots to avoid reallocs. In reality, we will need fewer.
 	preparedPrereqs := make([][]interface{}, 0, len(courses))
 	preparedAntireqs := make([][]interface{}, 0, len(courses))
 	seenPrereqs := make(map[IntPair]bool)
 	seenAntireqs := make(map[IntPair]bool)
 
-	bar := pb.StartNew(len(courses))
 	courseCodeRegexp := regexp.MustCompile(CourseCodePattern)
 	for _, course := range courses {
-		bar.Increment()
 		courseId := idMap.Course[course.Id]
 
 		if course.Prereqs != nil {
@@ -150,6 +147,7 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"course_prerequisite"},
 		[]string{"course_id", "prerequisite_id", "is_corequisite"},
 		pgx.CopyFromRows(preparedPrereqs),
@@ -158,6 +156,7 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 		return err
 	}
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"course_antirequisite"},
 		[]string{"course_id", "antirequisite_id"},
 		pgx.CopyFromRows(preparedAntireqs),
@@ -165,10 +164,6 @@ func ImportCourseRequisites(db *pgx.Conn, rootPath string, idMap *IdentifierMap)
 	if err != nil {
 		return err
 	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	bar.FinishPrint("Course requisites finished")
-	return nil
+
+	return tx.Commit(state.Ctx)
 }

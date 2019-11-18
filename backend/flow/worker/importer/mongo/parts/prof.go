@@ -5,9 +5,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"flow/common/state"
+
+	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 type MongoProf struct {
@@ -34,26 +35,25 @@ func readMongoProfs(rootPath string) []MongoProf {
 	return profs
 }
 
-func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := conn.Begin()
+func ImportProfs(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
 	idMap.Prof = make(map[string]int)
-	profs := readMongoProfs(rootPath)
+	profs := readMongoProfs(state.Env.MongoDumpPath)
 	preparedProfs := make([][]interface{}, len(profs))
 
-	bar := pb.StartNew(len(profs))
 	for i, prof := range profs {
-		bar.Increment()
 		profName := strings.TrimSpace(prof.FirstName + " " + prof.LastName)
 		idMap.Prof[prof.Id] = i + 1
 		preparedProfs[i] = []interface{}{profName, prof.Id}
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"prof"},
 		[]string{"name", "code"},
 		pgx.CopyFromRows(preparedProfs),
@@ -61,10 +61,6 @@ func ImportProfs(conn *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	bar.FinishPrint("Import profs finished")
-	return nil
+
+	return tx.Commit(state.Ctx)
 }

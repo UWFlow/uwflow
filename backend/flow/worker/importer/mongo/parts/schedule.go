@@ -5,11 +5,12 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/jackc/pgx"
+	"flow/common/state"
+	"flow/common/util"
+
+	"github.com/jackc/pgx/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"flow/worker/importer/mongo/convert"
 )
 
 type MongoSchedule struct {
@@ -36,14 +37,14 @@ func readMongoSchedules(rootPath string) []MongoSchedule {
 	return schedules
 }
 
-func ImportSchedules(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
-	schedules := readMongoSchedules(rootPath)
+	schedules := readMongoSchedules(state.Env.MongoDumpPath)
 	preparedSchedules := make([][]interface{}, 0)
 	seen := make(map[IntPair]bool)
 
@@ -53,7 +54,7 @@ func ImportSchedules(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error 
 		// Class number is definitely an integer
 		classNumber, _ := strconv.Atoi(schedule.ClassNumber)
 		// And this is definitely a valid term id
-		termId, _ := convert.MongoToPostgresTerm(schedule.TermId)
+		termId, _ := util.TermYearMonthToId(schedule.TermId)
 
 		sectionId, sectionFound := idMap.Section[SectionKey{classNumber, termId}]
 		if !userFound || !sectionFound {
@@ -76,6 +77,7 @@ func ImportSchedules(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error 
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"user_schedule"},
 		[]string{"user_id", "section_id"},
 		pgx.CopyFromRows(preparedSchedules),
@@ -84,9 +86,5 @@ func ImportSchedules(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error 
 		return err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit(state.Ctx)
 }

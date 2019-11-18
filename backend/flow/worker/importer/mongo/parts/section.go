@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx"
-	"go.mongodb.org/mongo-driver/bson"
-	"gopkg.in/cheggaaa/pb.v1"
+	"flow/common/state"
+	"flow/common/util"
 
-	"flow/worker/importer/mongo/convert"
+	"github.com/jackc/pgx/v4"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type MongoMeeting struct {
@@ -102,14 +102,15 @@ func ConvertMeeting(meeting MongoMeeting, idMap *IdentifierMap) PostgresMeeting 
 		}
 	}
 	if meeting.Building != nil && meeting.Room != nil {
-		location := *meeting.Building + " " + *meeting.Room
-		postgresMeeting.Location = &location
+		postgresMeeting.Location = util.StringToPointer(
+			*meeting.Building + " " + *meeting.Room,
+		)
 	}
 	return postgresMeeting
 }
 
 func ConvertSection(section MongoSection, idMap *IdentifierMap, terms map[int]Timeframe) PostgresSection {
-	termId, _ := convert.MongoToPostgresTerm(section.TermId)
+	termId, _ := util.TermYearMonthToId(section.TermId)
 	classNumber, _ := strconv.Atoi(section.ClassNumber)
 
 	meetings := make([]PostgresMeeting, len(section.Meetings))
@@ -132,23 +133,21 @@ func ConvertSection(section MongoSection, idMap *IdentifierMap, terms map[int]Ti
 	}
 }
 
-func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
-	tx, err := db.Begin()
+func ImportSections(state *state.State, idMap *IdentifierMap) error {
+	tx, err := state.Db.Begin(state.Ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(state.Ctx)
 
-	mongoSections := readMongoSections(rootPath)
-	// We do not know where the data is missing, but pre-allocate in any case
-	preparedSections := make([][]interface{}, 0, len(mongoSections))
-	// It is plausible that each section has on average 3 meetings or more
-	preparedMeetings := make([][]interface{}, 0, 3*len(mongoSections))
-
+	var preparedSections [][]interface{}
+	var preparedMeetings [][]interface{}
+	mongoSections := readMongoSections(state.Env.MongoDumpPath)
 	idMap.Section = make(map[SectionKey]int)
 	terms := make(map[int]Timeframe)
 
 	rows, err := tx.Query(
+		state.Ctx,
 		`SELECT term, start_date, end_date FROM term_date`,
 	)
 	if err != nil {
@@ -163,10 +162,8 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		terms[termId] = Timeframe{StartDate: startDate, EndDate: endDate}
 	}
 
-	bar := pb.StartNew(len(mongoSections))
 	sectionId := 1
 	for _, mongoSection := range mongoSections {
-		bar.Increment()
 		courseId, courseFound := idMap.Course[mongoSection.CourseId]
 		if !courseFound {
 			continue // We cannot do anything for missing courses
@@ -213,6 +210,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"course_section"},
 		[]string{
 			"class_number", "course_id", "section", "campus",
@@ -225,6 +223,7 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 	}
 
 	_, err = tx.CopyFrom(
+		state.Ctx,
 		pgx.Identifier{"section_meeting"},
 		[]string{
 			"section_id", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
@@ -236,10 +235,5 @@ func ImportSections(db *pgx.Conn, rootPath string, idMap *IdentifierMap) error {
 		return err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	bar.FinishPrint("Sections finished")
-	return err
+	return tx.Commit(state.Ctx)
 }

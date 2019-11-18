@@ -1,10 +1,10 @@
 package term
 
 import (
-  "context"
+	"context"
 	"time"
 
-  "flow/common/db"
+	"flow/common/db"
 )
 
 const SelectQuery = `SELECT term, start_date, end_date FROM term_date`

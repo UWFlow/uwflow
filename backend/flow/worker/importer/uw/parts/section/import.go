@@ -36,7 +36,7 @@ func ImportByTerm(state *state.State, client *api.Client, term *term.Term) error
 	}
 	log.EndTermImport(state.Log, "section", term.Id, result)
 
-  log.StartTermImport(state.Log, "meeting", term.Id)
+	log.StartTermImport(state.Log, "meeting", term.Id)
 	result, err = InsertAllMeetings(state.Ctx, state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)

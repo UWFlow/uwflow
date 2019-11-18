@@ -1,13 +1,13 @@
 package exam
 
 import (
-  "context"
+	"context"
 	"fmt"
 
-  "flow/common/db"
-  "flow/worker/importer/uw/log"
+	"flow/common/db"
+	"flow/worker/importer/uw/log"
 
-  "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4"
 )
 
 const SetupExamQuery = `
@@ -90,7 +90,7 @@ func InsertAll(ctx context.Context, conn db.Conn, exams []Exam) (*log.DbResult, 
 	}
 
 	_, err = tx.CopyFrom(
-    ctx,
+		ctx,
 		pgx.Identifier{"_section_exam_delta"},
 		[]string{
 			"course_code", "section_name", "term", "location",

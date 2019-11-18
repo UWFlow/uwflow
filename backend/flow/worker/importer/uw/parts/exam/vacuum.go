@@ -1,8 +1,8 @@
 package exam
 
 import (
-  "flow/common/state"
-  "flow/worker/importer/uw/log"
+	"flow/common/state"
+	"flow/worker/importer/uw/log"
 )
 
 func Vacuum(state *state.State) error {
