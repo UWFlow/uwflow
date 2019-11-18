@@ -7,23 +7,15 @@ import (
 
   "flow/common/env"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type Conn interface {
-  Begin(context.Context) (pgx.Tx, error)
-  Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
-  Query(context.Context, string, ...interface{}) (pgx.Rows, error)
-  QueryRow(context.Context, string, ...interface{}) pgx.Row
-}
 
 // Connection to database must complete within this timeframe.
 const ConnectTimeout = time.Second * 10
 
 // Connect to database.
-func Connect(ctx context.Context, env *env.Environment) (Conn, error) {
+func ConnectPool(ctx context.Context, env *env.Environment) (Conn, error) {
 	uri := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		env.PostgresUser, env.PostgresPassword,
