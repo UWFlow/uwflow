@@ -21,7 +21,7 @@ COPY . .
 # Alas, we have no tests!
 RUN go test -v ./.../test
 RUN cd api && go build
-RUN cd worker/importer/uw && go build
+RUN cd importer/uw && go build
 
 ######## RELEASE STAGE ########
 FROM alpine:latest AS api
@@ -36,8 +36,8 @@ CMD ["/app/api"]
 ######## RELEASE STAGE: UW IMPORTER ########
 FROM alpine:latest AS uw
 
-COPY --from=builder /build/worker/importer/uw/uw /app/uw
-COPY --from=builder /build/worker/importer/uw/crontab /etc/cron.d/crontab
+COPY --from=builder /build/importer/uw/uw /app/uw
+COPY --from=builder /build/importer/uw/crontab /etc/cron.d/crontab
 RUN crontab /etc/cron.d/crontab
 
 CMD ["crond", "-f"]
