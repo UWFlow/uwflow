@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestSendEmailInvalidEmail(t *testing.T) {
-	state, _ := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.SendEmail(state, w, r)
 	}))
@@ -32,7 +33,7 @@ func TestSendEmailInvalidEmail(t *testing.T) {
 }
 
 func TestVerifyResetCodeInvalid(t *testing.T) {
-	state, _ := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.VerifyResetCode(state, w, r)
 	}))
@@ -52,7 +53,7 @@ func TestVerifyResetCodeInvalid(t *testing.T) {
 }
 
 func TestResetPasswordInvalidCode(t *testing.T) {
-	state, _ := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.ResetPassword(state, w, r)
 	}))

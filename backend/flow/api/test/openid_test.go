@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +14,7 @@ import (
 var w = httptest.NewRecorder()
 
 func TestFbNoToken(t *testing.T) {
-	state, err := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.AuthenticateFbUser(state, w, r)
 	}))
@@ -28,7 +29,7 @@ func TestFbNoToken(t *testing.T) {
 }
 
 func TestFbInvalidToken(t *testing.T) {
-	state, err := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.AuthenticateFbUser(state, w, r)
 	}))
@@ -49,7 +50,7 @@ func TestFbInvalidToken(t *testing.T) {
 }
 
 func TestGoogleNoToken(t *testing.T) {
-	state, err := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.AuthenticateGoogleUser(state, w, r)
 	}))
@@ -64,7 +65,7 @@ func TestGoogleNoToken(t *testing.T) {
 }
 
 func TestGoogleInvalidToken(t *testing.T) {
-	state, err := state.Initialize()
+	state, _ := state.New(context.Background())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.AuthenticateGoogleUser(state, w, r)
 	}))
