@@ -47,7 +47,7 @@ func main() {
 
 	// TODO: set sane time limit?
 	ctx := context.Background()
-	state, err := state.New(ctx)
+	state, err := state.New(ctx, "uw")
 	if err != nil {
 		log.Fatalf("Initialization failed: %v\n", err)
 	}

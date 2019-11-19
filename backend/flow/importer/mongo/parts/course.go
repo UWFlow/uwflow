@@ -43,7 +43,7 @@ func readMongoCourses(rootPath string) []MongoCourse {
 }
 
 func ImportCourses(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "course")
+	log.StartImport(state.Log, "course")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -66,7 +66,7 @@ func ImportCourses(state *state.State, idMap *IdentifierMap) error {
 			course.Antireqs,
 		}
 	}
-  count, err := tx.CopyFrom(
+	count, err := tx.CopyFrom(
 		db.Identifier{"course"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
 		preparedCourses,
@@ -74,14 +74,14 @@ func ImportCourses(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "course", count)
+	log.EndImport(state.Log, "course", count)
 
 	return tx.Commit()
 }
 
 func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "course_prerequisite")
-  log.StartImport(state.Log, "course_antirequisite")
+	log.StartImport(state.Log, "course_prerequisite")
+	log.StartImport(state.Log, "course_antirequisite")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -149,7 +149,7 @@ func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
 		}
 	}
 
-  prereqCount, err := tx.CopyFrom(
+	prereqCount, err := tx.CopyFrom(
 		db.Identifier{"course_prerequisite"},
 		[]string{"course_id", "prerequisite_id", "is_corequisite"},
 		preparedPrereqs,
@@ -157,9 +157,9 @@ func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "course_prerequisite", prereqCount)
+	log.EndImport(state.Log, "course_prerequisite", prereqCount)
 
-  antireqCount, err := tx.CopyFrom(
+	antireqCount, err := tx.CopyFrom(
 		db.Identifier{"course_antirequisite"},
 		[]string{"course_id", "antirequisite_id"},
 		preparedAntireqs,
@@ -167,7 +167,7 @@ func ImportCourseRequisites(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "course_antirequisite", antireqCount)
+	log.EndImport(state.Log, "course_antirequisite", antireqCount)
 
 	return tx.Commit()
 }

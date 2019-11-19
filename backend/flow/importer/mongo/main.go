@@ -11,8 +11,7 @@ import (
 type ImportFunction func(*state.State, *parts.IdentifierMap) error
 
 func main() {
-	ctx := context.Background()
-	state, err := state.New(ctx)
+	state, err := state.New(context.Background(), "mongo")
 	if err != nil {
 		log.Fatalf("Initialization failed: %v", err)
 	}

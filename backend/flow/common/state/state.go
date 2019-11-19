@@ -22,13 +22,15 @@ type State struct {
 	Log *zap.Logger
 }
 
-func New(ctx context.Context) (*State, error) {
+func New(ctx context.Context, serviceName string) (*State, error) {
 	env, err := env.Get()
 	if err != nil {
 		return nil, fmt.Errorf("loading environment failed: %w", err)
 	}
 
-	log, err := zap.NewProduction(zap.AddCallerSkip(1))
+	config := zap.NewProductionConfig()
+	config.InitialFields = map[string]interface{}{"service": serviceName}
+	log, err := config.Build(zap.AddCallerSkip(1))
 	if err != nil {
 		return nil, fmt.Errorf("initializing logger failed: %w", err)
 	}

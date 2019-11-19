@@ -17,9 +17,9 @@ type DbResult struct {
 
 func StartImport(log *zap.Logger, table string) {
 	log.Info(
-    "start import",
-    zap.String("table", table),
-  )
+		"start import",
+		zap.String("table", table),
+	)
 }
 
 func EndImport(log *zap.Logger, table string, result *DbResult) {

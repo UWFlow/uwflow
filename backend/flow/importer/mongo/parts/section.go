@@ -135,8 +135,8 @@ func ConvertSection(section MongoSection, idMap *IdentifierMap, terms map[int]Ti
 }
 
 func ImportSections(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "course_section")
-  log.StartImport(state.Log, "section_meeting")
+	log.StartImport(state.Log, "course_section")
+	log.StartImport(state.Log, "section_meeting")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -210,7 +210,7 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 		sectionId += 1
 	}
 
-  sectionCount, err := tx.CopyFrom(
+	sectionCount, err := tx.CopyFrom(
 		db.Identifier{"course_section"},
 		[]string{
 			"class_number", "course_id", "section", "campus",
@@ -221,9 +221,9 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "course_section", sectionCount)
+	log.EndImport(state.Log, "course_section", sectionCount)
 
-  meetingCount, err := tx.CopyFrom(
+	meetingCount, err := tx.CopyFrom(
 		db.Identifier{"section_meeting"},
 		[]string{
 			"section_id", "prof_id", "start_date", "end_date", "start_seconds", "end_seconds",
@@ -234,7 +234,7 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "section_meeting", meetingCount)
+	log.EndImport(state.Log, "section_meeting", meetingCount)
 
 	return tx.Commit()
 }

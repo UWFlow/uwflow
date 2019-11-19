@@ -37,7 +37,7 @@ func readMongoProfs(rootPath string) []MongoProf {
 }
 
 func ImportProfs(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "prof")
+	log.StartImport(state.Log, "prof")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -55,7 +55,7 @@ func ImportProfs(state *state.State, idMap *IdentifierMap) error {
 		preparedProfs[i] = []interface{}{profName, prof.Id}
 	}
 
-  count, err := tx.CopyFrom(
+	count, err := tx.CopyFrom(
 		db.Identifier{"prof"},
 		[]string{"name", "code"},
 		preparedProfs,
@@ -63,7 +63,7 @@ func ImportProfs(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "prof", count)
+	log.EndImport(state.Log, "prof", count)
 
 	return tx.Commit()
 }

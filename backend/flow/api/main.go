@@ -55,8 +55,7 @@ func SetupRouter(state *state.State) *chi.Mux {
 }
 
 func main() {
-	ctx := context.Background()
-	state, err := state.New(ctx)
+	state, err := state.New(context.Background(), "api")
 	if err != nil {
 		log.Fatalf("Failed to initialize: %v", err)
 	}

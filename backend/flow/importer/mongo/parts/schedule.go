@@ -39,7 +39,7 @@ func readMongoSchedules(rootPath string) []MongoSchedule {
 }
 
 func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "user_schedule")
+	log.StartImport(state.Log, "user_schedule")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -79,7 +79,7 @@ func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
 		)
 	}
 
-  count, err := tx.CopyFrom(
+	count, err := tx.CopyFrom(
 		db.Identifier{"user_schedule"},
 		[]string{"user_id", "section_id"},
 		preparedSchedules,
@@ -87,7 +87,7 @@ func ImportSchedules(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "user_schedule", count)
+	log.EndImport(state.Log, "user_schedule", count)
 
 	return tx.Commit()
 }

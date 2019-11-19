@@ -42,7 +42,7 @@ func readMongoUsers(rootPath string) []MongoUser {
 }
 
 func ImportUsers(state *state.State, idMap *IdentifierMap) error {
-  log.StartImport(state.Log, "user")
+	log.StartImport(state.Log, "user")
 
 	tx, err := state.Db.Begin()
 	if err != nil {
@@ -81,7 +81,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 		}
 	}
 
-  userCount, err := tx.CopyFrom(
+	userCount, err := tx.CopyFrom(
 		db.Identifier{"user"},
 		[]string{"full_name", "program", "email", "join_source"},
 		preparedUsers,
@@ -89,9 +89,9 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "user", userCount)
+	log.EndImport(state.Log, "user", userCount)
 
-  emailUserCount, err := tx.CopyFrom(
+	emailUserCount, err := tx.CopyFrom(
 		db.Identifier{"secret", "user_email"},
 		[]string{"user_id", "password_hash"},
 		emailCredentials,
@@ -99,9 +99,9 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "secret.user_email", emailUserCount)
+	log.EndImport(state.Log, "secret.user_email", emailUserCount)
 
-  fbUserCount, err := tx.CopyFrom(
+	fbUserCount, err := tx.CopyFrom(
 		db.Identifier{"secret", "user_fb"},
 		[]string{"user_id", "fb_id"},
 		fbCredentials,
@@ -109,7 +109,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	if err != nil {
 		return err
 	}
-  log.EndImport(state.Log, "secret.user_fb", fbUserCount)
+	log.EndImport(state.Log, "secret.user_fb", fbUserCount)
 
 	return tx.Commit()
 }
