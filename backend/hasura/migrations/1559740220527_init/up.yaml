@@ -267,7 +267,6 @@
           - clear
           - engaging
           - course_id
-          - id
           - prof_id
           - user_id
           - text
@@ -337,7 +336,6 @@
           - clear
           - engaging
           - course_id
-          - id
           - prof_id
           - text
           - public
@@ -395,24 +393,8 @@
       table: prof_review_user_id
       update_permissions: []
     - array_relationships: []
-      delete_permissions:
-      - comment: null
-        permission:
-          filter:
-            user_id:
-              _eq: X-Hasura-User-Id
-        role: user
-      insert_permissions:
-        - comment: null
-          permission:
-            check:
-              user_id:
-                _eq: X-Hasura-User-Id
-            columns:
-            - user_id
-            - section_id
-            set: {}
-          role: user
+      delete_permissions: []
+      insert_permissions: []
       is_enum: false
       object_relationships:
         - comment: null
@@ -435,17 +417,7 @@
                 _eq: X-Hasura-User-Id
           role: user
       table: user_schedule
-      update_permissions:
-        - comment: null
-          permission:
-            columns:
-            - user_id
-            - section_id
-            filter:
-              user_id:
-                _eq: X-Hasura-User-Id
-            set: {}
-          role: user
+      update_permissions: []
     - array_relationships: []
       delete_permissions:
       - comment: null
@@ -820,7 +792,6 @@
           - liked
           - useful
           - course_id
-          - id
           - prof_id
           - user_id
           - text
@@ -893,7 +864,6 @@
           - liked
           - useful
           - course_id
-          - id
           - prof_id
           - text
           - public
