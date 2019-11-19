@@ -1,7 +1,9 @@
-version: '3'
+version: '3.6'
 services:
   api:
-    build: ./api
+    build:
+      context: ./flow
+      target: api
     container_name: api
     depends_on:
       - postgres
@@ -49,13 +51,15 @@ services:
     restart: always
     volumes:
       - ./hasura/migrations:/hasura-migrations
-  uwapi-importer:
-    build: ./uwapi-importer
-    container_name: uwapi-importer
+  uw:
+    build:
+      context: ./flow
+      target: uw
+    container_name: uw
     depends_on:
       - postgres
     env_file: .env
-    image: uwapi-importer:latest
+    image: uw:latest
     restart: always
 volumes:
   postgres:
