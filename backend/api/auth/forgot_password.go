@@ -3,9 +3,9 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/smtp"
+
+	"github.com/AyushK1/uwflow2.0/backend/api/sub"
 
 	"time"
 
@@ -86,17 +86,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set up authentication information.
-	from := state.Env.GmailUser
-	auth := smtp.PlainAuth("", from, state.Env.GmailAppPassword, "smtp.gmail.com")
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
-	to := []string{*body.Email}
-	msg := []byte(fmt.Sprintf("To: %s\r\n", *body.Email) +
-		fmt.Sprintf("Subject: %s\r\n", code) +
-		"\r\n" +
-		"This is the email body.\r\n")
-	err = smtp.SendMail("smtp.gmail.com:587", auth, from, to, msg)
+	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
 	if err != nil {
 		serde.Error(w, "Error sending forgot password email", http.StatusInternalServerError)
 		return

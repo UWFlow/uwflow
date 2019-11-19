@@ -2,6 +2,9 @@ package section
 
 import (
 	"fmt"
+	"net/smtp"
+	"os"
+	"sync"
 
 	"github.com/AyushK1/uwflow2.0/backend/uwapi-importer/db"
 )
@@ -49,7 +52,71 @@ FROM _course_section_delta d
 WHERE cs.id IS NULL
 `
 
+const SetupNewlyAvailableSectionsQuery = `
+DROP TABLE IF EXISTS _newly_available_sections;
+
+CREATE TEMPORARY TABLE _newly_available_sections(
+  section_id INT NOT NULL
+);
+
+INSERT INTO _newly_available_sections(
+  section_id
+)
+SELECT 
+  c.id
+FROM course_section c
+  LEFT JOIN _course_section_delta d
+	ON c.class_number = d.class_number
+   AND c.term = d.term
+WHERE d.enrollment_total < d.enrollment_capacity
+  AND c.enrollment_total >= c.enrollment_capacity;
+`
+const GetSectionSubscriptionsQuery = `
+SELECT
+  u.email, c.name, cs.section
+FROM section_subscriptions ss
+  INNER JOIN _newly_available_sections n ON n.section_id = ss.section_id
+  LEFT JOIN public.user u ON ss.user_id = u.id
+  LEFT JOIN course_section cs ON ss.section_id = cs.id
+  LEFT JOIN course c ON cs.course_id = c.id;
+`
+
 const TeardownSectionQuery = `DROP TABLE _course_section_delta`
+
+const TeardownNewlyAvailableSectionQuery = `DROP TABLE _newly_available_sections`
+
+const NumWorkers = 8
+
+type EmailItem struct {
+	To      string
+	Subject string
+	Body    string
+}
+
+func SendNotificationEmail(to string, subject string, body string) error {
+	// Set up authentication information for Gmail server
+	from := os.Getenv("GMAIL_USER")
+	auth := smtp.PlainAuth("", from, os.Getenv("GMAIL_APP_PASSWORD"), "smtp.gmail.com")
+	msg := []byte(fmt.Sprintf("To: %s\r\n", to) +
+		fmt.Sprintf("Subject: %s\r\n", subject) +
+		"\r\n" +
+		fmt.Sprintf("%s\r\n", body))
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{to}, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send email to %w", to)
+	}
+	return nil
+}
+
+func asyncSendBatch(wg sync.WaitGroup, batch []EmailItem) {
+	for _, item := range batch {
+		err := SendNotificationEmail(item.To, item.Subject, item.Body)
+		if err != nil {
+			// TODO: Log Error
+		}
+	}
+	wg.Done()
+}
 
 func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 	var result db.Result
@@ -83,6 +150,57 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*db.Result, error) {
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
+	}
+
+	_, err = tx.Exec(SetupNewlyAvailableSectionsQuery)
+	if err != nil {
+		return &result, fmt.Errorf("failed to setup newly available sections table: %w", err)
+	}
+
+	rows, err := tx.Query(GetSectionSubscriptionsQuery)
+	if err != nil {
+		return &result, fmt.Errorf("failed to query section subscriptions data: %w", err)
+	}
+	defer rows.Close()
+
+	items := []EmailItem{}
+	for rows.Next() {
+		var email, name, section string
+		err = rows.Scan(&email, &name, &section)
+		if err != nil {
+			return &result, fmt.Errorf("failed to parse row data for section subscription: %w", err)
+		}
+		e := EmailItem{
+			To:      email,
+			Subject: fmt.Sprintf("%s: %s", name, section),
+			Body:    "Insert body here",
+		}
+		items = append(items, e)
+	}
+
+	var wg sync.WaitGroup
+	var workers, itemsPerWorker int
+	if len(items) <= NumWorkers {
+		workers = len(items)
+		itemsPerWorker = 1
+	} else {
+		workers = NumWorkers
+		itemsPerWorker = len(items)/workers + 1
+	}
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		if i == workers-1 {
+			go asyncSendBatch(wg, items[i*itemsPerWorker:len(items)])
+		} else {
+			go asyncSendBatch(wg, items[i*itemsPerWorker:(i+1)*itemsPerWorker])
+		}
+	}
+	wg.Wait()
+
+	_, err = tx.Exec(TeardownNewlyAvailableSectionQuery)
+	if err != nil {
+		return &result, fmt.Errorf("failed to tear down table: %w", err)
 	}
 
 	tag, err := tx.Exec(UpdateSectionQuery)

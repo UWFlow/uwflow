@@ -31,15 +31,47 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Check that key exists in secret.password_reset table
-	var sectionExists bool
+	// Check section id is valid and fetch course id
+	var courseID int
 	err = state.Conn.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM course_section WHERE id = $1)`,
+		`SELECT course_id FROM course_section WHERE id = $1`,
 		*body.SectionID,
-	).Scan(&sectionExists)
-	if err != nil || !sectionExists {
+	).Scan(&courseID)
+	if err != nil {
 		serde.Error(w, "Provided section id is invalid", http.StatusBadRequest)
 		return
+	}
+
+	// Check if already subscribed to course
+	var alreadySubscribedToCourse bool
+	err = state.Conn.QueryRow(
+		`SELECT EXISTS(
+			SELECT 1 
+			FROM section_subscriptions ss
+			  LEFT JOIN course_section cs
+				ON ss.section_id = cs.id
+			WHERE cs.course_id = $1
+		)`, courseID,
+	).Scan(&alreadySubscribedToCourse)
+	if err != nil {
+		serde.Error(w, "Failed fetch", http.StatusInternalServerError)
+		return
+	}
+
+	if !alreadySubscribedToCourse {
+		var email string
+		err = state.Conn.QueryRow(
+			`SELECT email FROM public.user WHERE id = $1`, userID,
+		).Scan(&email)
+		if err != nil {
+			serde.Error(w, "Failed fetch", http.StatusInternalServerError)
+			return
+		}
+
+		err = SendAutomatedEmail(state, []string{email}, "New Subscription", "Body")
+		if err != nil {
+			serde.Error(w, "Failed to send subscription notification", http.StatusInternalServerError)
+		}
 	}
 
 	// insert into section_subscriptions table
