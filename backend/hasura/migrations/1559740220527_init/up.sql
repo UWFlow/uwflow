@@ -185,9 +185,6 @@ CREATE TABLE course_review (
   course_id INT
     REFERENCES course(id)
     ON UPDATE CASCADE ON DELETE SET NULL,
-  prof_id INT
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE SET NULL,
   user_id INT
     REFERENCES "user"(id)
     ON UPDATE CASCADE ON DELETE SET NULL,
@@ -201,7 +198,8 @@ CREATE TABLE course_review (
     CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
   public BOOLEAN NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT course_uniquely_reviewed UNIQUE(course_id, user_id)
 );
 
 CREATE TABLE prof_review (
@@ -223,7 +221,8 @@ CREATE TABLE prof_review (
     CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5),
   public BOOLEAN NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT prof_uniquely_reviewed UNIQUE(prof_id, user_id, course_id)
 );
 
 CREATE TABLE course_review_vote (
@@ -349,6 +348,31 @@ CREATE TRIGGER set_prof_review_updated_at
 BEFORE UPDATE ON prof_review
 FOR EACH ROW
 EXECUTE PROCEDURE set_updated_at();
+
+CREATE FUNCTION check_course_taken()
+RETURNS TRIGGER AS $$
+  BEGIN
+    IF EXISTS(
+      SELECT
+      FROM user_course_taken
+      WHERE user_id = NEW.user_id
+      AND course_id = NEW.course_id
+    )
+    THEN RETURN NEW;
+    ELSE RAISE EXCEPTION 'course must have been taken';
+    END IF;
+  END
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER course_review_check_course_taken
+BEFORE INSERT ON course_review
+FOR EACH ROW
+EXECUTE PROCEDURE check_course_taken();
+
+CREATE TRIGGER prof_review_check_course_taken
+BEFORE INSERT ON prof_review
+FOR EACH ROW
+EXECUTE PROCEDURE check_course_taken();
 
 -- END PUBLIC FUNCTIONS
 
