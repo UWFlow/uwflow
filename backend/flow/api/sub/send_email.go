@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/smtp"
 
-	"github.com/AyushK1/uwflow2.0/backend/api/state"
+	"flow/common/state"
 )
 
 func SendAutomatedEmail(state *state.State, to []string, subject string, body string) error {

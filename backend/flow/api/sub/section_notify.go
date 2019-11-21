@@ -44,7 +44,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 
 	// Check if already subscribed to course
 	var alreadySubscribedToCourse bool
-	err = state.Conn.QueryRow(
+	err = state.Db.QueryRow(
 		`SELECT EXISTS(
 			SELECT 1 
 			FROM section_subscriptions ss
@@ -60,7 +60,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 
 	if !alreadySubscribedToCourse {
 		var email string
-		err = state.Conn.QueryRow(
+		err = state.Db.QueryRow(
 			`SELECT email FROM public.user WHERE id = $1`, userID,
 		).Scan(&email)
 		if err != nil {
