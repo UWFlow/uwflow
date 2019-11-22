@@ -135,6 +135,8 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	reviews := readMongoReviews(state.Env.MongoDumpPath)
+	// Unfortunately, we did not enforce uniqueness in 1.0
+	seenCourseAndUser := make(map[IntPair]bool)
 
 	var preparedCourseReviews [][]interface{}
 	var preparedProfReviews [][]interface{}
@@ -147,6 +149,8 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		if !courseFound {
 			continue
 		}
+		userId := idMap.User[review.UserId]
+		seen := seenCourseAndUser[IntPair{courseId, userId}]
 
 		var profId int
 		var profFound bool
@@ -156,14 +160,14 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 			profFound = false
 		}
 
-		if !review.CourseReview.Empty() {
+		if !review.CourseReview.Empty() && !seen {
 			courseReview := &review.CourseReview
 			created, updated := sortedTimes(courseReview.CommentDate, courseReview.RatingDate)
 			preparedCourseReviews = append(
 				preparedCourseReviews,
 				[]interface{}{
 					courseId,
-					idMap.User[review.UserId],
+					userId,
 					nilIfEmpty(courseReview.Comment),
 					convertRating(courseReview.Easiness, 1, 4),
 					convertRating(courseReview.Interest, 0, 1),
@@ -174,10 +178,11 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				},
 			)
 			idMap.CourseReview[review.Id] = courseReviewId
+			seenCourseAndUser[IntPair{courseId, userId}] = true
 			courseReviewId += 1
 		}
 
-		if profFound && !review.ProfReview.Empty() {
+		if profFound && !review.ProfReview.Empty() && !seen {
 			profReview := &review.ProfReview
 			created, updated := sortedTimes(profReview.CommentDate, profReview.RatingDate)
 			preparedProfReviews = append(
@@ -185,7 +190,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				[]interface{}{
 					courseId,
 					profId,
-					idMap.User[review.UserId],
+					userId,
 					nilIfEmpty(profReview.Comment),
 					convertRating(profReview.Clarity, 1, 4),
 					convertRating(profReview.Passion, 1, 4),
