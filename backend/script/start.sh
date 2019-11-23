@@ -25,7 +25,7 @@ else
 fi
 
 # Restart docker containers, rebuilding images as needed
-$PREFIX docker-compose down
+$PREFIX docker-compose down --remove-orphans
 $PREFIX docker volume rm -f backend_postgres
 
 # Generate self-signed SSL certificate if needed
