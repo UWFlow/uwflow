@@ -180,7 +180,7 @@ CREATE TABLE user_schedule (
   CONSTRAINT section_uniquely_taken UNIQUE(user_id, section_id)
 );
 
-CREATE TABLE course_review (
+CREATE TABLE review (
   id SERIAL PRIMARY KEY,
   course_id INT
     REFERENCES course(id)
@@ -191,46 +191,29 @@ CREATE TABLE course_review (
   user_id INT
     REFERENCES "user"(id)
     ON UPDATE CASCADE ON DELETE SET NULL,
-  text TEXT
-    CONSTRAINT course_review_length CHECK (LENGTH(text) <= 8192),
-  easy SMALLINT
-    CONSTRAINT easy_range CHECK (0 <= easy AND easy <= 5),
   liked SMALLINT
     CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 1),
-  useful SMALLINT
-    CONSTRAINT useful_range CHECK (0 <= useful AND useful <= 5),
+  course_easy SMALLINT
+    CONSTRAINT easy_range CHECK (0 <= course_easy AND course_easy <= 5),
+  course_useful SMALLINT
+    CONSTRAINT useful_range CHECK (0 <= course_useful AND course_useful <= 5),
+  course_comment TEXT
+    CONSTRAINT course_comment_length CHECK (LENGTH(course_comment) <= 8192),
+  prof_clear SMALLINT
+    CONSTRAINT clear_range CHECK (0 <= prof_clear AND prof_clear <= 5),
+  prof_engaging SMALLINT
+    CONSTRAINT engaging_range CHECK (0 <= prof_engaging AND prof_engaging <= 5),
+  prof_comment TEXT
+    CONSTRAINT prof_comment_length CHECK (LENGTH(prof_comment) <= 8192),
   public BOOLEAN NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT course_uniquely_reviewed UNIQUE(course_id, user_id)
 );
 
-CREATE TABLE prof_review (
-  id SERIAL PRIMARY KEY,
-  course_id INT
-    REFERENCES course(id)
-    ON UPDATE CASCADE ON DELETE SET NULL,
-  prof_id INT
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE SET NULL,
-  user_id INT
-    REFERENCES "user"(id)
-    ON UPDATE CASCADE ON DELETE SET NULL,
-  text TEXT
-    CONSTRAINT prof_review_length CHECK (LENGTH(text) <= 8192),
-  clear SMALLINT
-    CONSTRAINT clear_range CHECK (0 <= clear AND clear <= 5),
-  engaging SMALLINT
-    CONSTRAINT engaging_range CHECK (0 <= engaging AND engaging <= 5),
-  public BOOLEAN NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT prof_uniquely_reviewed UNIQUE(prof_id, user_id, course_id)
-);
-
 CREATE TABLE course_review_vote (
   review_id INT NOT NULL
-    REFERENCES course_review(id)
+    REFERENCES review(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   user_id INT NOT NULL
@@ -244,7 +227,7 @@ CREATE TABLE course_review_vote (
 
 CREATE TABLE prof_review_vote (
   review_id INT NOT NULL
-    REFERENCES prof_review(id)
+    REFERENCES review(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   user_id INT NOT NULL
@@ -272,47 +255,26 @@ SELECT DISTINCT cs.course_id, sm.prof_id
 FROM course_section cs
   JOIN section_meeting sm ON sm.section_id = cs.id;
 
-CREATE VIEW course_review_author AS
+CREATE VIEW review_author AS
 SELECT
-  cr.id AS review_id,
+  r.id AS review_id,
   u.program AS program,
   CASE
-    WHEN cr.public
+    WHEN r.public
     THEN u.full_name
     ELSE NULL
   END AS full_name,
   CASE
-    WHEN cr.public
+    WHEN r.public
     THEN u.picture_url
     ELSE NULL
   END AS picture_url
-FROM course_review cr
-  JOIN "user" u ON cr.user_id = u.id;
+FROM review r
+  JOIN "user" u ON r.user_id = u.id;
 
-CREATE VIEW course_review_user_id AS
+CREATE VIEW review_user_id AS
 SELECT id AS review_id, user_id
-FROM course_review;
-
-CREATE VIEW prof_review_author AS
-SELECT
-  pr.id AS review_id,
-  u.program AS program,
-  CASE
-    WHEN pr.public
-    THEN u.full_name
-    ELSE NULL
-  END AS full_name,
-  CASE
-    WHEN pr.public
-    THEN u.picture_url
-    ELSE NULL
-  END AS picture_url
-FROM prof_review pr
-  JOIN "user" u ON pr.user_id = u.id;
-
-CREATE VIEW prof_review_user_id AS
-SELECT id AS review_id, user_id
-FROM prof_review;
+FROM review;
 
 -- END PUBLIC VIEWS
 
@@ -322,11 +284,9 @@ CREATE INDEX course_section_course_id_fkey ON course_section(course_id);
 CREATE INDEX section_meeting_prof_id_fkey ON section_meeting(prof_id);
 CREATE INDEX section_meeting_section_id_fkey ON section_meeting(section_id);
 
-CREATE INDEX course_review_prof_id_fkey ON course_review(prof_id);
-CREATE INDEX course_review_user_id_fkey ON course_review(user_id);
-
-CREATE INDEX prof_review_course_id_fkey ON prof_review(course_id);
-CREATE INDEX prof_review_user_id_fkey ON prof_review(user_id);
+-- there is a partial index on (course_id, ...), so only index the other fkeys
+CREATE INDEX review_prof_id_fkey ON review(prof_id);
+CREATE INDEX review_user_id_fkey ON review(user_id);
 
 -- END PUBLIC INDEXES
 
@@ -340,13 +300,8 @@ RETURNS TRIGGER AS $$
   END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_course_review_updated_at
-BEFORE UPDATE ON course_review
-FOR EACH ROW
-EXECUTE PROCEDURE set_updated_at();
-
-CREATE TRIGGER set_prof_review_updated_at
-BEFORE UPDATE ON prof_review
+CREATE TRIGGER set_review_updated_at
+BEFORE UPDATE ON review
 FOR EACH ROW
 EXECUTE PROCEDURE set_updated_at();
 
@@ -365,13 +320,8 @@ RETURNS TRIGGER AS $$
   END
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER course_review_check_course_taken
-BEFORE INSERT ON course_review
-FOR EACH ROW
-EXECUTE PROCEDURE check_course_taken();
-
-CREATE TRIGGER prof_review_check_course_taken
-BEFORE INSERT ON prof_review
+CREATE TRIGGER review_check_course_taken
+BEFORE INSERT ON review
 FOR EACH ROW
 EXECUTE PROCEDURE check_course_taken();
 
@@ -384,22 +334,26 @@ CREATE SCHEMA materialized;
 CREATE MATERIALIZED VIEW materialized.course_rating AS
 SELECT
   course_id,
-  COUNT(*)        AS total_count,
-  COUNT(text)     AS comment_count,
-  AVG(liked)      AS liked,
-  AVG(easy) / 5   AS easy,
-  AVG(useful) / 5 AS useful
-FROM course_review
+  -- We only consider reviews with non-NULL liked as filled.
+  -- This is because it's impossible to submit anything else with NULL liked,
+  -- but it *is* possible to have all fields be NULL by liking then unliking.
+  COUNT(liked)           AS filled_count,
+  COUNT(course_comment)  AS comment_count,
+  AVG(liked)             AS liked,
+  AVG(course_easy) / 5   AS easy,
+  AVG(course_useful) / 5 AS useful
+FROM review
 GROUP BY course_id;
 
 CREATE MATERIALIZED VIEW materialized.prof_rating AS
 SELECT
   prof_id,
-  COUNT(*)          AS total_count,
-  COUNT(text)       AS comment_count,
-  AVG(clear) / 5    AS clear,
-  AVG(engaging) / 5 AS engaging
-FROM prof_review
+  COUNT(liked)           AS filled_count,
+  COUNT(prof_comment)    AS comment_count,
+  AVG(liked)             AS liked,
+  AVG(prof_clear) / 5    AS clear,
+  AVG(prof_engaging) / 5 AS engaging
+FROM review
 GROUP BY prof_id;
 
 -- END MATERIALIZED VIEWS
@@ -421,12 +375,12 @@ $$ LANGUAGE plpgsql;
 -- START MATERIALIZED TRIGGERS
 
 CREATE TRIGGER refresh_course_rating
-AFTER INSERT OR UPDATE OR DELETE ON course_review
+AFTER INSERT OR UPDATE OR DELETE ON review
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.course_rating');
 
 CREATE TRIGGER refresh_prof_rating
-AFTER INSERT OR UPDATE OR DELETE ON prof_review
+AFTER INSERT OR UPDATE OR DELETE ON review
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_rating');
 
@@ -444,20 +398,20 @@ CREATE VIEW aggregate.prof_rating AS
 SELECT * FROM materialized.prof_rating;
 
 CREATE VIEW aggregate.course_easy_buckets AS
-SELECT course_id, easy AS value, COUNT(*) AS count
-FROM course_review GROUP BY course_id, easy;
+SELECT course_id, course_easy AS value, COUNT(*) AS count
+FROM review GROUP BY course_id, course_easy;
 
 CREATE VIEW aggregate.course_useful_buckets AS
-SELECT course_id, useful AS value, COUNT(*) AS count
-FROM course_review GROUP BY course_id, useful;
+SELECT course_id, course_useful AS value, COUNT(*) AS count
+FROM review GROUP BY course_id, course_useful;
 
 CREATE VIEW aggregate.prof_clear_buckets AS
-SELECT prof_id, clear AS value, COUNT(*) AS count
-FROM prof_review GROUP BY prof_id, clear;
+SELECT prof_id, prof_clear AS value, COUNT(*) AS count
+FROM review GROUP BY prof_id, prof_clear;
 
 CREATE VIEW aggregate.prof_engaging_buckets AS
-SELECT prof_id, engaging AS value, COUNT(*) AS count
-FROM prof_review GROUP BY prof_id, engaging;
+SELECT prof_id, prof_engaging AS value, COUNT(*) AS count
+FROM review GROUP BY prof_id, prof_engaging;
 
 -- END AGGREGATE VIEWS
 
