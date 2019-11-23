@@ -185,6 +185,9 @@ CREATE TABLE course_review (
   course_id INT
     REFERENCES course(id)
     ON UPDATE CASCADE ON DELETE SET NULL,
+  prof_id INT
+    REFERENCES prof(id)
+    ON UPDATE CASCADE ON DELETE SET NULL,
   user_id INT
     REFERENCES "user"(id)
     ON UPDATE CASCADE ON DELETE SET NULL,
