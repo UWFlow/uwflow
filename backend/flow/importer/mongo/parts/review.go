@@ -135,6 +135,8 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	idMap.CourseReview = make(map[primitive.ObjectID]int)
 	idMap.ProfReview = make(map[primitive.ObjectID]int)
 	reviews := readMongoReviews(state.Env.MongoDumpPath)
+	// Unfortunately, we did not enforce uniqueness in 1.0
+	seenCourseAndUser := make(map[IntPair]bool)
 
 	var preparedCourseReviews [][]interface{}
 	var preparedProfReviews [][]interface{}
@@ -147,6 +149,8 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		if !courseFound {
 			continue
 		}
+		userId := idMap.User[review.UserId]
+		seen := seenCourseAndUser[IntPair{courseId, userId}]
 
 		var profId int
 		var profFound bool
@@ -156,7 +160,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 			profFound = false
 		}
 
-		if !review.CourseReview.Empty() {
+		if !review.CourseReview.Empty() && !seen {
 			courseReview := &review.CourseReview
 			created, updated := sortedTimes(courseReview.CommentDate, courseReview.RatingDate)
 			preparedCourseReviews = append(
@@ -164,7 +168,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				[]interface{}{
 					courseId,
 					nilIfZero(profId),
-					idMap.User[review.UserId],
+					userId,
 					nilIfEmpty(courseReview.Comment),
 					convertRating(courseReview.Easiness, 1, 4),
 					convertRating(courseReview.Interest, 0, 1),
@@ -175,10 +179,11 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				},
 			)
 			idMap.CourseReview[review.Id] = courseReviewId
+			seenCourseAndUser[IntPair{courseId, userId}] = true
 			courseReviewId += 1
 		}
 
-		if profFound && !review.ProfReview.Empty() {
+		if profFound && !review.ProfReview.Empty() && !seen {
 			profReview := &review.ProfReview
 			created, updated := sortedTimes(profReview.CommentDate, profReview.RatingDate)
 			preparedProfReviews = append(
@@ -186,7 +191,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				[]interface{}{
 					courseId,
 					profId,
-					idMap.User[review.UserId],
+					userId,
 					nilIfEmpty(profReview.Comment),
 					convertRating(profReview.Clarity, 1, 4),
 					convertRating(profReview.Passion, 1, 4),
@@ -196,6 +201,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				},
 			)
 			idMap.ProfReview[review.Id] = profReviewId
+			seenCourseAndUser[IntPair{courseId, userId}] = true
 			profReviewId += 1
 		}
 
@@ -204,7 +210,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				preparedUserShortlists,
 				[]interface{}{
 					courseId,
-					idMap.User[review.UserId],
+					userId,
 				},
 			)
 		} else {
@@ -213,13 +219,33 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				preparedUserCourses,
 				[]interface{}{
 					courseId,
-					idMap.User[review.UserId],
+					userId,
 					termId,
 					review.LevelId,
 				},
 			)
 		}
 	}
+
+	takenCount, err := tx.CopyFrom(
+		db.Identifier{"user_course_taken"},
+		[]string{"course_id", "user_id", "term", "level"},
+		preparedUserCourses,
+	)
+	if err != nil {
+		return err
+	}
+	log.EndImport(state.Log, "user_course_taken", takenCount)
+
+	shortlistCount, err := tx.CopyFrom(
+		db.Identifier{"user_shortlist"},
+		[]string{"course_id", "user_id"},
+		preparedUserShortlists,
+	)
+	if err != nil {
+		return err
+	}
+	log.EndImport(state.Log, "user_shortlist", shortlistCount)
 
 	courseReviewCount, err := tx.CopyFrom(
 		db.Identifier{"course_review"},
@@ -246,26 +272,6 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		return err
 	}
 	log.EndImport(state.Log, "prof_review", profReviewCount)
-
-	takenCount, err := tx.CopyFrom(
-		db.Identifier{"user_course_taken"},
-		[]string{"course_id", "user_id", "term", "level"},
-		preparedUserCourses,
-	)
-	if err != nil {
-		return err
-	}
-	log.EndImport(state.Log, "user_course_taken", takenCount)
-
-	shortlistCount, err := tx.CopyFrom(
-		db.Identifier{"user_shortlist"},
-		[]string{"course_id", "user_id"},
-		preparedUserShortlists,
-	)
-	if err != nil {
-		return err
-	}
-	log.EndImport(state.Log, "user_shortlist", shortlistCount)
 
 	return tx.Commit()
 }
