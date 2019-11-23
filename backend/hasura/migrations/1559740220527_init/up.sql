@@ -320,6 +320,7 @@ CREATE INDEX section_meeting_prof_id_fkey ON section_meeting(prof_id);
 CREATE INDEX section_meeting_section_id_fkey ON section_meeting(section_id);
 
 CREATE INDEX course_review_course_id_fkey ON course_review(course_id);
+CREATE INDEX course_review_prof_id_fkey ON course_review(prof_id);
 CREATE INDEX course_review_user_id_fkey ON course_review(user_id);
 
 CREATE INDEX prof_review_course_id_fkey ON prof_review(course_id);
