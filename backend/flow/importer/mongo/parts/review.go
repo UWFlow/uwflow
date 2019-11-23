@@ -121,9 +121,9 @@ func readMongoReviews(rootPath string) []MongoReview {
 }
 
 func ImportReviews(state *state.State, idMap *IdentifierMap) error {
-	log.StartImport(state.Log, "user_course_taken")
 	log.StartImport(state.Log, "course_review")
 	log.StartImport(state.Log, "prof_review")
+	log.StartImport(state.Log, "user_course_taken")
 	log.StartImport(state.Log, "user_shortlist")
 
 	tx, err := state.Db.Begin()
@@ -167,6 +167,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				preparedCourseReviews,
 				[]interface{}{
 					courseId,
+					nilIfZero(profId),
 					userId,
 					nilIfEmpty(courseReview.Comment),
 					convertRating(courseReview.Easiness, 1, 4),
@@ -225,20 +226,10 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		}
 	}
 
-	takenCount, err := tx.CopyFrom(
-		db.Identifier{"user_course_taken"},
-		[]string{"course_id", "user_id", "term", "level"},
-		preparedUserCourses,
-	)
-	if err != nil {
-		return err
-	}
-	log.EndImport(state.Log, "user_course_taken", takenCount)
-
 	courseReviewCount, err := tx.CopyFrom(
 		db.Identifier{"course_review"},
 		[]string{
-			"course_id", "user_id", "text", "easy", "liked", "useful",
+			"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful",
 			"public", "created_at", "updated_at",
 		},
 		preparedCourseReviews,
@@ -260,6 +251,16 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		return err
 	}
 	log.EndImport(state.Log, "prof_review", profReviewCount)
+
+	takenCount, err := tx.CopyFrom(
+		db.Identifier{"user_course_taken"},
+		[]string{"course_id", "user_id", "term", "level"},
+		preparedUserCourses,
+	)
+	if err != nil {
+		return err
+	}
+	log.EndImport(state.Log, "user_course_taken", takenCount)
 
 	shortlistCount, err := tx.CopyFrom(
 		db.Identifier{"user_shortlist"},

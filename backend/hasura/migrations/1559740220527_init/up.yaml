@@ -469,6 +469,12 @@
         role: user
     - array_relationships:
       - comment: null
+        name: course_reviews
+        using:
+          foreign_key_constraint_on:
+            column: prof_id
+            table: course_review
+      - comment: null
         name: prof_clear_buckets
         using:
           manual_configuration:
@@ -786,6 +792,7 @@
           - liked
           - useful
           - course_id
+          - prof_id
           - user_id
           - text
           - public
@@ -797,6 +804,10 @@
         name: course
         using:
           foreign_key_constraint_on: course_id
+      - comment: null
+        name: prof
+        using:
+          foreign_key_constraint_on: prof_id
       - comment: null
         name: author
         using:
@@ -818,6 +829,7 @@
           columns:
           - id
           - course_id
+          - prof_id
           - text
           - easy
           - liked
@@ -833,6 +845,7 @@
           columns:
           - id
           - course_id
+          - prof_id
           - text
           - easy
           - liked
@@ -851,6 +864,7 @@
           - liked
           - useful
           - course_id
+          - prof_id
           - text
           - public
           filter:
