@@ -76,7 +76,8 @@ func TimeString12HToSeconds(time string) (int, error) {
 // Split a unified weekday string like "MTTh"
 // into separate strings for each day like ["M", "T", "Th"]
 func SplitWeekdayString(weekdays string) []string {
-  var splitWeekdays []string
+  // Crucially, splitWeekdays should never be nil, so allocate zero-length slice
+  splitWeekdays := make([]string, 0)
 	i, N := 0, len(weekdays)
 	for i < N {
 		// Day names are two characters iff the next char is lowercase
