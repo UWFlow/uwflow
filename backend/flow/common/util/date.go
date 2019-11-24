@@ -72,3 +72,21 @@ func TimeString12HToSeconds(time string) (int, error) {
 	}
 	return seconds, nil
 }
+
+// Split a unified weekday string like "MTTh"
+// into separate strings for each day like ["M", "T", "Th"]
+func SplitWeekdayString(weekdays string) []string {
+  var splitWeekdays []string
+	i, N := 0, len(weekdays)
+	for i < N {
+		// Day names are two characters iff the next char is lowercase
+		if i+1 < N && 'a' <= weekdays[i+1] && weekdays[i+1] <= 'z' {
+			splitWeekdays = append(splitWeekdays, weekdays[i:i+2])
+      i += 2
+		} else {
+			splitWeekdays = append(splitWeekdays, weekdays[i:i+1])
+      i += 1
+		}
+	}
+  return splitWeekdays
+}
