@@ -10,17 +10,19 @@ import (
 )
 
 type Course struct {
-	Id            int      `json:"id"`
-	Code          string   `json:"code"`
-	Name          string   `json:"name"`
-	ProfsTeaching []string `json:"profs"`
+	Id          int      `json:"id"`
+	Code        string   `json:"code"`
+	Name        string   `json:"name"`
+	Profs       []string `json:"profs"`
+	RatingCount int      `json:"rating_count"`
 }
 
 type Prof struct {
-	Id      int      `json:"id"`
-	Code    string   `json:"code"`
-	Name    string   `json:"name"`
-	Courses []string `json:"courses"`
+	Id          int      `json:"id"`
+	Code        string   `json:"code"`
+	Name        string   `json:"name"`
+	Courses     []string `json:"courses"`
+	RatingCount int      `json:"rating_count"`
 }
 
 type Response struct {
@@ -29,18 +31,23 @@ type Response struct {
 }
 
 const CourseQuery = `
-SELECT c.id, c.code, c.name, ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL)
+SELECT
+  c.id, c.code, c.name, cr.count AS review_count,
+  ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL) AS profs
 FROM course c
- LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
- LEFT JOIN prof p ON p.id = pc.prof_id
+ INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
+  LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
+  LEFT JOIN prof p ON p.id = pc.prof_id
 GROUP BY c.id
 `
 
 const ProfQuery = `
-SELECT p.id, p.code, p.name, ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL)
+SELECT p.id, p.code, p.name, pr.count AS review_count,
+ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL) AS courses
 FROM prof p
- LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
- LEFT JOIN course c ON c.id = pc.course_id
+ INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
+  LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
+  LEFT JOIN course c ON c.id = pc.course_id
 GROUP BY p.id
 `
 
@@ -54,7 +61,7 @@ func dump(state *state.State) (*Response, error) {
 	var response Response
 	for rows.Next() {
 		var c Course
-		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.ProfsTeaching)
+		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.RatingCount, &c.Profs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read rows: %v", err)
 		}
@@ -69,7 +76,7 @@ func dump(state *state.State) (*Response, error) {
 
 	for rows.Next() {
 		var p Prof
-		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.Courses)
+		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.RatingCount, &p.Courses)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read rows: %v", err)
 		}
