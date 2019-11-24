@@ -7,21 +7,7 @@ import (
 	"flow/importer/uw/log"
 )
 
-const SetupExamQuery = `
-DROP TABLE IF EXISTS _section_exam_delta;
-
-CREATE TEMPORARY TABLE _section_exam_delta(
-  course_code TEXT NOT NULL,
-  section_name TEXT NOT NULL,
-  term INT NOT NULL,
-  location TEXT,
-  start_seconds INT,
-  end_seconds INT,
-  date DATE,
-  day TEXT,
-  is_tba BOOLEAN NOT NULL
-);
-`
+const TruncateExamQuery = `TRUNCATE work.section_exam_delta`
 
 const UpdateExamQuery = `
 UPDATE section_exam SET
@@ -32,7 +18,7 @@ UPDATE section_exam SET
   date = delta.date,
   day = delta.day,
   is_tba = delta.is_tba
-FROM _section_exam_delta delta
+FROM work.section_exam_delta delta
   JOIN course c
     ON c.code = delta.course_code
   JOIN course_section s
@@ -50,7 +36,7 @@ INSERT INTO section_exam(
 SELECT
   s.id, d.location, d.start_seconds, d.end_seconds,
   d.date, d.day, d.is_tba
-FROM _section_exam_delta d
+FROM work.section_exam_delta d
   JOIN course c
     ON c.code = d.course_code
   JOIN course_section s
@@ -62,8 +48,6 @@ FROM _section_exam_delta d
 WHERE se.section_id IS NULL
 `
 
-const TeardownExamQuery = `DROP TABLE _section_exam_delta`
-
 func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 	var result log.DbResult
 
@@ -73,9 +57,9 @@ func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(SetupExamQuery)
+	_, err = tx.Exec(TruncateExamQuery)
 	if err != nil {
-		return &result, fmt.Errorf("failed to create temporary table: %w", err)
+		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
 	preparedExams := make([][]interface{}, len(exams))
@@ -87,7 +71,7 @@ func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 	}
 
 	_, err = tx.CopyFrom(
-		db.Identifier{"_section_exam_delta"},
+		db.Identifier{"work", "section_exam_delta"},
 		[]string{
 			"course_code", "section_name", "term", "location",
 			"start_seconds", "end_seconds", "date", "day", "is_tba",
@@ -109,11 +93,6 @@ func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
-
-	_, err = tx.Exec(TeardownExamQuery)
-	if err != nil {
-		return &result, fmt.Errorf("failed to tear down table: %w", err)
-	}
 
 	err = tx.Commit()
 	if err != nil {

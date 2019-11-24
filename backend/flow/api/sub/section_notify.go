@@ -46,8 +46,8 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 	var alreadySubscribedToCourse bool
 	err = state.Db.QueryRow(
 		`SELECT EXISTS(
-			SELECT 1 
-			FROM section_subscriptions ss
+			SELECT
+			FROM section_subscription ss
 			  LEFT JOIN course_section cs
 				ON ss.section_id = cs.id
 			WHERE cs.course_id = $1
@@ -74,9 +74,9 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	// insert into section_subscriptions table
+	// insert into section_subscription table
 	_, err = state.Db.Exec(
-		"INSERT INTO section_subscriptions(user_id, section_id) VALUES ($1, $2)",
+		"INSERT INTO section_subscription(user_id, section_id) VALUES ($1, $2)",
 		userID, *body.SectionID,
 	)
 	if err != nil {
@@ -106,9 +106,9 @@ func UnsubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// insert into section_subscriptions table
+	// delete from section_subscription table
 	tag, err := state.Db.Exec(
-		"DELETE FROM section_subscriptions WHERE user_id = $1 AND section_id = $2",
+		"DELETE FROM section_subscription WHERE user_id = $1 AND section_id = $2",
 		userID, *body.SectionID,
 	)
 	if err != nil {

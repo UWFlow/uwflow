@@ -156,7 +156,7 @@ CREATE TABLE section_meeting (
   is_tba BOOLEAN NOT NULL
 );
 
-CREATE TABLE section_subscriptions (
+CREATE TABLE section_subscription (
   user_id INT NOT NULL
     REFERENCES "user"(id)
     ON DELETE CASCADE
@@ -464,3 +464,72 @@ CREATE INDEX user_fb_user_id_fkey ON secret.user_fb(user_id);
 CREATE INDEX user_google_user_id_fkey ON secret.user_google(user_id);
 
 -- END SECRET INDEXES
+
+-- tables used by importers and workers internally
+CREATE SCHEMA work;
+
+-- START WORK TABLES
+
+CREATE TABLE work.course_delta(
+  code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  prereqs TEXT,
+  coreqs TEXT,
+  antireqs TEXT
+);
+
+CREATE TABLE work.section_exam_delta(
+  course_code TEXT NOT NULL,
+  section_name TEXT NOT NULL,
+  term INT NOT NULL,
+  location TEXT,
+  start_seconds INT,
+  end_seconds INT,
+  date DATE,
+  day TEXT,
+  is_tba BOOLEAN NOT NULL
+);
+
+CREATE TABLE work.course_section_delta(
+  class_number INT NOT NULL,
+  course_code TEXT NOT NULL,
+  section TEXT NOT NULL,
+  campus TEXT NOT NULL,
+  term INT NOT NULL,
+  enrollment_capacity INT NOT NULL,
+  enrollment_total INT NOT NULL
+);
+
+CREATE TABLE work.course_section_opened(
+  section_id INT NOT NULL
+);
+
+CREATE TABLE work.section_meeting_delta(
+  class_number INT NOT NULL,
+  term INT NOT NULL,
+  prof_code TEXT,
+  location TEXT,
+  start_seconds INT,
+  end_seconds INT,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  days TEXT[] NOT NULL,
+  is_cancelled BOOLEAN NOT NULL,
+  is_closed BOOLEAN NOT NULL,
+  is_tba BOOLEAN NOT NULL
+);
+
+CREATE TABLE work.prof_delta(
+  name TEXT NOT NULL,
+  code TEXT NOT NULL
+);
+
+CREATE TABLE work.email_queue(
+  addressee TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- END WORK TABLES
