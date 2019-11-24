@@ -99,8 +99,8 @@ func readMongoReviews(rootPath string) []MongoReview {
 
 	var reviews []MongoReview
 	for len(data) > 0 {
-    var r bson.Raw
-    var m MongoReview
+		var r bson.Raw
+		var m MongoReview
 		bson.Unmarshal(data, &r)
 		bson.Unmarshal(r, &m)
 		reviews = append(reviews, m)
@@ -124,13 +124,13 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	idMap.Review = make(map[primitive.ObjectID]int)
 	mongoReviews := readMongoReviews(state.Env.MongoDumpPath)
 	// Unfortunately, we did not enforce uniqueness in 1.0
-  seenCourseAndUser := make(map[IntPair]bool)
+	seenCourseAndUser := make(map[IntPair]bool)
 
 	var preparedReviews [][]interface{}
 	var preparedUserCourses [][]interface{}
 	var preparedUserShortlists [][]interface{}
 
-  var review data.Review
+	var review data.Review
 	reviewId := 1
 	for _, mongoReview := range mongoReviews {
 		courseId, courseFound := idMap.Course[mongoReview.CourseId]
@@ -147,15 +147,15 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 			profReview := &mongoReview.ProfReview
 
 			courseCreated, courseUpdated := sortedTimes(
-        courseReview.CommentDate,
-        courseReview.RatingDate,
-      )
-      profCreated, profUpdated := sortedTimes(
-        profReview.CommentDate,
-        profReview.RatingDate,
-      )
-      created, _ := sortedTimes(courseCreated, profCreated)
-      _, updated := sortedTimes(courseUpdated, profUpdated)
+				courseReview.CommentDate,
+				courseReview.RatingDate,
+			)
+			profCreated, profUpdated := sortedTimes(
+				profReview.CommentDate,
+				profReview.RatingDate,
+			)
+			created, _ := sortedTimes(courseCreated, profCreated)
+			_, updated := sortedTimes(courseUpdated, profUpdated)
 
 			seenCourseAndUser[IntPair{courseId, userId}] = true
 			idMap.Review[mongoReview.Id] = reviewId

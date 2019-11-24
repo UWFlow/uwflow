@@ -113,7 +113,7 @@ func ConvertMeeting(
 		meeting.EndDate = term.EndDate
 	}
 
-  meeting.Days = util.SplitWeekdayString(apiMeeting.Date.Weekdays)
+	meeting.Days = util.SplitWeekdayString(apiMeeting.Date.Weekdays)
 
 	return nil
 }
