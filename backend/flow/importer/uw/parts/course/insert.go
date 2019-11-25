@@ -8,18 +8,7 @@ import (
 	"flow/importer/uw/log"
 )
 
-const SetupCourseQuery = `
-DROP TABLE IF EXISTS _course_delta;
-
-CREATE TEMPORARY TABLE _course_delta(
-  code TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  description TEXT,
-  prereqs TEXT,
-  coreqs TEXT,
-  antireqs TEXT
-);
-`
+const TruncateCourseQuery = `TRUNCATE work.course_delta`
 
 const UpdateCourseQuery = `
 UPDATE course SET
@@ -28,7 +17,7 @@ UPDATE course SET
   prereqs = delta.prereqs,
   coreqs = delta.coreqs,
   antireqs = delta.antireqs
-FROM _course_delta delta
+FROM work.course_delta delta
 WHERE course.code = delta.code
 `
 
@@ -36,12 +25,10 @@ const InsertCourseQuery = `
 INSERT INTO course(code, name, description, prereqs, coreqs, antireqs)
 SELECT
   d.code, d.name, d.description, d.prereqs, d.coreqs, d.antireqs
-FROM _course_delta d
+FROM work.course_delta d
   LEFT JOIN course c ON c.code = d.code
 WHERE c.id IS NULL
 `
-
-const TeardownCourseQuery = `DROP TABLE _course_delta`
 
 func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	var result log.DbResult
@@ -52,9 +39,9 @@ func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(SetupCourseQuery)
+	_, err = tx.Exec(TruncateCourseQuery)
 	if err != nil {
-		return &result, fmt.Errorf("failed to create temporary table: %w", err)
+		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
 	var preparedCourses [][]interface{}
@@ -74,7 +61,7 @@ func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	}
 
 	_, err = tx.CopyFrom(
-		db.Identifier{"_course_delta"},
+		db.Identifier{"work", "course_delta"},
 		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
 		preparedCourses,
 	)
@@ -93,11 +80,6 @@ func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
-
-	_, err = tx.Exec(TeardownCourseQuery)
-	if err != nil {
-		return &result, fmt.Errorf("failed to tear down table: %w", err)
-	}
 
 	err = tx.Commit()
 	if err != nil {
