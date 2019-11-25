@@ -38,7 +38,7 @@ FROM course c
  INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
   LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
   LEFT JOIN prof p ON p.id = pc.prof_id
-GROUP BY c.id
+GROUP BY c.id, cr.filled_count
 `
 
 const ProfQuery = `
@@ -48,7 +48,7 @@ FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
   LEFT JOIN course c ON c.id = pc.course_id
-GROUP BY p.id
+GROUP BY p.id, pr.filled_count
 `
 
 func dump(state *state.State) (*Response, error) {
