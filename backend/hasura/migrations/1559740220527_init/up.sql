@@ -165,7 +165,7 @@ CREATE TABLE section_subscription (
     REFERENCES course_section(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT user_subscription_unique UNIQUE(section_id, user_id)
+  CONSTRAINT section_subscription_unique UNIQUE(section_id, user_id)
 );
 
 CREATE TABLE user_schedule (
