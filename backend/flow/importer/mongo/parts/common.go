@@ -16,10 +16,9 @@ type SectionKey struct {
 }
 
 type IdentifierMap struct {
-	Course       map[string]int
-	Prof         map[string]int
-	User         map[primitive.ObjectID]int
-	CourseReview map[primitive.ObjectID]int
-	ProfReview   map[primitive.ObjectID]int
-	Section      map[SectionKey]int
+	Course  map[string]int
+	Prof    map[string]int
+	User    map[primitive.ObjectID]int
+	Review  map[primitive.ObjectID]int
+	Section map[SectionKey]int
 }

@@ -113,16 +113,7 @@ func ConvertMeeting(
 		meeting.EndDate = term.EndDate
 	}
 
-	weekdays := apiMeeting.Date.Weekdays
-	N := len(weekdays)
-	for i := 0; i < N; i++ {
-		// Day names are two characters iff the next char is lowercase
-		if i+1 < N && 'a' <= weekdays[i+1] && weekdays[i+1] <= 'z' {
-			meeting.Days = append(meeting.Days, weekdays[i:i+2])
-		} else {
-			meeting.Days = append(meeting.Days, weekdays[i:i+1])
-		}
-	}
+	meeting.Days = util.SplitWeekdayString(apiMeeting.Date.Weekdays)
 
 	return nil
 }

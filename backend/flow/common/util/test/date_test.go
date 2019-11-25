@@ -71,3 +71,18 @@ func TestTimeString12HToSeconds(t *testing.T) {
 		want[i].Test(t, input, got, err)
 	}
 }
+
+func TestSplitWeekdayString(t *testing.T) {
+	inputs := []string{
+		"", "M", "Th", "MWF", "TTh", "MTWThFSSu",
+	}
+	want := []util.Outcome{
+		{Value: []string{}}, {Value: []string{"M"}}, {Value: []string{"Th"}},
+		{Value: []string{"M", "W", "F"}}, {Value: []string{"T", "Th"}},
+		{Value: []string{"M", "T", "W", "Th", "F", "S", "Su"}},
+	}
+	for i, input := range inputs {
+		got := util.SplitWeekdayString(input)
+		want[i].Test(t, input, got, nil)
+	}
+}

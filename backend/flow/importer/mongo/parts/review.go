@@ -5,6 +5,7 @@ import (
 	"path"
 	"time"
 
+	"flow/common/data"
 	"flow/common/db"
 	"flow/common/state"
 	"flow/common/util"
@@ -14,14 +15,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// This is the only value of Privacy for which the review is public
+const Public int = 2
+
 type MongoCourseReview struct {
-	Comment     string     `bson:"comment"`
-	Easiness    *float64   `bson:"easiness"`
-	Interest    *float64   `bson:"interest"`
-	Usefulness  *float64   `bson:"usefulness"`
-	Privacy     int        `bson:"privacy"`
-	CommentDate *time.Time `bson:"comment_date"`
-	RatingDate  *time.Time `bson:"rating_change_date"`
+	Comment         string     `bson:"comment"`
+	Easiness        *float64   `bson:"easiness"`
+	Interest        *float64   `bson:"interest"`
+	Usefulness      *float64   `bson:"usefulness"`
+	Privacy         int        `bson:"privacy"`
+	NumVotedHelpful int        `bson:"num_voted_helpful"`
+	CommentDate     *time.Time `bson:"comment_date"`
+	RatingDate      *time.Time `bson:"rating_change_date"`
 }
 
 func (r *MongoCourseReview) Empty() bool {
@@ -46,19 +51,20 @@ type MongoReview struct {
 	UserId       primitive.ObjectID `bson:"user_id"`
 	CourseId     string             `bson:"course_id"`
 	CourseReview MongoCourseReview  `bson:"course_review"`
-	ProfId       *string            `bson:"professor_id"`
+	ProfId       string             `bson:"professor_id"`
 	ProfReview   MongoProfReview    `bson:"professor_review"`
 	TermId       string             `bson:"term_id"`
 	LevelId      *string            `bson:"program_year_id"`
 }
 
-// This is the only value of Privacy for which the review is public
-const Public = 2
+func (r *MongoReview) Empty() bool {
+	return r.CourseReview.Empty() && r.ProfReview.Empty()
+}
 
 // Translate from binary to binned: (0 1) for liked or (0 1 2 3 4 5) for others.
 // We typically want to make the translation "soft" by mapping
 // to medium intensity ratings and not extremes (e.g. false -> 1, true -> 4).
-func convertRating(value *float64, falseValue, trueValue int16) *int16 {
+func rescaledRating(value *float64, falseValue, trueValue int16) *int16 {
 	if value == nil {
 		return nil
 	}
@@ -86,22 +92,6 @@ func sortedTimes(first *time.Time, second *time.Time) (*time.Time, *time.Time) {
 	}
 }
 
-func nilIfZero(value int) *int {
-	if value == 0 {
-		return nil
-	} else {
-		return &value
-	}
-}
-
-func nilIfEmpty(value string) *string {
-	if value == "" {
-		return nil
-	} else {
-		return &value
-	}
-}
-
 func readMongoReviews(rootPath string) []MongoReview {
 	data, err := ioutil.ReadFile(path.Join(rootPath, "user_course.bson"))
 	if err != nil {
@@ -117,12 +107,13 @@ func readMongoReviews(rootPath string) []MongoReview {
 		reviews = append(reviews, m)
 		data = data[len(r):]
 	}
+
 	return reviews
 }
 
 func ImportReviews(state *state.State, idMap *IdentifierMap) error {
-	log.StartImport(state.Log, "course_review")
-	log.StartImport(state.Log, "prof_review")
+	log.StartImport(state.Log, "review")
+	log.StartImport(state.Log, "course_review_upvote")
 	log.StartImport(state.Log, "user_course_taken")
 	log.StartImport(state.Log, "user_shortlist")
 
@@ -132,80 +123,71 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	}
 	defer tx.Rollback()
 
-	idMap.CourseReview = make(map[primitive.ObjectID]int)
-	idMap.ProfReview = make(map[primitive.ObjectID]int)
-	reviews := readMongoReviews(state.Env.MongoDumpPath)
+	idMap.Review = make(map[primitive.ObjectID]int)
+	mongoReviews := readMongoReviews(state.Env.MongoDumpPath)
 	// Unfortunately, we did not enforce uniqueness in 1.0
 	seenCourseAndUser := make(map[IntPair]bool)
 
-	var preparedCourseReviews [][]interface{}
-	var preparedProfReviews [][]interface{}
+	var preparedReviews [][]interface{}
 	var preparedUserCourses [][]interface{}
+	var preparedCourseUpvotes [][]interface{}
 	var preparedUserShortlists [][]interface{}
 
-	courseReviewId, profReviewId := 1, 1
-	for _, review := range reviews {
-		courseId, courseFound := idMap.Course[review.CourseId]
+	var review data.Review
+	reviewId := 1
+	for _, mongoReview := range mongoReviews {
+		courseId, courseFound := idMap.Course[mongoReview.CourseId]
 		if !courseFound {
 			continue
 		}
-		userId := idMap.User[review.UserId]
+
+		profId := idMap.Prof[mongoReview.ProfId]
+		userId := idMap.User[mongoReview.UserId]
 		seen := seenCourseAndUser[IntPair{courseId, userId}]
 
-		var profId int
-		var profFound bool
-		if review.ProfId != nil {
-			profId, profFound = idMap.Prof[*(review.ProfId)]
-		} else {
-			profFound = false
-		}
+		if !seen && !mongoReview.Empty() {
+			courseReview := &mongoReview.CourseReview
+			profReview := &mongoReview.ProfReview
 
-		if !review.CourseReview.Empty() && !seen {
-			courseReview := &review.CourseReview
-			created, updated := sortedTimes(courseReview.CommentDate, courseReview.RatingDate)
-			preparedCourseReviews = append(
-				preparedCourseReviews,
-				[]interface{}{
-					courseId,
-					nilIfZero(profId),
-					userId,
-					nilIfEmpty(courseReview.Comment),
-					convertRating(courseReview.Easiness, 1, 4),
-					convertRating(courseReview.Interest, 0, 1),
-					convertRating(courseReview.Usefulness, 1, 4),
-					courseReview.Privacy == Public,
-					created,
-					updated,
-				},
+			courseCreated, courseUpdated := sortedTimes(
+				courseReview.CommentDate,
+				courseReview.RatingDate,
 			)
-			idMap.CourseReview[review.Id] = courseReviewId
-			seenCourseAndUser[IntPair{courseId, userId}] = true
-			courseReviewId += 1
-		}
-
-		if profFound && !review.ProfReview.Empty() && !seen {
-			profReview := &review.ProfReview
-			created, updated := sortedTimes(profReview.CommentDate, profReview.RatingDate)
-			preparedProfReviews = append(
-				preparedProfReviews,
-				[]interface{}{
-					courseId,
-					profId,
-					userId,
-					nilIfEmpty(profReview.Comment),
-					convertRating(profReview.Clarity, 1, 4),
-					convertRating(profReview.Passion, 1, 4),
-					profReview.Privacy == Public,
-					created,
-					updated,
-				},
+			profCreated, profUpdated := sortedTimes(
+				profReview.CommentDate,
+				profReview.RatingDate,
 			)
-			idMap.ProfReview[review.Id] = profReviewId
+			created, _ := sortedTimes(courseCreated, profCreated)
+			_, updated := sortedTimes(courseUpdated, profUpdated)
+
 			seenCourseAndUser[IntPair{courseId, userId}] = true
-			profReviewId += 1
+			idMap.Review[mongoReview.Id] = reviewId
+
+			review = data.Review{
+				CourseId:      courseId,
+				ProfId:        util.NilIfZero(profId),
+				UserId:        userId,
+				Liked:         rescaledRating(courseReview.Interest, 0, 1),
+				CourseEasy:    rescaledRating(courseReview.Easiness, 1, 4),
+				CourseUseful:  rescaledRating(courseReview.Usefulness, 1, 4),
+				CourseComment: util.NilIfEmpty(courseReview.Comment),
+				ProfClear:     rescaledRating(profReview.Clarity, 1, 4),
+				ProfEngaging:  rescaledRating(profReview.Passion, 1, 4),
+				ProfComment:   util.NilIfEmpty(profReview.Comment),
+				Public:        courseReview.Privacy == Public,
+				CreatedAt:     created,
+				UpdatedAt:     updated,
+			}
+			preparedReviews = append(preparedReviews, data.AsSlice(review))
+
+			for i := 0; i < courseReview.NumVotedHelpful; i++ {
+				preparedCourseUpvotes = append(preparedCourseUpvotes, []interface{}{reviewId, nil})
+			}
+
+			reviewId += 1
 		}
 
-		if review.TermId == "9999_99" {
+		if mongoReview.TermId == "9999_99" {
 			preparedUserShortlists = append(
 				preparedUserShortlists,
 				[]interface{}{
@@ -214,14 +196,14 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				},
 			)
 		} else {
-			termId, _ := util.TermYearMonthToId(review.TermId)
+			termId, _ := util.TermYearMonthToId(mongoReview.TermId)
 			preparedUserCourses = append(
 				preparedUserCourses,
 				[]interface{}{
 					courseId,
 					userId,
 					termId,
-					review.LevelId,
+					mongoReview.LevelId,
 				},
 			)
 		}
@@ -247,31 +229,25 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	}
 	log.EndImport(state.Log, "user_shortlist", shortlistCount)
 
-	courseReviewCount, err := tx.CopyFrom(
-		db.Identifier{"course_review"},
-		[]string{
-			"course_id", "prof_id", "user_id", "text", "easy", "liked", "useful",
-			"public", "created_at", "updated_at",
-		},
-		preparedCourseReviews,
+	reviewCount, err := tx.CopyFrom(
+		db.Identifier{"review"},
+		data.Fields(review),
+		preparedReviews,
 	)
 	if err != nil {
 		return err
 	}
-	log.EndImport(state.Log, "course_review", courseReviewCount)
+	log.EndImport(state.Log, "review", reviewCount)
 
-	profReviewCount, err := tx.CopyFrom(
-		db.Identifier{"prof_review"},
-		[]string{
-			"course_id", "prof_id", "user_id", "text", "clear", "engaging",
-			"public", "created_at", "updated_at",
-		},
-		preparedProfReviews,
+	courseUpvoteCount, err := tx.CopyFrom(
+		db.Identifier{"course_review_upvote"},
+		[]string{"review_id", "user_id"},
+		preparedCourseUpvotes,
 	)
 	if err != nil {
 		return err
 	}
-	log.EndImport(state.Log, "prof_review", profReviewCount)
+	log.EndImport(state.Log, "course_review_upvote", courseUpvoteCount)
 
 	return tx.Commit()
 }
