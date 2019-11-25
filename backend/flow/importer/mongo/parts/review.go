@@ -19,13 +19,14 @@ import (
 const Public int = 2
 
 type MongoCourseReview struct {
-	Comment     string     `bson:"comment"`
-	Easiness    *float64   `bson:"easiness"`
-	Interest    *float64   `bson:"interest"`
-	Usefulness  *float64   `bson:"usefulness"`
-	Privacy     int        `bson:"privacy"`
-	CommentDate *time.Time `bson:"comment_date"`
-	RatingDate  *time.Time `bson:"rating_change_date"`
+	Comment         string     `bson:"comment"`
+	Easiness        *float64   `bson:"easiness"`
+	Interest        *float64   `bson:"interest"`
+	Usefulness      *float64   `bson:"usefulness"`
+	Privacy         int        `bson:"privacy"`
+	NumVotedHelpful int        `bson:"num_voted_helpful"`
+	CommentDate     *time.Time `bson:"comment_date"`
+	RatingDate      *time.Time `bson:"rating_change_date"`
 }
 
 func (r *MongoCourseReview) Empty() bool {
@@ -112,6 +113,7 @@ func readMongoReviews(rootPath string) []MongoReview {
 
 func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 	log.StartImport(state.Log, "review")
+	log.StartImport(state.Log, "course_review_upvote")
 	log.StartImport(state.Log, "user_course_taken")
 	log.StartImport(state.Log, "user_shortlist")
 
@@ -128,6 +130,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 
 	var preparedReviews [][]interface{}
 	var preparedUserCourses [][]interface{}
+	var preparedCourseUpvotes [][]interface{}
 	var preparedUserShortlists [][]interface{}
 
 	var review data.Review
@@ -159,7 +162,6 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 
 			seenCourseAndUser[IntPair{courseId, userId}] = true
 			idMap.Review[mongoReview.Id] = reviewId
-			reviewId += 1
 
 			review = data.Review{
 				CourseId:      courseId,
@@ -177,6 +179,12 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				UpdatedAt:     updated,
 			}
 			preparedReviews = append(preparedReviews, data.AsSlice(review))
+
+			for i := 0; i < courseReview.NumVotedHelpful; i++ {
+				preparedCourseUpvotes = append(preparedCourseUpvotes, []interface{}{reviewId, nil})
+			}
+
+			reviewId += 1
 		}
 
 		if mongoReview.TermId == "9999_99" {
@@ -230,6 +238,16 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		return err
 	}
 	log.EndImport(state.Log, "review", reviewCount)
+
+	courseUpvoteCount, err := tx.CopyFrom(
+		db.Identifier{"course_review_upvote"},
+		[]string{"review_id", "user_id"},
+		preparedCourseUpvotes,
+	)
+	if err != nil {
+		return err
+	}
+	log.EndImport(state.Log, "course_review_upvote", courseUpvoteCount)
 
 	return tx.Commit()
 }

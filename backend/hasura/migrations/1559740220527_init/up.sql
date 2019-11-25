@@ -211,32 +211,28 @@ CREATE TABLE review (
   CONSTRAINT course_uniquely_reviewed UNIQUE(course_id, user_id)
 );
 
-CREATE TABLE course_review_vote (
+CREATE TABLE course_review_upvote (
   review_id INT NOT NULL
     REFERENCES review(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  user_id INT NOT NULL
+  user_id INT
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  vote INT NOT NULL
-    CONSTRAINT vote_range CHECK (vote = -1 OR vote = 1),
-  CONSTRAINT course_review_vote_unique UNIQUE(review_id, user_id)
+  CONSTRAINT course_review_upvote_unique UNIQUE(review_id, user_id)
 );
 
-CREATE TABLE prof_review_vote (
+CREATE TABLE prof_review_upvote (
   review_id INT NOT NULL
     REFERENCES review(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  user_id INT NOT NULL
+  user_id INT
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  vote INT NOT NULL
-    CONSTRAINT vote_range CHECK (vote = -1 OR vote = 1),
-  CONSTRAINT prof_review_vote_unique UNIQUE(review_id, user_id)
+  CONSTRAINT prof_review_upvote_unique UNIQUE(review_id, user_id)
 );
 
 -- END PUBLIC TABLES
@@ -356,6 +352,18 @@ SELECT
 FROM review
 GROUP BY prof_id;
 
+CREATE MATERIALIZED VIEW materialized.course_review_rating AS
+SELECT review.id AS review_id, COUNT(u.review_id) AS upvote_count
+FROM review
+  LEFT JOIN course_review_upvote u ON review.id = u.review_id
+GROUP BY review.id;
+
+CREATE MATERIALIZED VIEW materialized.prof_review_rating AS
+SELECT review.id AS review_id, COUNT(u.review_id) AS upvote_count
+FROM review
+  LEFT JOIN prof_review_upvote u ON review.id = u.review_id
+GROUP BY review.id;
+
 -- END MATERIALIZED VIEWS
 
 -- START MATERIALIZED FUNCTIONS
@@ -384,6 +392,16 @@ AFTER INSERT OR UPDATE OR DELETE ON review
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_rating');
 
+CREATE TRIGGER refresh_course_review_rating
+AFTER INSERT OR UPDATE OR DELETE ON course_review_upvote
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.course_review_rating');
+
+CREATE TRIGGER refresh_prof_review_rating
+AFTER INSERT OR UPDATE OR DELETE ON prof_review_upvote
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.prof_review_rating');
+
 -- END MATERIALIZED TRIGGERS
 
 -- Aggregations intractable in Hasura
@@ -396,6 +414,12 @@ SELECT * FROM materialized.course_rating;
 
 CREATE VIEW aggregate.prof_rating AS
 SELECT * FROM materialized.prof_rating;
+
+CREATE VIEW aggregate.course_review_rating AS
+SELECT * FROM materialized.course_review_rating;
+
+CREATE VIEW aggregate.prof_review_rating AS
+SELECT * FROM materialized.prof_review_rating;
 
 CREATE VIEW aggregate.course_easy_buckets AS
 SELECT course_id, course_easy AS value, COUNT(*) AS count

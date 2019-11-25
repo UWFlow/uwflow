@@ -238,17 +238,17 @@
       update_permissions: []
     - array_relationships:
       - comment: null
-        name: prof_review_votes
+        name: prof_review_upvotes
         using:
           foreign_key_constraint_on:
             column: review_id
-            table: prof_review_vote
+            table: prof_review_upvote
       - comment: null
-        name: course_review_votes
+        name: course_review_upvotes
         using:
           foreign_key_constraint_on:
             column: review_id
-            table: course_review_vote
+            table: course_review_upvote
       delete_permissions:
       - comment: null
         permission:
@@ -301,6 +301,24 @@
             column_mapping:
               id: review_id
             remote_table: review_user_id
+      - comment: null
+        name: course_review_rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table:
+              schema: aggregate
+              name: course_review_rating
+      - comment: null
+        name: prof_review_rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: review_id
+            remote_table:
+              schema: aggregate
+              name: prof_review_rating
       select_permissions:
       - comment: null
         permission:
@@ -673,6 +691,60 @@
       select_permissions:
       - comment: null
         permission:
+          allow_aggregations: true
+          columns:
+          - review_id
+          - upvote_count
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - review_id
+          - upvote_count
+          filter: {}
+        role: user
+      table:
+        name: course_review_rating
+        schema: aggregate
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - review_id
+          - upvote_count
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - review_id
+          - upvote_count
+          filter: {}
+        role: user
+      table:
+        name: prof_review_rating
+        schema: aggregate
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
           allow_aggregations: false
           columns:
           - review_id
@@ -883,18 +955,6 @@
             column: user_id
             table: review
       - comment: null
-        name: course_review_votes
-        using:
-          foreign_key_constraint_on:
-            column: user_id
-            table: course_review_vote
-      - comment: null
-        name: prof_review_votes
-        using:
-          foreign_key_constraint_on:
-            column: user_id
-            table: prof_review_vote
-      - comment: null
         name: courses_taken
         using:
           foreign_key_constraint_on:
@@ -1002,19 +1062,10 @@
           columns:
           - review_id
           - user_id
-          - vote
           set: {}
         role: user
       is_enum: false
-      object_relationships:
-      - comment: null
-        name: review
-        using:
-          foreign_key_constraint_on: review_id
-      - comment: null
-        name: user
-        using:
-          foreign_key_constraint_on: user_id
+      object_relationships: []
       select_permissions:
       - comment: null
         permission:
@@ -1022,31 +1073,12 @@
           columns:
           - review_id
           - user_id
-          - vote
-          filter: {}
-        role: user
-      - comment: null
-        permission:
-          allow_aggregations: true
-          columns:
-          - review_id
-          - user_id
-          - vote
-          filter: {}
-        role: anonymous
-      table: prof_review_vote
-      update_permissions:
-      - comment: null
-        permission:
-          columns:
-          - review_id
-          - user_id
-          - vote
           filter:
             user_id:
               _eq: X-Hasura-User-Id
-          set: {}
         role: user
+      table: course_review_upvote
+      update_permissions: []
     - array_relationships: []
       delete_permissions:
       - comment: null
@@ -1065,19 +1097,10 @@
           columns:
           - review_id
           - user_id
-          - vote
           set: {}
         role: user
       is_enum: false
-      object_relationships:
-      - comment: null
-        name: review
-        using:
-          foreign_key_constraint_on: review_id
-      - comment: null
-        name: user
-        using:
-          foreign_key_constraint_on: user_id
+      object_relationships: []
       select_permissions:
       - comment: null
         permission:
@@ -1085,29 +1108,10 @@
           columns:
           - review_id
           - user_id
-          - vote
-          filter: {}
-        role: user
-      - comment: null
-        permission:
-          allow_aggregations: true
-          columns:
-          - review_id
-          - user_id
-          - vote
-          filter: {}
-        role: anonymous
-      table: course_review_vote
-      update_permissions:
-      - comment: null
-        permission:
-          columns:
-          - review_id
-          - user_id
-          - vote
           filter:
             user_id:
               _eq: X-Hasura-User-Id
-          set: {}
         role: user
+      table: prof_review_upvote
+      update_permissions: []
   type: replace_metadata
