@@ -1,7 +1,7 @@
 package term
 
 import (
-  "fmt"
+	"fmt"
 
 	"flow/common/db"
 	"flow/common/util"

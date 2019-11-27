@@ -60,7 +60,7 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 			location := apiSection.Location
 			currentExam = Exam{
 				CourseCode:   code,
-				TermId:         termId,
+				TermId:       termId,
 				Location:     &location,
 				StartSeconds: &startSeconds,
 				EndSeconds:   &endSeconds,
