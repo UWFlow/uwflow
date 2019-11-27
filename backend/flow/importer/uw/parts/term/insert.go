@@ -1,7 +1,10 @@
 package term
 
 import (
+  "fmt"
+
 	"flow/common/db"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -38,8 +41,8 @@ func InsertAll(conn *db.Conn, terms []Term) (*log.DbResult, error) {
 		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
-	preparedTerms := make([][]interface{}, len(termsA))
-	for _, term := range terms {
+	preparedTerms := make([][]interface{}, len(terms))
+	for i, term := range terms {
 		preparedTerms[i] = util.AsSlice(term)
 	}
 

@@ -82,11 +82,11 @@ CREATE TABLE user_course_taken (
     REFERENCES "user"(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   level TEXT,
   -- It is possible to re-take a course in a different term.
   -- However, it is not possible to take a course twice in the same term.
-  CONSTRAINT course_uniquely_taken UNIQUE(user_id, term, course_id)
+  CONSTRAINT course_uniquely_taken UNIQUE(user_id, term_id, course_id)
 );
 
 CREATE TABLE user_shortlist (
@@ -108,12 +108,12 @@ CREATE TABLE course_section (
     REFERENCES course(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  section TEXT NOT NULL,
+  term_id INT NOT NULL,
+  section_name TEXT NOT NULL,
   campus TEXT NOT NULL,
-  term INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL,
-  CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term)
+  CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term_id)
 );
 
 CREATE TABLE section_exam (
@@ -506,7 +506,7 @@ CREATE TABLE work.course_delta(
 CREATE TABLE work.section_exam_delta(
   course_code TEXT NOT NULL,
   section_name TEXT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   location TEXT,
   start_seconds INT,
   end_seconds INT,
@@ -518,9 +518,9 @@ CREATE TABLE work.section_exam_delta(
 CREATE TABLE work.course_section_delta(
   class_number INT NOT NULL,
   course_code TEXT NOT NULL,
-  section TEXT NOT NULL,
+  section_name TEXT NOT NULL,
   campus TEXT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL
 );
@@ -531,7 +531,7 @@ CREATE TABLE work.course_section_opened(
 
 CREATE TABLE work.section_meeting_delta(
   class_number INT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   prof_code TEXT,
   location TEXT,
   start_seconds INT,

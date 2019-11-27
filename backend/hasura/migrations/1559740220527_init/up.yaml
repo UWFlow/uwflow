@@ -136,8 +136,8 @@
             - enrollment_capacity
             - enrollment_total
             - id
-            - section
-            - term
+            - section_name
+            - term_id
             filter: {}
           role: user
         - comment: null
@@ -150,8 +150,8 @@
             - enrollment_capacity
             - enrollment_total
             - id
-            - section
-            - term
+            - section_name
+            - term_id
             filter: {}
           role: anonymous
       table: course_section
@@ -619,7 +619,7 @@
           columns:
           - course_id
           - user_id
-          - term
+          - term_id
           - level
           filter:
             user_id:

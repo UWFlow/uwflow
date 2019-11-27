@@ -24,8 +24,8 @@ FROM work.section_exam_delta delta
     ON c.code = delta.course_code
   JOIN course_section s
     ON s.course_id = c.id
-   AND s.section = delta.section_name
-   AND s.term = delta.term
+   AND s.section_name = delta.section_name
+   AND s.term_id = delta.term_id
 WHERE section_exam.section_id = s.id
 `
 
@@ -42,8 +42,8 @@ FROM work.section_exam_delta d
     ON c.code = d.course_code
   JOIN course_section s
     ON s.course_id = c.id
-   AND s.section = d.section_name
-   AND s.term = d.term
+   AND s.section_name = d.section_name
+   AND s.term_id = d.term_id
   LEFT JOIN section_exam se
     ON se.section_id = s.id
 WHERE se.section_id IS NULL

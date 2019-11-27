@@ -95,7 +95,7 @@ WITH src AS (
   FROM section_exam
 )
 SELECT
-  c.code, cs.section, c.name, src.is_exam, src.location,
+  c.code, cs.section_name, c.name, src.is_exam, src.location,
   src.start_date, src.end_date, src.start_seconds, src.end_seconds, src.days
 FROM
   user_schedule us

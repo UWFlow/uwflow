@@ -213,8 +213,8 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	sectionCount, err := tx.CopyFrom(
 		db.Identifier{"course_section"},
 		[]string{
-			"class_number", "course_id", "section", "campus",
-			"term", "enrollment_capacity", "enrollment_total",
+			"class_number", "course_id", "section_name", "campus",
+			"term_id", "enrollment_capacity", "enrollment_total",
 		},
 		preparedSections,
 	)

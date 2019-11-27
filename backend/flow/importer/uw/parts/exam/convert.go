@@ -39,7 +39,7 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 		if apiSection.Date == "" || apiSection.StartTime == "" {
 			currentExam = Exam{
 				CourseCode: code,
-				Term:       termId,
+				TermId:     termId,
 				IsTba:      true,
 			}
 		} else {
@@ -60,7 +60,7 @@ func Convert(apiExam *ApiExam, termId int) ([]Exam, error) {
 			location := apiSection.Location
 			currentExam = Exam{
 				CourseCode:   code,
-				Term:         termId,
+				TermId:         termId,
 				Location:     &location,
 				StartSeconds: &startSeconds,
 				EndSeconds:   &endSeconds,
