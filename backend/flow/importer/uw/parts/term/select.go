@@ -1,34 +1,11 @@
 package term
 
-import (
-	"time"
+import "flow/common/db"
 
-	"flow/common/db"
-)
+const SelectQuery = `SELECT id, start_date, end_date FROM term WHERE id = $1`
 
-const SelectQuery = `SELECT id, start_date, end_date FROM term`
-
-func SelectAll(conn *db.Conn) ([]Term, error) {
-	var terms []Term
-
-	rows, err := conn.Query(SelectQuery)
-	if err != nil {
-		return terms, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var termId int
-		var startDate, endDate time.Time
-		err = rows.Scan(&termId, &startDate, &endDate)
-		if err != nil {
-			return terms, err
-		}
-		terms = append(
-			terms,
-			Term{Id: termId, StartDate: startDate, EndDate: endDate},
-		)
-	}
-
-	return terms, nil
+func Select(conn *db.Conn, termId int) (*Term, error) {
+	var term Term
+	err := conn.QueryRow(SelectQuery, termId).Scan(&term.Id, &term.StartDate, &term.EndDate)
+	return &term, err
 }
