@@ -7,17 +7,17 @@ import (
 )
 
 func TestCamelToSnakeCase(t *testing.T) {
-  inputs := []string{
-    "", "Course", "CourseId", "ServeHTTP", "VersionI", "already_snake",
-  }
-  want := []util.Outcome{
-    {Value: ""}, {Value: "course"}, {Value: "course_id"},
-    {Value: "serve_http"}, {Value: "version_i"}, {Value: "already_snake"},
-  }
-  for i, input := range inputs {
-    got := util.CamelToSnakeCase(input)
-    want[i].Test(t, input, got, nil)
-  }
+	inputs := []string{
+		"", "Course", "CourseId", "ServeHTTP", "VersionI", "already_snake",
+	}
+	want := []util.Outcome{
+		{Value: ""}, {Value: "course"}, {Value: "course_id"},
+		{Value: "serve_http"}, {Value: "version_i"}, {Value: "already_snake"},
+	}
+	for i, input := range inputs {
+		got := util.CamelToSnakeCase(input)
+		want[i].Test(t, input, got, nil)
+	}
 }
 
 func TestLastFirstToFirstLast(t *testing.T) {

@@ -150,7 +150,7 @@ func ImportSections(state *state.State, idMap *IdentifierMap) error {
 	idMap.Section = make(map[SectionKey]int)
 	terms := make(map[int]Timeframe)
 
-	rows, err := tx.Query(`SELECT term, start_date, end_date FROM term_date`)
+	rows, err := tx.Query(`SELECT id, start_date, end_date FROM term`)
 	if err != nil {
 		return nil
 	}

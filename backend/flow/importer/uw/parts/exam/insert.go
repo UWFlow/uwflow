@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"flow/common/db"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -64,18 +65,12 @@ func InsertAll(conn *db.Conn, exams []Exam) (*log.DbResult, error) {
 
 	preparedExams := make([][]interface{}, len(exams))
 	for i, exam := range exams {
-		preparedExams[i] = []interface{}{
-			exam.CourseCode, exam.SectionName, exam.Term, exam.Location,
-			exam.StartSeconds, exam.EndSeconds, exam.Date, exam.Day, exam.IsTba,
-		}
+		preparedExams[i] = util.AsSlice(exam)
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "section_exam_delta"},
-		[]string{
-			"course_code", "section_name", "term", "location",
-			"start_seconds", "end_seconds", "date", "day", "is_tba",
-		},
+		util.Fields(exams),
 		preparedExams,
 	)
 	if err != nil {

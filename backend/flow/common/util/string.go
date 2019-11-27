@@ -6,37 +6,37 @@ import (
 )
 
 func IsLowerCase(char byte) bool {
-  return 'a' <= char && char <= 'z'
+	return 'a' <= char && char <= 'z'
 }
 
 func ToLowerCase(char byte) byte {
-  return char - 'A' + 'a'
+	return char - 'A' + 'a'
 }
 
 func IsUpperCase(char byte) bool {
-  return 'A' <= char && char <= 'Z'
+	return 'A' <= char && char <= 'Z'
 }
 
 func ToUpperCase(char byte) byte {
-  return char - 'a' + 'A'
+	return char - 'a' + 'A'
 }
 
 // Convert CamelCase to snake_case
 func CamelToSnakeCase(in string) string {
-  var sb strings.Builder
+	var sb strings.Builder
 
-  for i := 0; i < len(in); i++ {
-    if IsUpperCase(in[i]) {
-      if i > 0 && IsLowerCase(in[i - 1]) {
-        sb.WriteByte('_')
-      }
-      sb.WriteByte(ToLowerCase(in[i]))
-    } else {
-      sb.WriteByte(in[i])
-    }
-  }
+	for i := 0; i < len(in); i++ {
+		if IsUpperCase(in[i]) {
+			if i > 0 && IsLowerCase(in[i-1]) {
+				sb.WriteByte('_')
+			}
+			sb.WriteByte(ToLowerCase(in[i]))
+		} else {
+			sb.WriteByte(in[i])
+		}
+	}
 
-  return sb.String()
+	return sb.String()
 }
 
 // Map name in "Last,First..." format to "First...Last" format

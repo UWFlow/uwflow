@@ -52,8 +52,8 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
-CREATE TABLE term_date (
-  term INT PRIMARY KEY,
+CREATE TABLE term (
+  id INT PRIMARY KEY,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL
 );
@@ -547,6 +547,12 @@ CREATE TABLE work.section_meeting_delta(
 CREATE TABLE work.prof_delta(
   name TEXT NOT NULL,
   code TEXT NOT NULL
+);
+
+CREATE TABLE work.term_delta(
+  id INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL
 );
 
 CREATE TABLE work.email_queue(

@@ -196,7 +196,6 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 // so we might as well overwrite them fully.
 const TruncateMeetingQuery = `
   TRUNCATE work.section_meeting_delta;
-  TRUNCATE section_meeting;
 `
 
 const InsertMeetingQuery = `

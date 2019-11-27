@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"flow/common/db"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -51,18 +52,12 @@ func InsertAll(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 			result.Rejected++
 			continue
 		}
-		preparedCourses = append(
-			preparedCourses,
-			[]interface{}{
-				courseCode, course.Name, course.Description,
-				course.Prereqs, course.Coreqs, course.Antireqs,
-			},
-		)
+		preparedCourses = append(preparedCourses, util.AsSlice(course))
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "course_delta"},
-		[]string{"code", "name", "description", "prereqs", "coreqs", "antireqs"},
+		util.Fields(courses),
 		preparedCourses,
 	)
 	if err != nil {

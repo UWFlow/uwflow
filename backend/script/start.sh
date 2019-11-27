@@ -35,7 +35,7 @@ $PREFIX docker-compose up -d --build
 
 # Wait for migrations to be applied by selecting from a random table
 while ! $PREFIX docker exec postgres \
-  psql -U $POSTGRES_USER $POSTGRES_DB -c 'SELECT TRUE FROM term_date' \
+  psql -U $POSTGRES_USER $POSTGRES_DB -c 'SELECT TRUE FROM term' \
   >/dev/null 2>/dev/null
 do
   echo "Waiting for containers to settle..."

@@ -6,7 +6,7 @@ import (
 	"flow/common/db"
 )
 
-const SelectQuery = `SELECT term, start_date, end_date FROM term_date`
+const SelectQuery = `SELECT id, start_date, end_date FROM term`
 
 func SelectAll(conn *db.Conn) ([]Term, error) {
 	var terms []Term
