@@ -9,7 +9,6 @@ type ConvertResult struct {
 }
 
 type Section struct {
-	Id                 int
 	CourseCode         string
 	ClassNumber        int
 	SectionName        string

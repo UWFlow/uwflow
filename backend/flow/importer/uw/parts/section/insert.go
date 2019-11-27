@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"flow/common/db"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -114,18 +115,12 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 
 	preparedSections := make([][]interface{}, len(sections))
 	for i, section := range sections {
-		preparedSections[i] = []interface{}{
-			section.ClassNumber, section.CourseCode, section.SectionName, section.Campus,
-			section.TermId, section.EnrollmentCapacity, section.EnrollmentTotal,
-		}
+		preparedSections[i] = util.AsSlice(section)
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "course_section_delta"},
-		[]string{
-			"class_number", "course_code", "section", "campus",
-			"term", "enrollment_capacity", "enrollment_total",
-		},
+		util.Fields(sections),
 		preparedSections,
 	)
 	if err != nil {
@@ -242,22 +237,12 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error)
 
 	preparedMeetings := make([][]interface{}, len(meetings))
 	for i, meeting := range meetings {
-		preparedMeetings[i] = []interface{}{
-			meeting.ClassNumber, meeting.TermId, meeting.ProfCode,
-			meeting.Location, meeting.StartSeconds, meeting.EndSeconds,
-			meeting.StartDate, meeting.EndDate, meeting.Days,
-			meeting.IsCancelled, meeting.IsClosed, meeting.IsTba,
-		}
+		preparedMeetings[i] = util.AsSlice(meeting)
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "section_meeting_delta"},
-		[]string{
-			"class_number", "term", "prof_code",
-			"location", "start_seconds", "end_seconds",
-			"start_date", "end_date", "days",
-			"is_cancelled", "is_closed", "is_tba",
-		},
+		util.Fields(meetings),
 		preparedMeetings,
 	)
 	if err != nil {
@@ -310,14 +295,14 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	seenProfCode := make(map[string]bool)
 	for _, prof := range profs {
 		if !seenProfCode[prof.Code] {
-			preparedProfs = append(preparedProfs, []interface{}{prof.Name, prof.Code})
+			preparedProfs = append(preparedProfs, util.AsSlice(prof))
 			seenProfCode[prof.Code] = true
 		}
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "prof_delta"},
-		[]string{"name", "code"},
+		util.Fields(profs),
 		preparedProfs,
 	)
 	if err != nil {
