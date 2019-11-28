@@ -322,7 +322,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - course_id
@@ -341,7 +341,7 @@
         role: anonymous
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - course_id
@@ -707,6 +707,7 @@
           - comment_count
           - clear
           - engaging
+          - liked
           filter: {}
         role: anonymous
       - comment: null
@@ -718,6 +719,7 @@
           - comment_count
           - clear
           - engaging
+          - liked
           filter: {}
         role: user
       table:
@@ -1028,17 +1030,9 @@
           - id
           - picture_url
           - program
-          filter: {}
-        role: anonymous
-      - comment: null
-        permission:
-          allow_aggregations: false
-          columns:
-          - full_name
-          - id
-          - picture_url
-          - program
-          filter: {}
+          filter:
+            id:
+              _eq: X-Hasura-User-Id
         role: user
       table: user
       update_permissions:
@@ -1111,7 +1105,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - review_id
           - user_id
@@ -1146,7 +1140,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - review_id
           - user_id
