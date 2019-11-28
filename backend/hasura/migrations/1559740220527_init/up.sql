@@ -52,8 +52,8 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
-CREATE TABLE term_date (
-  term INT PRIMARY KEY,
+CREATE TABLE term (
+  id INT PRIMARY KEY,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL
 );
@@ -82,11 +82,11 @@ CREATE TABLE user_course_taken (
     REFERENCES "user"(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   level TEXT,
   -- It is possible to re-take a course in a different term.
   -- However, it is not possible to take a course twice in the same term.
-  CONSTRAINT course_uniquely_taken UNIQUE(user_id, term, course_id)
+  CONSTRAINT course_uniquely_taken UNIQUE(user_id, term_id, course_id)
 );
 
 CREATE TABLE user_shortlist (
@@ -108,12 +108,12 @@ CREATE TABLE course_section (
     REFERENCES course(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  section TEXT NOT NULL,
+  term_id INT NOT NULL,
+  section_name TEXT NOT NULL,
   campus TEXT NOT NULL,
-  term INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL,
-  CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term)
+  CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term_id)
 );
 
 CREATE TABLE section_exam (
@@ -329,28 +329,30 @@ CREATE SCHEMA materialized;
 
 CREATE MATERIALIZED VIEW materialized.course_rating AS
 SELECT
-  course_id,
+  course.id                AS course_id,
   -- We only consider reviews with non-NULL liked as filled.
   -- This is because it's impossible to submit anything else with NULL liked,
   -- but it *is* possible to have all fields be NULL by liking then unliking.
-  COUNT(liked)           AS filled_count,
-  COUNT(course_comment)  AS comment_count,
-  AVG(liked)             AS liked,
-  AVG(course_easy) / 5   AS easy,
-  AVG(course_useful) / 5 AS useful
-FROM review
-GROUP BY course_id;
+  COUNT(r.liked)           AS filled_count,
+  COUNT(r.course_comment)  AS comment_count,
+  AVG(r.liked)             AS liked,
+  AVG(r.course_easy) / 5   AS easy,
+  AVG(r.course_useful) / 5 AS useful
+FROM course
+  LEFT JOIN review r ON course.id = r.course_id
+GROUP BY course.id;
 
 CREATE MATERIALIZED VIEW materialized.prof_rating AS
 SELECT
-  prof_id,
-  COUNT(liked)           AS filled_count,
-  COUNT(prof_comment)    AS comment_count,
-  AVG(liked)             AS liked,
-  AVG(prof_clear) / 5    AS clear,
-  AVG(prof_engaging) / 5 AS engaging
-FROM review
-GROUP BY prof_id;
+  prof.id                  AS prof_id,
+  COUNT(r.liked)           AS filled_count,
+  COUNT(r.prof_comment)    AS comment_count,
+  AVG(r.liked)             AS liked,
+  AVG(r.prof_clear) / 5    AS clear,
+  AVG(r.prof_engaging) / 5 AS engaging
+FROM prof
+  LEFT JOIN review r ON prof.id = r.prof_id
+GROUP BY prof.id;
 
 CREATE MATERIALIZED VIEW materialized.course_review_rating AS
 SELECT review.id AS review_id, COUNT(u.review_id) AS upvote_count
@@ -506,7 +508,7 @@ CREATE TABLE work.course_delta(
 CREATE TABLE work.section_exam_delta(
   course_code TEXT NOT NULL,
   section_name TEXT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   location TEXT,
   start_seconds INT,
   end_seconds INT,
@@ -518,9 +520,9 @@ CREATE TABLE work.section_exam_delta(
 CREATE TABLE work.course_section_delta(
   class_number INT NOT NULL,
   course_code TEXT NOT NULL,
-  section TEXT NOT NULL,
+  section_name TEXT NOT NULL,
   campus TEXT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL
 );
@@ -531,7 +533,7 @@ CREATE TABLE work.course_section_opened(
 
 CREATE TABLE work.section_meeting_delta(
   class_number INT NOT NULL,
-  term INT NOT NULL,
+  term_id INT NOT NULL,
   prof_code TEXT,
   location TEXT,
   start_seconds INT,
@@ -547,6 +549,12 @@ CREATE TABLE work.section_meeting_delta(
 CREATE TABLE work.prof_delta(
   name TEXT NOT NULL,
   code TEXT NOT NULL
+);
+
+CREATE TABLE work.term_delta(
+  id INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL
 );
 
 CREATE TABLE work.email_queue(

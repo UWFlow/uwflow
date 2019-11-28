@@ -9,7 +9,7 @@ import (
 )
 
 func ImportAll(state *state.State, client *api.Client) error {
-	log.StartImport(state.Log, "term_date")
+	log.StartImport(state.Log, "term")
 
 	events, err := FetchAll(client)
 	if err != nil {
@@ -26,6 +26,6 @@ func ImportAll(state *state.State, client *api.Client) error {
 		return fmt.Errorf("failed to insert terms: %w", err)
 	}
 
-	log.EndImport(state.Log, "term_date", result)
+	log.EndImport(state.Log, "term", result)
 	return nil
 }

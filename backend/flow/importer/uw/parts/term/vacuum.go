@@ -8,7 +8,7 @@ import (
 	"flow/importer/uw/log"
 )
 
-const DeleteQuery = `DELETE FROM term_date WHERE term < $1`
+const DeleteQuery = `DELETE FROM term WHERE id < $1`
 
 func Vacuum(state *state.State) error {
 	log.StartVacuum(state.Log, "term")

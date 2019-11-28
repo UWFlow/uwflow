@@ -5,6 +5,40 @@ import (
 	"strings"
 )
 
+func IsLowerCase(char byte) bool {
+	return 'a' <= char && char <= 'z'
+}
+
+func ToLowerCase(char byte) byte {
+	return char - 'A' + 'a'
+}
+
+func IsUpperCase(char byte) bool {
+	return 'A' <= char && char <= 'Z'
+}
+
+func ToUpperCase(char byte) byte {
+	return char - 'a' + 'A'
+}
+
+// Convert CamelCase to snake_case
+func CamelToSnakeCase(in string) string {
+	var sb strings.Builder
+
+	for i := 0; i < len(in); i++ {
+		if IsUpperCase(in[i]) {
+			if i > 0 && IsLowerCase(in[i-1]) {
+				sb.WriteByte('_')
+			}
+			sb.WriteByte(ToLowerCase(in[i]))
+		} else {
+			sb.WriteByte(in[i])
+		}
+	}
+
+	return sb.String()
+}
+
 // Map name in "Last,First..." format to "First...Last" format
 func LastFirstToFirstLast(name string) (string, error) {
 	splits := strings.Split(name, ",")
@@ -22,11 +56,11 @@ func ProfNameToCode(profName string) string {
 
 	for i := 0; i < len(profName); i++ {
 		// Uppercase Latin letters are extracted and converted to lowercase
-		if 'A' <= profName[i] && profName[i] <= 'Z' {
-			sb.WriteByte(profName[i] - 'A' + 'a')
+		if IsUpperCase(profName[i]) {
+			sb.WriteByte(ToLowerCase(profName[i]))
 			lastIsLetter = true
 			// Lowercase Latin letters are extracted as-is
-		} else if 'a' <= profName[i] && profName[i] <= 'z' {
+		} else if IsLowerCase(profName[i]) {
 			sb.WriteByte(profName[i])
 			lastIsLetter = true
 			// Everything else is dropped
