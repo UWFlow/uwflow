@@ -329,28 +329,30 @@ CREATE SCHEMA materialized;
 
 CREATE MATERIALIZED VIEW materialized.course_rating AS
 SELECT
-  course_id,
+  course.id                AS course_id,
   -- We only consider reviews with non-NULL liked as filled.
   -- This is because it's impossible to submit anything else with NULL liked,
   -- but it *is* possible to have all fields be NULL by liking then unliking.
-  COUNT(liked)           AS filled_count,
-  COUNT(course_comment)  AS comment_count,
-  AVG(liked)             AS liked,
-  AVG(course_easy) / 5   AS easy,
-  AVG(course_useful) / 5 AS useful
-FROM review
-GROUP BY course_id;
+  COUNT(r.liked)           AS filled_count,
+  COUNT(r.course_comment)  AS comment_count,
+  AVG(r.liked)             AS liked,
+  AVG(r.course_easy) / 5   AS easy,
+  AVG(r.course_useful) / 5 AS useful
+FROM course
+  LEFT JOIN review r ON course.id = r.course_id
+GROUP BY course.id;
 
 CREATE MATERIALIZED VIEW materialized.prof_rating AS
 SELECT
-  prof_id,
-  COUNT(liked)           AS filled_count,
-  COUNT(prof_comment)    AS comment_count,
-  AVG(liked)             AS liked,
-  AVG(prof_clear) / 5    AS clear,
-  AVG(prof_engaging) / 5 AS engaging
-FROM review
-GROUP BY prof_id;
+  prof.id                  AS prof_id,
+  COUNT(r.liked)           AS filled_count,
+  COUNT(r.prof_comment)    AS comment_count,
+  AVG(r.liked)             AS liked,
+  AVG(r.prof_clear) / 5    AS clear,
+  AVG(r.prof_engaging) / 5 AS engaging
+FROM prof
+  LEFT JOIN review r ON prof.id = r.prof_id
+GROUP BY prof.id;
 
 CREATE MATERIALIZED VIEW materialized.course_review_rating AS
 SELECT review.id AS review_id, COUNT(u.review_id) AS upvote_count

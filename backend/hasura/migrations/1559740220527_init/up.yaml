@@ -24,15 +24,6 @@
               name: course_useful_buckets
               schema: aggregate
       - comment: null
-        name: rating
-        using:
-          manual_configuration:
-            column_mapping:
-              id: course_id
-            remote_table:
-              name: course_rating
-              schema: aggregate
-      - comment: null
         name: reviews
         using:
           foreign_key_constraint_on:
@@ -74,7 +65,16 @@
       event_triggers: []
       insert_permissions: []
       is_enum: false
-      object_relationships: []
+      object_relationships:
+      - comment: null
+        name: rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: course_id
+            remote_table:
+              name: course_rating
+              schema: aggregate
       select_permissions:
       - comment: null
         permission:
@@ -520,15 +520,6 @@
               name: prof_engaging_buckets
               schema: aggregate
       - comment: null
-        name: rating
-        using:
-          manual_configuration:
-            column_mapping:
-              id: prof_id
-            remote_table:
-              name: prof_rating
-              schema: aggregate
-      - comment: null
         name: prof_courses
         using:
           manual_configuration:
@@ -539,7 +530,16 @@
       event_triggers: []
       insert_permissions: []
       is_enum: false
-      object_relationships: []
+      object_relationships:
+      - comment: null
+        name: rating
+        using:
+          manual_configuration:
+            column_mapping:
+              id: prof_id
+            remote_table:
+              name: prof_rating
+              schema: aggregate
       select_permissions:
       - comment: null
         permission:
