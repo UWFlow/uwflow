@@ -1,4 +1,4 @@
-package data
+package util
 
 import "reflect"
 
@@ -12,7 +12,7 @@ func Fields(dbEntity interface{}) []string {
 
 	fields := make([]string, tp.NumField())
 	for i := 0; i < tp.NumField(); i++ {
-		fields[i] = tp.Field(i).Tag.Get("db")
+		fields[i] = CamelToSnakeCase(tp.Field(i).Name)
 	}
 
 	return fields

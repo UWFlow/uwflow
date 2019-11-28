@@ -10,58 +10,47 @@ import (
 	"flow/importer/uw/parts/term"
 )
 
-func ImportByTerm(state *state.State, client *api.Client, term *term.Term) error {
-	apiSections, err := FetchByTerm(client, term.Id)
-	if err != nil {
-		return fmt.Errorf("failed to fetch sections: %w", err)
-	}
-
+func ImportAll(state *state.State, client *api.Client) error {
 	var converted ConvertResult
-	err = ConvertAll(&converted, apiSections, term)
-	if err != nil {
-		return fmt.Errorf("failed to convert sections: %w", err)
+	termIds := []int{util.CurrentTermId(), util.NextTermId()}
+
+	for _, termId := range termIds {
+		apiSections, err := FetchByTerm(client, termId)
+		if err != nil {
+			return fmt.Errorf("failed to fetch sections: %w", err)
+		}
+
+		term, err := term.Select(state.Db, termId)
+		if err != nil {
+			return fmt.Errorf("failed to load term: %w", err)
+		}
+
+		err = ConvertAll(&converted, apiSections, term)
+		if err != nil {
+			return fmt.Errorf("failed to convert sections: %w", err)
+		}
 	}
 
-	log.StartTermImport(state.Log, "prof", term.Id)
+	log.StartImport(state.Log, "prof")
 	result, err := InsertAllProfs(state.Db, converted.Profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
-	log.EndTermImport(state.Log, "prof", term.Id, result)
+	log.EndImport(state.Log, "prof", result)
 
-	log.StartTermImport(state.Log, "course_section", term.Id)
+	log.StartImport(state.Log, "course_section")
 	result, err = InsertAllSections(state.Db, converted.Sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
-	log.EndTermImport(state.Log, "course_section", term.Id, result)
+	log.EndImport(state.Log, "course_section", result)
 
-	log.StartTermImport(state.Log, "section_meeting", term.Id)
+	log.StartImport(state.Log, "section_meeting")
 	result, err = InsertAllMeetings(state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}
-	log.EndTermImport(state.Log, "section_meeting", term.Id, result)
+	log.EndImport(state.Log, "section_meeting", result)
 
-	return nil
-}
-
-func ImportAll(state *state.State, client *api.Client) error {
-	currentTermId := util.CurrentTermId()
-	nextTermId := util.NextTermId()
-	terms, err := term.SelectAll(state.Db)
-	if err != nil {
-		return fmt.Errorf("failed to load terms: %w", err)
-	}
-
-	for _, term := range terms {
-		// Don't bother with terms that have passed
-		if term.Id >= currentTermId && term.Id <= nextTermId {
-			err := ImportByTerm(state, client, &term)
-			if err != nil {
-				return fmt.Errorf("failed to import sections: %w", err)
-			}
-		}
-	}
 	return nil
 }

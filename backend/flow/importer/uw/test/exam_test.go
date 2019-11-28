@@ -82,7 +82,7 @@ func TestConvertExam(t *testing.T) {
 				{
 					CourseCode:   "cs350",
 					SectionName:  "LEC 001",
-					Term:         1199,
+					TermId:       1199,
 					Location:     util.StringToPointer("PAC 1, 2, 3"),
 					StartSeconds: util.IntToPointer(70200),
 					EndSeconds:   util.IntToPointer(79200),
@@ -93,7 +93,7 @@ func TestConvertExam(t *testing.T) {
 				{
 					CourseCode:   "cs350",
 					SectionName:  "LEC 002",
-					Term:         1199,
+					TermId:       1199,
 					Location:     util.StringToPointer("PAC 1, 2, 3"),
 					StartSeconds: util.IntToPointer(70200),
 					EndSeconds:   util.IntToPointer(79200),
@@ -108,7 +108,7 @@ func TestConvertExam(t *testing.T) {
 				{
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 001",
-					Term:         1199,
+					TermId:       1199,
 					Location:     util.StringToPointer("M3 1006"),
 					StartSeconds: util.IntToPointer(45000),
 					EndSeconds:   util.IntToPointer(54000),
@@ -119,7 +119,7 @@ func TestConvertExam(t *testing.T) {
 				{
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 003",
-					Term:         1199,
+					TermId:       1199,
 					Location:     util.StringToPointer("M3 1006"),
 					StartSeconds: util.IntToPointer(45000),
 					EndSeconds:   util.IntToPointer(54000),
@@ -130,7 +130,7 @@ func TestConvertExam(t *testing.T) {
 				{
 					CourseCode:   "actsc372",
 					SectionName:  "LEC 002",
-					Term:         1199,
+					TermId:       1199,
 					Location:     util.StringToPointer("PAC 1"),
 					StartSeconds: util.IntToPointer(45000),
 					EndSeconds:   util.IntToPointer(54000),

@@ -51,7 +51,6 @@ func ConvertMeeting(
 		Meeting{
 			ClassNumber: apiSection.ClassNumber,
 			TermId:      apiSection.TermId,
-			Days:        make([]string, 0),
 			IsCancelled: apiMeeting.Date.IsCancelled,
 			IsClosed:    apiMeeting.Date.IsClosed,
 			IsTba:       apiMeeting.Date.IsTba,

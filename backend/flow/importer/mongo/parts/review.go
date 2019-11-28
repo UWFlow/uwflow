@@ -5,10 +5,10 @@ import (
 	"path"
 	"time"
 
-	"flow/common/data"
 	"flow/common/db"
 	"flow/common/state"
 	"flow/common/util"
+	"flow/importer/mongo/data"
 	"flow/importer/mongo/log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -178,7 +178,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				CreatedAt:     created,
 				UpdatedAt:     updated,
 			}
-			preparedReviews = append(preparedReviews, data.AsSlice(review))
+			preparedReviews = append(preparedReviews, util.AsSlice(review))
 
 			for i := 0; i < courseReview.NumVotedHelpful; i++ {
 				preparedCourseUpvotes = append(preparedCourseUpvotes, []interface{}{reviewId, nil})
@@ -211,7 +211,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 
 	takenCount, err := tx.CopyFrom(
 		db.Identifier{"user_course_taken"},
-		[]string{"course_id", "user_id", "term", "level"},
+		[]string{"course_id", "user_id", "term_id", "level"},
 		preparedUserCourses,
 	)
 	if err != nil {
@@ -231,7 +231,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 
 	reviewCount, err := tx.CopyFrom(
 		db.Identifier{"review"},
-		data.Fields(review),
+		util.Fields(review),
 		preparedReviews,
 	)
 	if err != nil {

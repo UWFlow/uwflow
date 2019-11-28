@@ -5,7 +5,7 @@ import "time"
 type Exam struct {
 	CourseCode   string
 	SectionName  string
-	Term         int
+	TermId       int
 	Location     *string
 	StartSeconds *int
 	EndSeconds   *int

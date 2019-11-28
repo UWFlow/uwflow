@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"flow/common/db"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -18,29 +19,29 @@ const TruncateSectionQuery = `
 const UpdateSectionQuery = `
 UPDATE course_section SET
   course_id = c.id,
-  section = delta.section,
+  section_name = delta.section_name,
   campus = delta.campus,
   enrollment_capacity = delta.enrollment_capacity,
   enrollment_total = delta.enrollment_total
 FROM work.course_section_delta delta
   JOIN course c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
-  AND course_section.term = delta.term
+  AND course_section.term_id = delta.term_id
 `
 
 const InsertSectionQuery = `
 INSERT INTO course_section(
-  class_number, course_id, section, campus,
-  term, enrollment_capacity, enrollment_total
+  class_number, course_id, section_name, campus,
+  term_id, enrollment_capacity, enrollment_total
 )
 SELECT
-  d.class_number, c.id, d.section, d.campus,
-  d.term, d.enrollment_capacity, d.enrollment_total
+  d.class_number, c.id, d.section_name, d.campus,
+  d.term_id, d.enrollment_capacity, d.enrollment_total
 FROM work.course_section_delta d
   JOIN course c ON c.code = d.course_code
   LEFT JOIN course_section cs
    ON cs.class_number = d.class_number
-  AND cs.term = d.term
+  AND cs.term_id = d.term_id
 WHERE cs.id IS NULL
 `
 
@@ -51,13 +52,13 @@ SELECT
 FROM course_section c
   LEFT JOIN work.course_section_delta d
 	ON c.class_number = d.class_number
-   AND c.term = d.term
+   AND c.term_id = d.term_id
 WHERE d.enrollment_total < d.enrollment_capacity
   AND c.enrollment_total >= c.enrollment_capacity;
 `
 const GetSectionSubscriptionsQuery = `
 SELECT
-  u.email, c.name, cs.section
+  u.email, c.name, cs.section_name
 FROM section_subscription ss
   INNER JOIN work.course_section_opened n ON n.section_id = ss.section_id
   LEFT JOIN public.user u ON ss.user_id = u.id
@@ -114,18 +115,12 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 
 	preparedSections := make([][]interface{}, len(sections))
 	for i, section := range sections {
-		preparedSections[i] = []interface{}{
-			section.ClassNumber, section.CourseCode, section.SectionName, section.Campus,
-			section.TermId, section.EnrollmentCapacity, section.EnrollmentTotal,
-		}
+		preparedSections[i] = util.AsSlice(section)
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "course_section_delta"},
-		[]string{
-			"class_number", "course_code", "section", "campus",
-			"term", "enrollment_capacity", "enrollment_total",
-		},
+		util.Fields(sections),
 		preparedSections,
 	)
 	if err != nil {
@@ -201,7 +196,6 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 // so we might as well overwrite them fully.
 const TruncateMeetingQuery = `
   TRUNCATE work.section_meeting_delta;
-  TRUNCATE section_meeting;
 `
 
 const InsertMeetingQuery = `
@@ -220,7 +214,7 @@ FROM work.section_meeting_delta d
   -- must have a matching section
   JOIN course_section s
     ON s.class_number = d.class_number
-   AND s.term = d.term
+   AND s.term_id = d.term_id
   -- may not have a matching prof
   LEFT JOIN prof p
     ON p.code = d.prof_code
@@ -242,22 +236,12 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error)
 
 	preparedMeetings := make([][]interface{}, len(meetings))
 	for i, meeting := range meetings {
-		preparedMeetings[i] = []interface{}{
-			meeting.ClassNumber, meeting.TermId, meeting.ProfCode,
-			meeting.Location, meeting.StartSeconds, meeting.EndSeconds,
-			meeting.StartDate, meeting.EndDate, meeting.Days,
-			meeting.IsCancelled, meeting.IsClosed, meeting.IsTba,
-		}
+		preparedMeetings[i] = util.AsSlice(meeting)
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "section_meeting_delta"},
-		[]string{
-			"class_number", "term", "prof_code",
-			"location", "start_seconds", "end_seconds",
-			"start_date", "end_date", "days",
-			"is_cancelled", "is_closed", "is_tba",
-		},
+		util.Fields(meetings),
 		preparedMeetings,
 	)
 	if err != nil {
@@ -310,14 +294,14 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	seenProfCode := make(map[string]bool)
 	for _, prof := range profs {
 		if !seenProfCode[prof.Code] {
-			preparedProfs = append(preparedProfs, []interface{}{prof.Name, prof.Code})
+			preparedProfs = append(preparedProfs, util.AsSlice(prof))
 			seenProfCode[prof.Code] = true
 		}
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "prof_delta"},
-		[]string{"name", "code"},
+		util.Fields(profs),
 		preparedProfs,
 	)
 	if err != nil {
