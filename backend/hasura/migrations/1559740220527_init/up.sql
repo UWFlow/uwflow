@@ -1,3 +1,6 @@
+-- trigram support for fast text search
+CREATE EXTENSION pg_trgm;
+
 -- START PUBLIC TABLES
 
 CREATE TABLE course (
@@ -276,6 +279,10 @@ FROM review;
 
 -- START PUBLIC INDEXES
 
+CREATE INDEX course_code_trgm ON course USING GIN(code gin_trgm_ops);
+CREATE INDEX course_name_trgm ON course USING GIN(name gin_trgm_ops);
+CREATE INDEX prof_name_trgm ON prof USING GIN(name gin_trgm_ops);
+
 CREATE INDEX course_section_course_id_fkey ON course_section(course_id);
 CREATE INDEX section_meeting_prof_id_fkey ON section_meeting(prof_id);
 CREATE INDEX section_meeting_section_id_fkey ON section_meeting(section_id);
@@ -367,6 +374,15 @@ FROM review
 GROUP BY review.id;
 
 -- END MATERIALIZED VIEWS
+
+-- START MATERIALIZED INDEXES
+
+CREATE INDEX course_rating_course_id_fkey ON materialized.course_rating(course_id);
+CREATE INDEX prof_rating_prof_id_fkey ON materialized.prof_rating(prof_id);
+CREATE INDEX course_review_rating_review_id_fkey ON materialized.course_review_rating(review_id);
+CREATE INDEX prof_review_rating_review_id_fkey ON materialized.prof_review_rating(review_id);
+
+-- END MATERIALIZED INDEXES
 
 -- START MATERIALIZED FUNCTIONS
 
