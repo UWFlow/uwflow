@@ -56,14 +56,18 @@ func UserIdFromRequest(state *state.State, request *http.Request) (int, error) {
 			return state.Env.JwtKey, nil
 		},
 	)
+	if err != nil {
+		return 0, fmt.Errorf("malformed token: %w", err)
+	}
+
 	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
 		userId, err := strconv.Atoi(claims.Hasura.UserId)
 		if err != nil {
-			return 0, fmt.Errorf("invalid user id: %v", err)
+			return 0, fmt.Errorf("invalid user id: %w", err)
 		} else {
 			return userId, nil
 		}
 	} else {
-		return 0, fmt.Errorf("invalid auth token: %v", err)
+		return 0, fmt.Errorf("invalid auth token: %w", err)
 	}
 }
