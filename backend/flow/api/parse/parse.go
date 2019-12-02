@@ -22,6 +22,10 @@ type ScheduleParseResponse struct {
 	SectionsImported int `json:"sections_imported"`
 }
 
+type TranscriptParseResponse struct {
+	CoursesImported int `json:"courses_imported"`
+}
+
 func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request) {
 	userId, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
@@ -78,11 +82,13 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	var response TranscriptParseResponse
 	for _, summary := range result.CourseHistory {
+		response.CoursesImported += len(summary.Courses)
 		for _, course := range summary.Courses {
 			// If (course, user, term) combination exists, do not add it again
 			_, err = tx.Exec(
-				`INSERT INTO user_course_taken(course_id, user_id, term, level) `+
+				`INSERT INTO user_course_taken(course_id, user_id, term_id, level) `+
 					`SELECT id, $2, $3, $4 FROM course WHERE code = $1 `+
 					`ON CONFLICT DO NOTHING`,
 				course, userId, summary.Term, summary.Level,
@@ -106,7 +112,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 			http.StatusInternalServerError,
 		)
 	} else {
-		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
 		log.Printf("Imported transcript for user %d: %v\n", userId, result)
 	}
 }
@@ -158,7 +164,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 		tag, err := tx.Exec(
 			`INSERT INTO user_schedule(user_id, section_id) `+
 				`SELECT $1, id FROM course_section `+
-				`WHERE class_number = $2 AND term = $3`,
+				`WHERE class_number = $2 AND term_id = $3`,
 			userId, classNumber, scheduleSummary.Term,
 		)
 		if err != nil {
@@ -187,7 +193,10 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 			http.StatusInternalServerError,
 		)
 	} else {
-		w.WriteHeader(http.StatusOK)
+		response := ScheduleParseResponse{
+			SectionsImported: len(scheduleSummary.ClassNumbers),
+		}
+		json.NewEncoder(w).Encode(response)
 		log.Printf("Imported schedule for user %d: %v\n", userId, scheduleSummary)
 	}
 }
