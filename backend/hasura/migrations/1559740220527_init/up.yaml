@@ -1016,7 +1016,13 @@
           foreign_key_constraint_on:
             column: user_id
             table: user_shortlist
-      delete_permissions: []
+      delete_permissions:
+      - comment: null
+        permission:
+          filter:
+            id:
+              _eq: X-Hasura-User-Id
+        role: user
       event_triggers: []
       insert_permissions: []
       is_enum: false
