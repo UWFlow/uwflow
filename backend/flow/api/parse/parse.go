@@ -183,6 +183,12 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 			)
 			return
 		}
+		_, err = tx.Exec(
+			`INSERT INTO user_course_taken(user_id, course_id) `+
+				`SELECT $1, course_id FROM course_section `+
+				`WHERE class_number = $2 AND term_id = $3`,
+			userId, classNumber, scheduleSummary.Term,
+		)
 	}
 
 	err = tx.Commit()
