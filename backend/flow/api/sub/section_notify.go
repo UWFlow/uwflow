@@ -2,11 +2,50 @@ package sub
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"flow/api/serde"
 	"flow/common/state"
 )
+
+const htmlTemplate = `
+<html>
+<head>
+	<title></title>
+	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
+</head>
+<body aria-readonly="false" style="cursor: auto;">
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
+	<tbody>
+		<tr>
+			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+		</tr>
+	</tbody>
+</table>
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:600px">
+	<tbody>
+		<tr>
+			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
+				Hi {{.Name}},<br /><br />
+				You subscribed to one (or more) sections in {{.CourseCode}}.<br /><br />
+				We’ll notify you when enrolment drops so that at least one seat is open in a section you subscribed to.<br /><br />
+				If you’d like to unsubscribe, navigate to {{.CourseURL}}, sign in, and click the blue bell icon on sections you don’t want to hear about.<br /><br />
+				Cheers,<br />
+				UW Flow
+			</span></td>
+		</tr>
+	</tbody>
+</table>
+
+</body>
+</html>`
+
+type subscriptionData struct {
+	Name       string
+	CourseCode string
+	CourseURL  string
+}
 
 type sectionNotifyRequest struct {
 	SectionID *int `json:"section_id"`
@@ -60,15 +99,28 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 
 	if !alreadySubscribedToCourse {
 		var email string
+		var data subscriptionData
 		err = state.Db.QueryRow(
-			`SELECT email FROM public.user WHERE id = $1`, userID,
-		).Scan(&email)
+			`SELECT email, full_name FROM public.user WHERE id = $1`, userID,
+		).Scan(&email, &data.Name)
 		if err != nil {
 			serde.Error(w, "Failed fetch", http.StatusInternalServerError)
 			return
 		}
 
-		err = SendAutomatedEmail(state, []string{email}, "New Subscription", "Body")
+		err = state.Db.QueryRow(
+			`SELECT code FROM course WHERE id = $1`, courseID,
+		).Scan(&data.CourseCode)
+		if err != nil {
+			serde.Error(w, "Failed fetch", http.StatusInternalServerError)
+			return
+		}
+		data.CourseURL = fmt.Sprintf("https://uwflow.com/course/%s", data.CourseCode)
+
+		err = SendAutomatedEmail(
+			state, []string{email},
+			fmt.Sprintf("You’re all set to receive notifications for %s", data.CourseCode),
+			htmlTemplate, data)
 		if err != nil {
 			serde.Error(w, "Failed to send subscription notification", http.StatusInternalServerError)
 		}

@@ -14,6 +14,36 @@ import (
 	"flow/common/state"
 )
 
+const htmlTemplate = `
+<html>
+<head>
+	<title></title>
+	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
+</head>
+<body aria-readonly="false" style="cursor: auto;">
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
+	<tbody>
+		<tr>
+			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+		</tr>
+	</tbody>
+</table>
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:600px">
+	<tbody>
+		<tr>
+			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
+				Hi {{.Name}},<br /><br />
+				Your one-time reset code is {{.Code}}. Follow the instructions back on Flow and we will have you course-surfing in no time!<br /><br />
+				Cheers,<br />
+				UW Flow
+			</span></td>
+		</tr>
+	</tbody>
+</table>
+
+</body>
+</html>`
+
 type sendEmailRequest struct {
 	Email *string `json:"email"`
 }
@@ -21,6 +51,11 @@ type sendEmailRequest struct {
 type resetPasswordRequest struct {
 	Key      *string `json:"key"`
 	Password *string `json:"password"`
+}
+
+type forgotPasswordEmail struct {
+	Name string
+	Code string
 }
 
 // GenerateRandomBytes returns securely generated random bytes.
@@ -67,25 +102,26 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 
 	// Check db if email exists and get corresponding user_id
 	var userID int
-	var join_source string
+	var joinSource string
+	var emailData forgotPasswordEmail
 	err = state.Db.QueryRow(
-		`SELECT id, join_source FROM public.user WHERE email = $1`,
+		`SELECT id, full_name, join_source FROM public.user WHERE email = $1`,
 		*body.Email,
-	).Scan(&userID, &join_source)
-	if err != nil || join_source != "email" {
+	).Scan(&userID, &(emailData.Name), &joinSource)
+	if err != nil || joinSource != "email" {
 		serde.Error(w, "Email not found", http.StatusBadRequest)
 		return
 	}
 
 	// generate unique code which expires in 1 hour
 	expiry := time.Now().Add(time.Hour)
-	code, err := GenerateRandomString(6)
+	emailData.Code, err = GenerateRandomString(6)
 	if err != nil {
 		serde.Error(w, "Failed to generate verification code", http.StatusInternalServerError)
 		return
 	}
 
-	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
+	err = sub.SendAutomatedEmail(state, []string{*body.Email}, "Verify your email with UW Flow", htmlTemplate, emailData)
 	if err != nil {
 		serde.Error(w, "Error sending forgot password email", http.StatusInternalServerError)
 		return
@@ -94,7 +130,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 	// Attempt to insert generated code and userID into secret.password_reset table
 	_, err = state.Db.Exec(
 		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)`,
-		userID, code, expiry,
+		userID, emailData.Code, expiry,
 	)
 	if err != nil {
 		serde.Error(w, "Error writing to db", http.StatusInternalServerError)
