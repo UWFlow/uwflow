@@ -11,7 +11,7 @@ import (
 
 func SendAutomatedEmail(state *state.State, to []string, subject string, htmlTemplate string, data interface{}) error {
 	var emailBody bytes.Buffer
-	header := "MIME-version: 1.0\nContent-Type: text/html\n"
+	header := "MIME-version: 1.0\nContent-Type: text/html;charset=\"UTF-8\";\n"
 	emailBody.Write([]byte(header))
 
 	t, err := template.New("email").Parse(htmlTemplate)
