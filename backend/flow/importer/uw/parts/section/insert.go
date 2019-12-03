@@ -195,6 +195,7 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 // nothing references meetings (no primary key),
 // so we might as well overwrite them fully.
 const TruncateMeetingQuery = `
+  TRUCNATE section_meeting;
   TRUNCATE work.section_meeting_delta;
 `
 
