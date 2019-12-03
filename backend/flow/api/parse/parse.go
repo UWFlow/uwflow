@@ -163,6 +163,14 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	_, err = tx.Exec(
 		`DELETE FROM user_course_taken WHERE term_id = $1`, scheduleSummary.Term,
 	)
+	if err != nil {
+		serde.Error(
+			w,
+			fmt.Sprintf("failed to clear sections: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
+	}
 	for _, classNumber := range scheduleSummary.ClassNumbers {
 		tag, err := tx.Exec(
 			`INSERT INTO user_schedule(user_id, section_id) `+
@@ -186,10 +194,11 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 			)
 			return
 		}
-		_, err = tx.Exec(
+		tx.Exec(
 			`INSERT INTO user_course_taken(user_id, term_id, course_id) `+
 				`SELECT $1, $2, course_id FROM course_section `+
-				`WHERE term_id = $2 AND class_number = $3`,
+				`WHERE term_id = $2 AND class_number = $3`+
+				`ON CONFLICT DO NOTHING`,
 			userId, scheduleSummary.Term, classNumber,
 		)
 	}
