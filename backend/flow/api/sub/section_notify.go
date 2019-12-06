@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"flow/api/serde"
 	"flow/common/state"
@@ -116,6 +117,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 			return
 		}
 		data.CourseURL = fmt.Sprintf("https://uwflow.com/course/%s", data.CourseCode)
+		data.CourseCode = strings.ToUpper(data.CourseCode)
 
 		err = SendAutomatedEmail(
 			state, []string{email},
