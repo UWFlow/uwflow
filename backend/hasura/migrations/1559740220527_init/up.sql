@@ -238,6 +238,11 @@ CREATE TABLE prof_review_upvote (
   CONSTRAINT prof_review_upvote_unique UNIQUE(review_id, user_id)
 );
 
+CREATE TABLE update_time (
+  term_id INT PRIMARY KEY,
+  time TIMESTAMP NOT NULL
+);
+
 -- END PUBLIC TABLES
 
 -- START PUBLIC VIEWS

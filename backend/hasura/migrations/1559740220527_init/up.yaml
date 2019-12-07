@@ -1156,4 +1156,29 @@
         role: user
       table: prof_review_upvote
       update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - term_id
+          - time
+          filter: {}
+        role: anonymous
+      - comment: null
+        permission:
+          allow_aggregations: true
+          columns:
+          - term_id
+          - time
+          filter: {}
+        role: user
+      table: update_time
+      update_permissions: []
   type: replace_metadata
