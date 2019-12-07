@@ -1,9 +1,9 @@
 package course
 
 type ConvertResult struct {
-  Courses []Course
-  Prereqs []Prereq
-  Antireqs []Antireq
+	Courses  []Course
+	Prereqs  []Prereq
+	Antireqs []Antireq
 }
 
 type Course struct {
@@ -16,14 +16,14 @@ type Course struct {
 }
 
 type Prereq struct {
-  CourseCode string
-  PrereqCode string
-  IsCoreq    bool
+	CourseCode string
+	PrereqCode string
+	IsCoreq    bool
 }
 
 type Antireq struct {
-  CourseCode string
-  AntireqCode string
+	CourseCode  string
+	AntireqCode string
 }
 
 // Data necessary to uniquely identify a course, equivalent to a course code

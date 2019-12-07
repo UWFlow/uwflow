@@ -1,39 +1,39 @@
 package course
 
 import (
-  "regexp"
-  "strings"
+	"regexp"
+	"strings"
 )
 
 var CourseCodeRegexp = regexp.MustCompile(`([A-Z]{2,}\s+)?[0-9]{3,}[A-Z]*`)
 
 func NextOccurence(input string, char byte, startIndex int) (int, bool) {
-  if startIndex < 0 {
-    startIndex = 0
-  }
-  for i := startIndex; i < len(input); i++ {
-    if input[i] == char {
-      return i, true
-    }
-  }
-  return startIndex, false
+	if startIndex < 0 {
+		startIndex = 0
+	}
+	for i := startIndex; i < len(input); i++ {
+		if input[i] == char {
+			return i, true
+		}
+	}
+	return startIndex, false
 }
 
 func FindCourseCodes(input string) ([][]int, []string) {
-  matches := CourseCodeRegexp.FindAllStringIndex(input, -1)
-  codes := make([]string, len(matches))
-  var lastCode string
-  for i, bounds := range matches {
-    s, e := bounds[0], bounds[1]
-    if '0' <= input[s] && input[s] <= '9' {
-      codes[i] = strings.ToLower(lastCode + input[s:e])
-    } else {
-      spaceIndex, _ := NextOccurence(input, ' ', s)
-      lastCode = input[s:spaceIndex]
-      codes[i] = strings.ToLower(lastCode + input[spaceIndex + 1:e])
-    }
-  }
-  return matches, codes
+	matches := CourseCodeRegexp.FindAllStringIndex(input, -1)
+	codes := make([]string, len(matches))
+	var lastCode string
+	for i, bounds := range matches {
+		s, e := bounds[0], bounds[1]
+		if '0' <= input[s] && input[s] <= '9' {
+			codes[i] = strings.ToLower(lastCode + input[s:e])
+		} else {
+			spaceIndex, _ := NextOccurence(input, ' ', s)
+			lastCode = input[s:spaceIndex]
+			codes[i] = strings.ToLower(lastCode + input[spaceIndex+1:e])
+		}
+	}
+	return matches, codes
 }
 
 // ExpandCourseCodes takes a string containing course numbers
@@ -48,70 +48,70 @@ func FindCourseCodes(input string) ([][]int, []string) {
 // Additionally, ExpandCourseCodes returns the list of all
 // course codes occuring in the string.
 func ExpandCourseCodes(input string) (string, []string) {
-  var sb strings.Builder
-  // Output is at least as long as the input
-  sb.Grow(len(input))
+	var sb strings.Builder
+	// Output is at least as long as the input
+	sb.Grow(len(input))
 
-  matches, codes := FindCourseCodes(input)
-  lastEnd := 0
+	matches, codes := FindCourseCodes(input)
+	lastEnd := 0
 
-  for i, match := range matches {
-    sb.WriteString(input[lastEnd:match[0]])
-    sb.WriteString(strings.ToUpper(codes[i]))
-    lastEnd = match[1]
-  }
-  sb.WriteString(input[lastEnd:])
+	for i, match := range matches {
+		sb.WriteString(input[lastEnd:match[0]])
+		sb.WriteString(strings.ToUpper(codes[i]))
+		lastEnd = match[1]
+	}
+	sb.WriteString(input[lastEnd:])
 
-  return sb.String(), codes
+	return sb.String(), codes
 }
 
 func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
-  dst.Courses = make([]Course, len(apiCourses))
+	dst.Courses = make([]Course, len(apiCourses))
 
-  for i, apiCourse := range apiCourses {
-    courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
-    prereqString, prereqCodes := ExpandCourseCodes(apiCourse.Prereqs)
-    coreqString, coreqCodes := ExpandCourseCodes(apiCourse.Coreqs)
-    antireqString, antireqCodes := ExpandCourseCodes(apiCourse.Antireqs)
+	for i, apiCourse := range apiCourses {
+		courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
+		prereqString, prereqCodes := ExpandCourseCodes(apiCourse.Prereqs)
+		coreqString, coreqCodes := ExpandCourseCodes(apiCourse.Coreqs)
+		antireqString, antireqCodes := ExpandCourseCodes(apiCourse.Antireqs)
 
-    dst.Courses[i] = Course {
-      Code: courseCode,
-      Name: apiCourse.Name,
-      Description: apiCourse.Description,
-      Prereqs: prereqString,
-      Coreqs: coreqString,
-      Antireqs: antireqString,
-    }
+		dst.Courses[i] = Course{
+			Code:        courseCode,
+			Name:        apiCourse.Name,
+			Description: apiCourse.Description,
+			Prereqs:     prereqString,
+			Coreqs:      coreqString,
+			Antireqs:    antireqString,
+		}
 
-    for _, prereqCode := range prereqCodes {
-      dst.Prereqs = append(
-        dst.Prereqs,
-        Prereq{
-          CourseCode: courseCode,
-          PrereqCode: prereqCode,
-          IsCoreq:    false,
-        },
-      )
-    }
-    for _, coreqCode := range coreqCodes {
-      dst.Prereqs = append(
-        dst.Prereqs,
-        Prereq{
-          CourseCode: courseCode,
-          PrereqCode: coreqCode,
-          IsCoreq:    true,
-        },
-      )
-    }
-    for _, antireqCode := range antireqCodes {
-      dst.Antireqs = append(
-        dst.Antireqs,
-        Antireq{
-          CourseCode: courseCode,
-          AntireqCode: antireqCode,
-        },
-      )
-    }
-  }
-  return nil
+		for _, prereqCode := range prereqCodes {
+			dst.Prereqs = append(
+				dst.Prereqs,
+				Prereq{
+					CourseCode: courseCode,
+					PrereqCode: prereqCode,
+					IsCoreq:    false,
+				},
+			)
+		}
+		for _, coreqCode := range coreqCodes {
+			dst.Prereqs = append(
+				dst.Prereqs,
+				Prereq{
+					CourseCode: courseCode,
+					PrereqCode: coreqCode,
+					IsCoreq:    true,
+				},
+			)
+		}
+		for _, antireqCode := range antireqCodes {
+			dst.Antireqs = append(
+				dst.Antireqs,
+				Antireq{
+					CourseCode:  courseCode,
+					AntireqCode: antireqCode,
+				},
+			)
+		}
+	}
+	return nil
 }

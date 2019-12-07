@@ -44,31 +44,31 @@ func TestConvertCourse(t *testing.T) {
 	want := []util.Outcome{
 		{
 			Value: course.Course{
-        Code:   "cs145",
-        Name:    "Designing Functional Programs (Advanced Level)",
-        Description: "CS 145 is an advanced-level version of CS 135.",
-        Prereqs: "",
-        Coreqs: "",
-        Antireqs: "CS115, CS135, CS137, CS138",
-      },
-    },
-    {
+				Code:        "cs145",
+				Name:        "Designing Functional Programs (Advanced Level)",
+				Description: "CS 145 is an advanced-level version of CS 135.",
+				Prereqs:     "",
+				Coreqs:      "",
+				Antireqs:    "CS115, CS135, CS137, CS138",
+			},
+		},
+		{
 			Value: course.Course{
-        Code:   "stat230",
-        Name:    "Probability",
-        Description: "",
-        Prereqs: "(MATH135 with min. grade of 60% or MATH145)&(MATH128 with min. grade of 70% or (MATH117 or MATH137) with min. grade of 60% or MATH147)); Level at least 1B Hon Math or Math/Phys students only.",
-        Coreqs: "MATH119 or MATH138 or MATH148.",
-        Antireqs: "STAT220, STAT240",
-      },
-    },
+				Code:        "stat230",
+				Name:        "Probability",
+				Description: "",
+				Prereqs:     "(MATH135 with min. grade of 60% or MATH145)&(MATH128 with min. grade of 70% or (MATH117 or MATH137) with min. grade of 60% or MATH147)); Level at least 1B Hon Math or Math/Phys students only.",
+				Coreqs:      "MATH119 or MATH138 or MATH148.",
+				Antireqs:    "STAT220, STAT240",
+			},
+		},
 	}
 
-  var converted course.ConvertResult
-  err := course.ConvertAll(&converted, inputs)
-  if err != nil {
-    t.Fatalf("err %s", err)
-  }
+	var converted course.ConvertResult
+	err := course.ConvertAll(&converted, inputs)
+	if err != nil {
+		t.Fatalf("err %s", err)
+	}
 	for i, got := range converted.Courses {
 		want[i].Test(t, inputs[i], got, err)
 	}

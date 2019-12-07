@@ -340,13 +340,13 @@ func InsertAllUpdateTimes(conn *db.Conn, times []UpdateTime) (*log.DbResult, err
 	}
 	defer tx.Rollback()
 
-  for _, time := range times {
-    _, err := tx.Exec(UpdateTimesQuery, time.TermId, time.Time)
-    if err != nil {
-      return &result, fmt.Errorf("failed to update: %w", err)
-    }
-  }
-  result.Updated = len(times)
+	for _, time := range times {
+		_, err := tx.Exec(UpdateTimesQuery, time.TermId, time.Time)
+		if err != nil {
+			return &result, fmt.Errorf("failed to update: %w", err)
+		}
+	}
+	result.Updated = len(times)
 
 	err = tx.Commit()
 	if err != nil {

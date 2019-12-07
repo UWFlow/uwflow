@@ -9,7 +9,7 @@ import (
 )
 
 func ImportAll(state *state.State, client *api.Client) error {
-  var converted ConvertResult
+	var converted ConvertResult
 	log.StartImport(state.Log, "course")
 
 	courses, err := FetchAll(client)
