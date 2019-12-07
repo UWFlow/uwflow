@@ -29,7 +29,12 @@ func ImportAll(state *state.State, client *api.Client) error {
 
 	err = InsertAllPrereqs(state.Db, converted.Prereqs)
 	if err != nil {
-		return fmt.Errorf("failed to insert requisites: %w", err)
+		return fmt.Errorf("failed to insert prerequisites: %w", err)
+	}
+
+	err = InsertAllAntireqs(state.Db, converted.Antireqs)
+	if err != nil {
+		return fmt.Errorf("failed to insert antirequisites: %w", err)
 	}
 
 	return nil

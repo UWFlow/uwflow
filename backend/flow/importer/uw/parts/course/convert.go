@@ -7,12 +7,11 @@ import (
 
 var CourseCodeRegexp = regexp.MustCompile(`([A-Z]{2,}\s+)?[0-9]{3,}[A-Z]*`)
 
-func NextOccurence(input string, char byte, startIndex int) (int, bool) {
-	if startIndex < 0 {
-		startIndex = 0
-	}
+func nextSpace(input string, startIndex int) (int, bool) {
+	var char byte
 	for i := startIndex; i < len(input); i++ {
-		if input[i] == char {
+		char = input[i]
+		if char == ' ' || char == '\t' || char == '\n' {
 			return i, true
 		}
 	}
@@ -28,7 +27,7 @@ func FindCourseCodes(input string) ([][]int, []string) {
 		if '0' <= input[s] && input[s] <= '9' {
 			codes[i] = strings.ToLower(lastCode + input[s:e])
 		} else {
-			spaceIndex, _ := NextOccurence(input, ' ', s)
+			spaceIndex, _ := nextSpace(input, s)
 			lastCode = input[s:spaceIndex]
 			codes[i] = strings.ToLower(lastCode + input[spaceIndex+1:e])
 		}

@@ -84,29 +84,21 @@ func InsertAllCourses(conn *db.Conn, courses []Course) error {
 	return nil
 }
 
-const TruncatePrereqQuery = `TRUNCATE work.prerequisite_delta`
-
-const UpdatePrereqQuery = `
-UPDATE course_prerequisite SET
-  is_corequisite = delta.is_corequisite
-FROM work.prerequisite_delta delta
-  JOIN course c ON c.code = delta.course_code
-  JOIN course p ON p.code = delta.prereq_code
-WHERE course_prerequisite.course_id = c.id
-  AND course_prerequisite.prerequisite_id = p.id
+// We fetch courses rarely enough that it's easier to truncate
+// requisite tables every time instead of fumbling with updates/deletions.
+const TruncatePrereqQuery = `
+TRUNCATE course_prerequisite;
+TRUNCATE work.course_prerequisite_delta;
 `
 
 const InsertPrereqQuery = `
 INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
 SELECT
   c.id, p.id, d.is_coreq
-FROM work.prerequisite_delta d
+FROM work.course_prerequisite_delta d
   JOIN course c ON c.code = d.course_code
   JOIN course p ON p.code = d.prereq_code
-  LEFT JOIN course_prerequisite old
-    ON c.id = old.course_id
-   AND p.id = old.prerequisite_id
-WHERE c.id IS NULL
+ON CONFLICT (course_id, prerequisite_id) DO NOTHING
 `
 
 func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
@@ -129,7 +121,7 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 	}
 
 	_, err = tx.CopyFrom(
-		db.Identifier{"work", "prereq_elta"},
+		db.Identifier{"work", "course_prerequisite_delta"},
 		util.Fields(prereqs),
 		preparedPrereqs,
 	)
@@ -137,13 +129,7 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 		return fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdatePrereqQuery)
-	if err != nil {
-		return fmt.Errorf("failed to apply update: %w", err)
-	}
-	result.Updated = int(tag.RowsAffected())
-
-	tag, err = tx.Exec(InsertPrereqQuery)
+	tag, err := tx.Exec(InsertPrereqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
@@ -154,7 +140,64 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	touched := result.Inserted + result.Updated
-	result.Untouched = len(prereqs) - touched
+	return nil
+}
+
+// We fetch courses rarely enough that it's easier to truncate
+// requisite tables every time instead of fumbling with updates/deletions.
+const TruncateAntireqQuery = `
+TRUNCATE course_antirequisite;
+TRUNCATE work.course_antirequisite_delta;
+`
+
+const InsertAntireqQuery = `
+INSERT INTO course_antirequisite(course_id, antirequisite_id)
+SELECT
+  c.id, a.id
+FROM work.course_antirequisite_delta d
+  JOIN course c ON c.code = d.course_code
+  JOIN course a ON a.code = d.antireq_code
+ON CONFLICT (course_id, antirequisite_id) DO NOTHING
+`
+
+func InsertAllAntireqs(conn *db.Conn, antireqs []Antireq) error {
+	var result log.DbResult
+
+	tx, err := conn.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to open transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(TruncateAntireqQuery)
+	if err != nil {
+		return fmt.Errorf("failed to truncate work table: %w", err)
+	}
+
+	var preparedAntireqs [][]interface{}
+	for _, antireq := range antireqs {
+		preparedAntireqs = append(preparedAntireqs, util.AsSlice(antireq))
+	}
+
+	_, err = tx.CopyFrom(
+		db.Identifier{"work", "course_antirequisite_delta"},
+		util.Fields(antireqs),
+		preparedAntireqs,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to copy data: %w", err)
+	}
+
+	tag, err := tx.Exec(InsertAntireqQuery)
+	if err != nil {
+		return fmt.Errorf("failed to insert: %w", err)
+	}
+	result.Inserted = int(tag.RowsAffected())
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
