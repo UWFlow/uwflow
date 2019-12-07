@@ -9,6 +9,7 @@ import (
 )
 
 func ImportAll(state *state.State, client *api.Client) error {
+  var converted ConvertResult
 	log.StartImport(state.Log, "course")
 
 	courses, err := FetchAll(client)
@@ -16,11 +17,20 @@ func ImportAll(state *state.State, client *api.Client) error {
 		return fmt.Errorf("failed to fetch courses: %w", err)
 	}
 
-	result, err := InsertAll(state.Db, courses)
+	err = ConvertAll(&converted, courses)
+	if err != nil {
+		return fmt.Errorf("failed to convert courses: %w", err)
+	}
+
+	err = InsertAllCourses(state.Db, converted.Courses)
 	if err != nil {
 		return fmt.Errorf("failed to insert courses: %w", err)
 	}
 
-	log.EndImport(state.Log, "course", result)
+	err = InsertAllPrereqs(state.Db, converted.Prereqs)
+	if err != nil {
+		return fmt.Errorf("failed to insert requisites: %w", err)
+	}
+
 	return nil
 }

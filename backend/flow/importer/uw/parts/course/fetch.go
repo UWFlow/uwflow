@@ -12,20 +12,20 @@ type Semaphore chan empty
 
 const RateLimit = 20
 
-func FetchAll(client *api.Client) ([]Course, error) {
+func FetchAll(client *api.Client) ([]ApiCourse, error) {
 	handles, err := FetchHandles(client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch handles: %w", err)
 	}
 
 	sema := make(Semaphore, RateLimit)
-	datachan := make(chan *Course, len(handles))
+	datachan := make(chan *ApiCourse, len(handles))
 	errorchan := make(chan error, len(handles))
 	for _, handle := range handles {
 		go asyncFetchByHandle(client, handle, sema, datachan, errorchan)
 	}
 
-	courses := make([]Course, len(handles))
+	courses := make([]ApiCourse, len(handles))
 	for i := 0; i < len(handles); i++ {
 		select {
 		case course := <-datachan:
@@ -38,8 +38,8 @@ func FetchAll(client *api.Client) ([]Course, error) {
 }
 
 func asyncFetchByHandle(
-	client *api.Client, handle CourseHandle,
-	sema Semaphore, datachan chan *Course, errorchan chan error,
+	client *api.Client, handle ApiCourseHandle,
+	sema Semaphore, datachan chan *ApiCourse, errorchan chan error,
 ) {
 	sema <- empty{}
 	course, err := FetchByHandle(client, handle)
@@ -51,15 +51,15 @@ func asyncFetchByHandle(
 	<-sema
 }
 
-func FetchByHandle(client *api.Client, handle CourseHandle) (*Course, error) {
-	var course Course
+func FetchByHandle(client *api.Client, handle ApiCourseHandle) (*ApiCourse, error) {
+	var course ApiCourse
 	endpoint := fmt.Sprintf("courses/%s/%s", handle.Subject, handle.Number)
 	err := client.Getv2(endpoint, &course)
 	return &course, err
 }
 
-func FetchHandles(client *api.Client) ([]CourseHandle, error) {
-	handles := make([]CourseHandle, 0)
+func FetchHandles(client *api.Client) ([]ApiCourseHandle, error) {
+	handles := make([]ApiCourseHandle, 0)
 	seenHandle := make(map[string]bool)
 	// We are only intersted in the two upcoming terms
 	termIds := []int{util.CurrentTermId(), util.NextTermId()}
@@ -79,8 +79,8 @@ func FetchHandles(client *api.Client) ([]CourseHandle, error) {
 	return handles, nil
 }
 
-func FetchHandlesByTerm(client *api.Client, termId int) ([]CourseHandle, error) {
-	var handles []CourseHandle
+func FetchHandlesByTerm(client *api.Client, termId int) ([]ApiCourseHandle, error) {
+	var handles []ApiCourseHandle
 	endpoint := fmt.Sprintf("terms/%d/courses", termId)
 	err := client.Getv2(endpoint, &handles)
 	return handles, err
