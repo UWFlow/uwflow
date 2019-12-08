@@ -432,7 +432,7 @@ AFTER INSERT OR UPDATE OR DELETE ON prof_review_upvote
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_review_rating');
 
-CREATE TRIGGER refresh_prof_teaches_course_rating
+CREATE TRIGGER refresh_prof_teaches_course
 AFTER INSERT OR UPDATE OR DELETE ON section_meeting
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_teaches_course');
