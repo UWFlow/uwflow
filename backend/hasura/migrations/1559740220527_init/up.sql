@@ -254,12 +254,6 @@ SELECT
   is_corequisite
 FROM course_prerequisite;
 
-CREATE VIEW prof_teaches_course AS
-SELECT DISTINCT cs.course_id, sm.prof_id
-FROM course_section cs
-  JOIN section_meeting sm ON sm.section_id = cs.id
-WHERE sm.prof_id IS NOT NULL;
-
 CREATE VIEW review_author AS
 SELECT
   r.id AS review_id,
@@ -379,6 +373,15 @@ FROM review
   LEFT JOIN prof_review_upvote u ON review.id = u.review_id
 GROUP BY review.id;
 
+CREATE MATERIALIZED VIEW materialized.prof_teaches_course AS
+SELECT DISTINCT cs.course_id, sm.prof_id
+FROM course_section cs
+  JOIN section_meeting sm ON sm.section_id = cs.id
+WHERE sm.prof_id IS NOT NULL;
+
+CREATE VIEW prof_teaches_course AS
+SELECT * FROM materialized.prof_teaches_course;
+
 -- END MATERIALIZED VIEWS
 
 -- START MATERIALIZED INDEXES
@@ -387,6 +390,9 @@ CREATE INDEX course_rating_course_id_fkey ON materialized.course_rating(course_i
 CREATE INDEX prof_rating_prof_id_fkey ON materialized.prof_rating(prof_id);
 CREATE INDEX course_review_rating_review_id_fkey ON materialized.course_review_rating(review_id);
 CREATE INDEX prof_review_rating_review_id_fkey ON materialized.prof_review_rating(review_id);
+
+CREATE INDEX prof_teaches_course_course_id_fkey ON materialized.prof_teaches_course(course_id);
+CREATE INDEX prof_teaches_course_prof_id_fkey ON materialized.prof_teaches_course(prof_id);
 
 -- END MATERIALIZED INDEXES
 
@@ -425,6 +431,11 @@ CREATE TRIGGER refresh_prof_review_rating
 AFTER INSERT OR UPDATE OR DELETE ON prof_review_upvote
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_review_rating');
+
+CREATE TRIGGER refresh_prof_teaches_course_rating
+AFTER INSERT OR UPDATE OR DELETE ON section_meeting
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.prof_teaches_course');
 
 -- END MATERIALIZED TRIGGERS
 
