@@ -240,7 +240,7 @@ CREATE TABLE prof_review_upvote (
 
 CREATE TABLE update_time (
   term_id INT PRIMARY KEY,
-  time TIMESTAMP NOT NULL
+  time TIMESTAMPTZ NOT NULL
 );
 
 -- END PUBLIC TABLES
