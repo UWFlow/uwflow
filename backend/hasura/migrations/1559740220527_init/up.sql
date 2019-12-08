@@ -238,6 +238,11 @@ CREATE TABLE prof_review_upvote (
   CONSTRAINT prof_review_upvote_unique UNIQUE(review_id, user_id)
 );
 
+CREATE TABLE update_time (
+  term_id INT PRIMARY KEY,
+  time TIMESTAMPTZ NOT NULL
+);
+
 -- END PUBLIC TABLES
 
 -- START PUBLIC VIEWS
@@ -252,7 +257,8 @@ FROM course_prerequisite;
 CREATE VIEW prof_teaches_course AS
 SELECT DISTINCT cs.course_id, sm.prof_id
 FROM course_section cs
-  JOIN section_meeting sm ON sm.section_id = cs.id;
+  JOIN section_meeting sm ON sm.section_id = cs.id
+WHERE sm.prof_id IS NOT NULL;
 
 CREATE VIEW review_author AS
 SELECT
@@ -519,6 +525,17 @@ CREATE TABLE work.course_delta(
   prereqs TEXT,
   coreqs TEXT,
   antireqs TEXT
+);
+
+CREATE TABLE work.course_prerequisite_delta(
+  course_code TEXT NOT NULL,
+  prereq_code TEXT NOT NULL,
+  is_coreq BOOLEAN NOT NULL
+);
+
+CREATE TABLE work.course_antirequisite_delta(
+  course_code TEXT NOT NULL,
+  antireq_code TEXT NOT NULL
 );
 
 CREATE TABLE work.section_exam_delta(

@@ -14,13 +14,13 @@ type fatalfer interface {
 func (m Outcome) Test(f fatalfer, input interface{}, value interface{}, err error) {
 	if m.Error {
 		if err == nil {
-			f.Fatalf("For: %+v; got: %+v; want err", input, value)
+			f.Fatalf("\n\tfor: %+v\n\thave: %+v\n\twant err", input, value)
 		}
 	} else {
 		if err != nil {
-			f.Fatalf("For: %+v; err: %v; want: %+v", input, err, m.Value)
+			f.Fatalf("\n\tfor: %+v\n\terr: %v\n\twant: %+v", input, err, m.Value)
 		} else if !reflect.DeepEqual(value, m.Value) {
-			f.Fatalf("For: %+v; got: %+v; want: %+v", input, value, m.Value)
+			f.Fatalf("\n\tfor: %+v\n\thave: %+v\n\twant: %+v", input, value, m.Value)
 		}
 	}
 }
