@@ -2,6 +2,7 @@ package sub
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"flow/api/serde"
@@ -17,17 +18,17 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 	body := sectionNotifyRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 	if body.SectionID == nil {
-		serde.Error(w, "Expected {section_id}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("expected section_id")), http.StatusBadRequest)
 		return
 	}
 
 	userID, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		serde.Error(w, "Authorization failed", http.StatusUnauthorized)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusUnauthorized)
 		return
 	}
 
@@ -38,7 +39,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 		*body.SectionID,
 	).Scan(&courseID)
 	if err != nil {
-		serde.Error(w, "Provided section id is invalid", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 
@@ -54,7 +55,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 		)`, courseID,
 	).Scan(&alreadySubscribedToCourse)
 	if err != nil {
-		serde.Error(w, "Failed fetch", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 
@@ -64,13 +65,13 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 			`SELECT email FROM public.user WHERE id = $1`, userID,
 		).Scan(&email)
 		if err != nil {
-			serde.Error(w, "Failed fetch", http.StatusInternalServerError)
+			serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusInternalServerError)
 			return
 		}
 
 		err = SendAutomatedEmail(state, []string{email}, "New Subscription", "Body")
 		if err != nil {
-			serde.Error(w, "Failed to send subscription notification", http.StatusInternalServerError)
+			serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusInternalServerError)
 		}
 	}
 
@@ -80,7 +81,7 @@ func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Reque
 		userID, *body.SectionID,
 	)
 	if err != nil {
-		serde.Error(w, "Error inserting for user_id", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("subscribing to section: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 
@@ -92,17 +93,17 @@ func UnsubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Req
 	body := sectionNotifyRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("unsubscribing to section: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 	if body.SectionID == nil {
-		serde.Error(w, "Expected {section_id}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("unsubscribing to section: expected section_id")), http.StatusBadRequest)
 		return
 	}
 
 	userID, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		serde.Error(w, "Authorization failed", http.StatusUnauthorized)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("unsubscribing to section: %w", err.Error())), http.StatusUnauthorized)
 		return
 	}
 
@@ -112,11 +113,11 @@ func UnsubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Req
 		userID, *body.SectionID,
 	)
 	if err != nil {
-		serde.Error(w, "Error unsubscribing", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("unsubscribing to section: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 	if tag.RowsAffected() == 0 {
-		serde.Error(w, "Invalid user_id, section_id pair", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("section_notify", fmt.Errorf("unsubscribing to section: invalid section_id, user_id pair")), http.StatusBadRequest)
 		return
 	}
 

@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"time"
@@ -57,11 +58,11 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 	body := sendEmailRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 	if body.Email == nil {
-		serde.Error(w, "Expected {email}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: expected email in request")), http.StatusBadRequest)
 		return
 	}
 
@@ -73,7 +74,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		*body.Email,
 	).Scan(&userID, &join_source)
 	if err != nil || join_source != "email" {
-		serde.Error(w, "Email not found", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: not an email user")), http.StatusBadRequest)
 		return
 	}
 
@@ -81,13 +82,13 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 	expiry := time.Now().Add(time.Hour)
 	code, err := GenerateRandomString(6)
 	if err != nil {
-		serde.Error(w, "Failed to generate verification code", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 
 	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
 	if err != nil {
-		serde.Error(w, "Error sending forgot password email", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 
@@ -97,7 +98,7 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		userID, code, expiry,
 	)
 	if err != nil {
-		serde.Error(w, "Error writing to db", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 
@@ -108,7 +109,7 @@ func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request)
 	queryParams := r.URL.Query()
 	key, ok := queryParams["key"]
 	if !ok {
-		serde.Error(w, "Expected param key=KEY", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expected param key=KEY")), http.StatusBadRequest)
 		return
 	}
 
@@ -119,7 +120,7 @@ func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request)
 		key[0], time.Now(),
 	).Scan(&keyExists)
 	if err != nil || !keyExists {
-		serde.Error(w, "Provided key not found or is expired", http.StatusForbidden)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: provided key not found or is expired")), http.StatusForbidden)
 		return
 	}
 
@@ -130,11 +131,11 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 	body := resetPasswordRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 	if body.Key == nil || body.Password == nil {
-		serde.Error(w, "Expected {key, password}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expected key, password in request")), http.StatusBadRequest)
 		return
 	}
 
@@ -146,19 +147,19 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 		*body.Key,
 	).Scan(&userID, &expiry)
 	if err != nil {
-		serde.Error(w, "Invalid key", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 
 	// Check that key is not expired
 	if !(expiry.After(time.Now())) {
-		serde.Error(w, "Expired key", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expired key")), http.StatusInternalServerError)
 		return
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(*body.Password), bcryptCost)
 	if err != nil {
-		serde.Error(w, "Internal error", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 	_, err = state.Db.Exec(
@@ -166,7 +167,7 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 		passwordHash, userID,
 	)
 	if err != nil {
-		serde.Error(w, "Error updating password", http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusInternalServerError)
 		return
 	}
 

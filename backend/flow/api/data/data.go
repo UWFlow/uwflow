@@ -89,13 +89,13 @@ func dump(state *state.State) (*Response, error) {
 func HandleSearch(state *state.State, w http.ResponseWriter, r *http.Request) {
 	res, err := dump(state)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("search", err), http.StatusInternalServerError)
 	} else {
 		err := json.NewEncoder(w).Encode(res)
 		if err != nil {
 			serde.Error(
 				w,
-				fmt.Sprintf("failed to encode response: %v", err),
+				serde.WithEnum("search", fmt.Errorf("failed to encode response: %w", err.Error())),
 				http.StatusInternalServerError,
 			)
 		}

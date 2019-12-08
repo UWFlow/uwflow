@@ -31,7 +31,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to extract user id: %v", err),
+			serde.WithEnum("transcript", fmt.Errorf("extracting user id: %w", err.Error())),
 			http.StatusUnauthorized,
 		)
 		return
@@ -39,7 +39,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		serde.Error(w, "expected form/multipart: {file}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("transcript", fmt.Errorf("expected form/multipart: {file}")), http.StatusBadRequest)
 		return
 	}
 
@@ -48,13 +48,13 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 	fileContents.ReadFrom(file)
 	text, err := PdfToText(fileContents.Bytes())
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("failed to convert transcript: %v", err), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("transcript", fmt.Errorf("converting transcript: %w", err.Error())), http.StatusBadRequest)
 		return
 	}
 
 	result, err := transcript.Parse(text)
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("failed to parse transcript: %v", err), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("transcript", err), http.StatusBadRequest)
 		return
 	}
 
@@ -62,7 +62,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to open transaction: %v", err),
+			serde.WithEnum("transcript", fmt.Errorf("opening transaction: %w", err.Error())),
 			http.StatusInternalServerError,
 		)
 		return
@@ -76,7 +76,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to update user record: %v", err),
+			serde.WithEnum("transcript", fmt.Errorf("updating user record: %w", err.Error())),
 			http.StatusInternalServerError,
 		)
 		return
@@ -96,7 +96,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 			if err != nil {
 				serde.Error(
 					w,
-					fmt.Sprintf("failed to update user record: %v", err),
+					serde.WithEnum("transcript", fmt.Errorf("updating user record: %w", err.Error())),
 					http.StatusInternalServerError,
 				)
 				return
@@ -108,7 +108,7 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to commit transaction: %v", err),
+			serde.WithEnum("transcript", fmt.Errorf("committing transaction: %w", err.Error())),
 			http.StatusInternalServerError,
 		)
 	} else {
@@ -122,7 +122,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to extract user id: %v", err),
+			serde.WithEnum("schedule", fmt.Errorf("extracting user id: %w", err.Error())),
 			http.StatusUnauthorized,
 		)
 		return
@@ -131,19 +131,19 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	req := ScheduleParseRequest{}
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("malformed JSON: %v", err), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("schedule", fmt.Errorf("malformed JSON: %v", err)), http.StatusBadRequest)
 		return
 	}
 
 	scheduleSummary, err := schedule.Parse(req.Text)
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("failed to parse schedule: %v", err), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("schedule", fmt.Errorf("%w", err.Error())), http.StatusBadRequest)
 		return
 	}
 	if scheduleSummary.Term < util.CurrentTermId() {
 		serde.Error(
 			w,
-			fmt.Sprintf("cannot import schedule for past term %d", scheduleSummary.Term),
+			serde.WithEnum("schedule", fmt.Errorf("cannot import schedule for past term %d", scheduleSummary.Term)),
 			http.StatusBadRequest,
 		)
 		return
@@ -153,7 +153,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to open transaction: %v", err),
+			serde.WithEnum("schedule", fmt.Errorf("opening transaction: %w", err.Error())),
 			http.StatusInternalServerError,
 		)
 		return
@@ -166,7 +166,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to clear sections: %v", err),
+			serde.WithEnum("schedule", fmt.Errorf("clearing sections: %w", err.Error())),
 			http.StatusInternalServerError,
 		)
 		return
@@ -181,7 +181,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			serde.Error(
 				w,
-				fmt.Sprintf("failed to store section: %v", err),
+				serde.WithEnum("schedule", fmt.Errorf("storing sections: %w", err.Error())),
 				http.StatusInternalServerError,
 			)
 			return
@@ -189,7 +189,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 		if tag.RowsAffected() == 0 {
 			serde.Error(
 				w,
-				fmt.Sprintf("class number %d not found in term %d", classNumber, scheduleSummary.Term),
+				serde.WithEnum("schedule", fmt.Errorf("class number %d not found in term %d", classNumber, scheduleSummary.Term)),
 				http.StatusBadRequest,
 			)
 			return
@@ -207,7 +207,7 @@ func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		serde.Error(
 			w,
-			fmt.Sprintf("failed to commit transaction: %v", err),
+			serde.WithEnum("schedule", err),
 			http.StatusInternalServerError,
 		)
 	} else {

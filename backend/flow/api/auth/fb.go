@@ -36,7 +36,7 @@ func GetFbUserInfo(fbID string, accessToken string, fields []string) (map[string
 	)
 	response, err := http.Get(url)
 	if err != nil {
-		return map[string]interface{}{}, err
+		return map[string]interface{}{}, fmt.Errorf("fetching user info from fb graph API: %w", err.Error())
 	}
 	defer response.Body.Close()
 	var body interface{}
@@ -52,13 +52,13 @@ func GetFbAppToken(fbAppId string, fbAppSecret string) (string, error) {
 	)
 	response, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("fetching fb app token: %w", err.Error())
 	}
 	defer response.Body.Close()
 	body := fbAppTokenResponse{}
 	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("fetching fb app token: %w", err.Error())
 	}
 	return body.AppToken, nil
 }
@@ -71,17 +71,17 @@ func verifyFbAccessToken(accessToken string, appToken string) (string, error) {
 	)
 	response, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("verifying fb access token: %w", err.Error())
 	}
 	defer response.Body.Close()
 	body := fbVerifyAccessTokenResponse{}
 	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("verifying fb access token: %w", err.Error())
 	}
 	// "is_valid" field is false in API response if verification fails
 	if !body.Data.IsValid {
-		return "", fmt.Errorf("Invalid access token")
+		return "", fmt.Errorf("verifying fb access token: invalid access token")
 	}
 	return body.Data.UserID, nil
 }
@@ -92,12 +92,12 @@ func registerFbUser(conn *db.Conn, accessToken string, fbID string) (int, error)
 	fields := []string{"name", "email"}
 	userInfo, err := GetFbUserInfo(fbID, accessToken, fields)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("registering new fb user: %w", err.Error())
 	}
 	// fb user could have invalid email field
 	// https://developers.facebook.com/docs/graph-api/reference/user/
 	if _, ok := userInfo["email"]; !ok {
-		return 0, fmt.Errorf("Invalid FB account email")
+		return 0, fmt.Errorf("registering new fb user: invalid fb account email")
 	}
 
 	// forms user profile pic url
@@ -112,7 +112,7 @@ func registerFbUser(conn *db.Conn, accessToken string, fbID string) (int, error)
 		userInfo["name"].(string), profilePicURL, userInfo["email"].(string), "facebook",
 	).Scan(&userID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("registering new fb user: %w", err.Error())
 	}
 	// insert into user_fb table
 	_, err = conn.Exec(
@@ -120,7 +120,7 @@ func registerFbUser(conn *db.Conn, accessToken string, fbID string) (int, error)
 		userID, fbID,
 	)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("registering new fb user: %w", err.Error())
 	}
 	return userID, nil
 }
@@ -130,25 +130,25 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	body := fbAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("fb", err), http.StatusBadRequest)
 		return
 	}
 	if body.AccessToken == "" {
-		serde.Error(w, "Expected {access_token}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("fb", fmt.Errorf("expected access token in request")), http.StatusBadRequest)
 		return
 	}
 
 	// fetch fb app specific token
 	appToken, err := GetFbAppToken(state.Env.FbAppId, state.Env.FbAppSecret)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusInternalServerError)
+		serde.Error(w, serde.WithEnum("fb", err), http.StatusInternalServerError)
 		return
 	}
 
 	// verify the received access token
 	fbID, err := verifyFbAccessToken(body.AccessToken, appToken)
 	if err != nil {
-		serde.Error(w, "Invalid Facebook access token provided", http.StatusUnauthorized)
+		serde.Error(w, serde.WithEnum("fb", err), http.StatusUnauthorized)
 		return
 	}
 
@@ -163,7 +163,7 @@ func AuthenticateFbUser(state *state.State, w http.ResponseWriter, r *http.Reque
 	if userID == 0 {
 		userID, err = registerFbUser(state.Db, body.AccessToken, fbID)
 		if err != nil {
-			serde.Error(w, err.Error(), http.StatusInternalServerError)
+			serde.Error(w, serde.WithEnum("fb", err), http.StatusInternalServerError)
 			return
 		}
 	}

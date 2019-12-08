@@ -35,7 +35,7 @@ func verifyGoogleIDToken(idToken string) (string, error) {
 	)
 	response, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("verifying google id token: %w", err.Error())
 	}
 
 	// attempt to extract "user_id" from Google API response
@@ -43,12 +43,12 @@ func verifyGoogleIDToken(idToken string) (string, error) {
 	body := googleVerifyTokenResponse{}
 	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("verifying google id token: %w", err.Error())
 	}
 	// response will only contain "error_description"
 	// field if verification fails
 	if body.GoogleID == nil {
-		return "", fmt.Errorf("Invalid id token")
+		return "", fmt.Errorf("verifying google id token: invalid id token")
 	}
 	// otherwise return the "user_id"
 	return *body.GoogleID, nil
@@ -59,11 +59,11 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 	// we can safely extract the desired jwt claims from the token
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &googleIDTokenClaims{})
 	if err != nil {
-		return 0, fmt.Errorf("Invalid id token")
+		return 0, fmt.Errorf("parsing jwt: invalid id token")
 	}
 	tokenClaims, ok := token.Claims.(*googleIDTokenClaims)
 	if !ok {
-		return 0, fmt.Errorf("Invalid id token")
+		return 0, fmt.Errorf("fetching token claims: invalid id token")
 	}
 
 	var userID int
@@ -72,14 +72,14 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 		tokenClaims.Name, tokenClaims.PictureUrl, tokenClaims.Email, "google",
 	).Scan(&userID)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("registering new google user: %w", err.Error())
 	}
 	_, err = state.Db.Exec(
 		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
 		userID, googleID,
 	)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("registering new google user: %w", err.Error())
 	}
 	return userID, nil
 }
@@ -88,11 +88,11 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	body := googleAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, "Expected non-empty body", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("google", err), http.StatusBadRequest)
 		return
 	}
 	if body.IDToken == "" {
-		serde.Error(w, "Expected {id_token}", http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("google", fmt.Errorf("expected id_token in request")), http.StatusBadRequest)
 		return
 	}
 
@@ -100,7 +100,7 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 	// tokenInfo, err := verifyGoogleIDToken(body.IDToken)
 	googleID, err := verifyGoogleIDToken(body.IDToken)
 	if err != nil {
-		serde.Error(w, "Invalid Google id token provided", http.StatusUnauthorized)
+		serde.Error(w, serde.WithEnum("google", err), http.StatusUnauthorized)
 		return
 	}
 
@@ -118,7 +118,7 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 		// provide required profile info including name and profile pic url
 		userID, err = registerGoogleUser(state, googleID, body.IDToken)
 		if err != nil {
-			serde.Error(w, err.Error(), http.StatusInternalServerError)
+			serde.Error(w, serde.WithEnum("google", err), http.StatusInternalServerError)
 			return
 		}
 	}
