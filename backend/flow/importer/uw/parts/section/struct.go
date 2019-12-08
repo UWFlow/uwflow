@@ -3,9 +3,10 @@ package section
 import "time"
 
 type ConvertResult struct {
-	Sections []Section
-	Meetings []Meeting
-	Profs    []Prof
+	Sections    []Section
+	Meetings    []Meeting
+	Profs       []Prof
+	UpdateTimes []UpdateTime
 }
 
 type Section struct {
@@ -40,6 +41,11 @@ type Prof struct {
 	Name string
 }
 
+type UpdateTime struct {
+	TermId int
+	Time   time.Time
+}
+
 type ApiSection struct {
 	Subject            string       `json:"subject"`
 	CatalogNumber      string       `json:"catalog_number"`
@@ -49,6 +55,7 @@ type ApiSection struct {
 	EnrollmentCapacity int          `json:"enrollment_capacity"`
 	EnrollmentTotal    int          `json:"enrollment_total"`
 	TermId             int          `json:"term"`
+	LastUpdated        time.Time    `json:"last_updated"`
 	Meetings           []ApiMeeting `json:"classes"`
 }
 

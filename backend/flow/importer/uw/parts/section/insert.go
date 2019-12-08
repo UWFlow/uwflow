@@ -325,3 +325,33 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	result.Untouched = len(preparedProfs) - result.Inserted
 	return &result, nil
 }
+
+const UpdateTimesQuery = `
+INSERT INTO update_time VALUES ($1, $2)
+ON CONFLICT (term_id) DO UPDATE SET time = EXCLUDED.time
+`
+
+func InsertAllUpdateTimes(conn *db.Conn, times []UpdateTime) (*log.DbResult, error) {
+	var result log.DbResult
+
+	tx, err := conn.Begin()
+	if err != nil {
+		return &result, fmt.Errorf("failed to open transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, time := range times {
+		_, err := tx.Exec(UpdateTimesQuery, time.TermId, time.Time)
+		if err != nil {
+			return &result, fmt.Errorf("failed to update: %w", err)
+		}
+	}
+	result.Updated = len(times)
+
+	err = tx.Commit()
+	if err != nil {
+		return &result, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return &result, nil
+}
