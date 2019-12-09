@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"flow/api/serde"
-	"flow/api/sub"
 	"flow/common/state"
 )
 
@@ -82,7 +81,7 @@ func sendEmail(state *state.State, r *http.Request) (error, int) {
 		return serde.WithEnum("reset_password", fmt.Errorf("generating one-time reset code: %w", err)), http.StatusInternalServerError
 	}
 
-	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
+	err = SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
 	if err != nil {
 		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %w", err)), http.StatusInternalServerError
 	}

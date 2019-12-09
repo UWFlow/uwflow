@@ -8,58 +8,78 @@ import (
 	"flow/api/auth"
 	"flow/api/data"
 	"flow/api/parse"
-	"flow/api/sub"
 	"flow/api/webcal"
-	"flow/common/state"
+	"flow/common/db"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-type StatefulHandlerFunc func(*state.State, http.ResponseWriter, *http.Request)
+type TransactionalHandlerFunc func(*db.Tx, http.ResponseWriter, *http.Request) (interface{}, error)
 
-func WithState(s *state.State, handler StatefulHandlerFunc) http.HandlerFunc {
+func WithDb(conn *db.Conn, handler TransactionalHandlerFunc) http.HandlerFunc {
+	inner := func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+		tx, err := conn.BeginWithContext(r.Context())
+		if err != nil {
+			return nil, fmt.Errorf("opening transaction: %w", err)
+		}
+		defer tx.Rollback()
+
+		resp, err := handler(tx, r)
+		if err != nil {
+			return nil, err
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			return nil, fmt.Errorf("committing: %w", err)
+		}
+
+		return resp, nil
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Put db connection in request context before entering
-		reqState := &state.State{Db: s.Db.With(r.Context()), Env: s.Env, Log: s.Log}
-		handler(reqState, w, r)
+		resp, err := inner(w, r)
+		if err != nil {
+			serde.Error(w, r, err)
+		} else if resp != nil {
+			json.NewEncoder(w).Encode(resp)
+		}
 	}
 }
 
-func SetupRouter(state *state.State) *chi.Mux {
+func SetupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
 		// Reponses are always JSON, but requests may not be (e.g. PDF uploads)
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Logger,
 		middleware.Recoverer,
+		middleware.RequestID,
 	)
 
-	router.Post("/auth/email/login", WithState(state, auth.AuthenticateEmail))
-	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
-	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
-	router.Post("/parse/schedule", WithState(state, parse.HandleSchedule))
-	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
-	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
-	router.Post("/auth/forgot-password/send-email", WithState(state, auth.SendEmail))
-	router.Post("/auth/forgot-password/verify", WithState(state, auth.VerifyResetCode))
-	router.Post("/auth/forgot-password/reset", WithState(state, auth.ResetPassword))
+	router.Post("/auth/email/login", WithDb(conn, auth.AuthenticateEmail))
+	router.Post("/auth/email/register", WithDb(conn, auth.RegisterEmail))
+	router.Post("/parse/transcript", WithDb(conn, parse.HandleTranscript))
+	router.Post("/parse/schedule", WithDb(conn, parse.HandleSchedule))
+	router.Post("/auth/google/login", WithDb(conn, auth.AuthenticateGoogleUser))
+	router.Post("/auth/facebook/login", WithDb(conn, auth.AuthenticateFbUser))
+	router.Post("/auth/forgot-password/send-email", WithDb(conn, auth.SendEmail))
+	router.Post("/auth/forgot-password/verify", WithDb(conn, auth.VerifyResetCode))
+	router.Post("/auth/forgot-password/reset", WithDb(conn, auth.ResetPassword))
 
-	router.Get("/data/search", WithState(state, data.HandleSearch))
-	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
-
-	router.Post("/section_notify/subscribe", WithState(state, sub.SubscribeToSection))
-	router.Post("/section_notify/unsubscribe", WithState(state, sub.UnsubscribeToSection))
+	router.Get("/data/search", WithDb(conn, data.HandleSearch))
+	router.Get("/schedule/ical/{userId}", WithDb(conn, webcal.HandleWebcal))
 
 	return router
 }
 
 func main() {
-	state, err := state.New(context.Background(), "api")
+	conn, err := db.ConnectPool(context.Background(), env.Global)
 	if err != nil {
-		log.Fatalf("Failed to initialize: %v", err)
+		log.Fatalf("Error: %s", err)
 	}
 
-	router := SetupRouter(state)
-	log.Fatalf("Server error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
+	router := SetupRouter(conn)
+	log.Fatalf("Error: %v", http.ListenAndServe(":"+env.Global.ApiPort, router))
 }

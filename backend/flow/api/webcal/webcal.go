@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"flow/api/serde"
-	"flow/common/state"
+	"flow/common/db"
 
 	"github.com/go-chi/chi"
 )
 
-type PostgresEvent struct {
+type postgresEvent struct {
 	CourseCode   string
 	SectionName  string
 	CourseName   string
@@ -29,21 +29,21 @@ type PostgresEvent struct {
 	HasDay [7]bool
 }
 
-type WebcalEvent struct {
+type webcalEvent struct {
 	Summary   string
 	StartTime time.Time
 	EndTime   time.Time
 	Location  string
 }
 
-const WebcalPreamble = `BEGIN:VCALENDAR
+const webcalPreamble = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//UW Flow//uwflow.com//EN
 X-WR-CALDESC:Schedule exported from https://uwflow.com
 X-WR-CALNAME:UW Flow schedule
 `
 
-const WebcalEventTemplate = `BEGIN:VEVENT
+const webcalEventTemplate = `BEGIN:VEVENT
 SUMMARY:%s
 DTSTART;VALUE=DATE-TIME:%s
 DTEND;VALUE=DATE-TIME:%s
@@ -53,7 +53,7 @@ END:VEVENT
 `
 
 var (
-	DayToIndex = map[string]int{
+	dayToIndex = map[string]int{
 		"Su": 0,
 		"M":  1,
 		"Tu": 2,
@@ -64,10 +64,10 @@ var (
 	}
 )
 
-func WriteCalendar(w io.Writer, events []*WebcalEvent) {
+func writeCalendar(w io.Writer, events []*webcalEvent) {
 	createTime := time.Now()
 
-	io.WriteString(w, WebcalPreamble)
+	io.WriteString(w, webcalPreamble)
 	// iCalendar spec (RFC 5545) requires timestamps in ISO 8601 format.
 	// RFC 3339 is a stricter version of ISO 8601, thus acceptable.
 	createTimeString := createTime.Format(time.RFC3339)
@@ -75,14 +75,14 @@ func WriteCalendar(w io.Writer, events []*WebcalEvent) {
 		startTimeString := event.StartTime.Format(time.RFC3339)
 		endTimeString := event.EndTime.Format(time.RFC3339)
 		fmt.Fprintf(
-			w, WebcalEventTemplate,
+			w, webcalEventTemplate,
 			event.Summary, startTimeString, endTimeString, createTimeString, event.Location,
 		)
 	}
 	io.WriteString(w, "END:VCALENDAR\n")
 }
 
-const SelectEventQuery = `
+const selectEventQuery = `
 WITH src AS (
   SELECT
     FALSE as is_exam, section_id, location, start_date, end_date,
@@ -109,49 +109,52 @@ WHERE us.user_id = $1
   AND src.end_seconds IS NOT NULL
 `
 
-func ExtractUserEvents(state *state.State, userId int) ([]*PostgresEvent, error) {
-	var events []*PostgresEvent
-	rows, err := state.Db.Query(SelectEventQuery, userId)
+func extractUserEvents(tx *db.Tx, userId int) ([]*postgresEvent, error) {
+	var events []*postgresEvent
+
+	rows, err := tx.Query(selectEventQuery, userId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("querying events: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var ev PostgresEvent
+		var ev postgresEvent
 
 		err = rows.Scan(
 			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.IsExam, &ev.Location,
 			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading event row: %w", err)
 		}
 
 		for _, day := range ev.Days {
-			ev.HasDay[DayToIndex[day]] = true
+			ev.HasDay[dayToIndex[day]] = true
 		}
 
 		events = append(events, &ev)
 	}
+
 	return events, nil
 }
 
-func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
+func postgresToWebcalEvent(event *postgresEvent, date time.Time) *webcalEvent {
 	var location string
 	if event.Location != nil {
 		location = *event.Location
 	} else {
 		location = "Unknown"
 	}
-	summary := fmt.Sprintf(
-		"%s - %s - %s",
-		strings.ToUpper(event.CourseCode), event.SectionName, event.CourseName,
-	)
+
+	var summary = strings.ToUpper(event.CourseCode)
 	if event.IsExam {
-		summary = "Final exam for " + summary
+		summary = fmt.Sprintf("%s FINAL", summary)
+	} else {
+		summary = fmt.Sprintf("%s - %s", summary, event.SectionName)
 	}
-	return &WebcalEvent{
+
+	return &webcalEvent{
 		Summary:   summary,
 		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
 		EndTime:   date.Add(time.Second * time.Duration(event.EndSeconds)),
@@ -159,8 +162,8 @@ func PostgresToWebcalEvent(event *PostgresEvent, date time.Time) *WebcalEvent {
 	}
 }
 
-func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*WebcalEvent, error) {
-	var webcalEvents []*WebcalEvent
+func postgresToWebcalEvents(events []*postgresEvent) ([]*webcalEvent, error) {
+	var webcalEvents []*webcalEvent
 
 	for _, event := range events {
 		// Walk entire date range for each event. It would be more efficient
@@ -168,7 +171,7 @@ func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*Web
 		// but this is so fast as-is that the difference is negligible.
 		for date := event.StartDate; !date.After(event.EndDate); date = date.AddDate(0, 0, 1) {
 			if event.HasDay[int(date.Weekday())] {
-				webcalEvents = append(webcalEvents, PostgresToWebcalEvent(event, date))
+				webcalEvents = append(webcalEvents, postgresToWebcalEvent(event, date))
 			}
 		}
 	}
@@ -176,23 +179,25 @@ func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*Web
 	return webcalEvents, nil
 }
 
-func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
+func HandleWebcal(tx *db.Tx, w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	userId, err := strconv.Atoi(chi.URLParam(r, "userId"))
 	if err != nil {
-		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing user id: %w", err))
 	}
-	events, err := ExtractUserEvents(state, userId)
+
+	events, err := extractUserEvents(tx, userId)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("extracting events: %w", err))
 	}
-	webcalEvents, err := PostgresToWebcalEvents(state, events)
+
+	webcalEvents, err := postgresToWebcalEvents(events)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting events: %w", err))
 	}
+
 	w.Header().Set("Content-Type", "text/calendar")
 	w.WriteHeader(http.StatusCreated)
-	WriteCalendar(w, webcalEvents)
+	writeCalendar(w, webcalEvents)
+
+	return nil, nil
 }

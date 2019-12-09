@@ -5,11 +5,21 @@ import (
 	"errors"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/middleware"
 )
 
-type ErrorPayload struct {
-	enum string `json:"error"`
-}
+const (
+	EmailNotRegistered   = "email_not_registered"
+	EmailTakenByEmail    = "email_taken_by_email"
+	EmailTakenByFacebook = "email_taken_by_facebook"
+	EmailTakenByGoogle   = "email_taken_by_google"
+	EmailWrongPassword   = "email_wrong_password"
+
+	ScheduleIsOld = "schedule_old"
+
+	Unknown = "unknown"
+)
 
 type enumErr struct {
 	err  error
@@ -28,16 +38,49 @@ func WithEnum(enum string, err error) error {
 	return enumErr{err: err, enum: enum}
 }
 
-func Error(w http.ResponseWriter, err error, status int) {
-	log.Printf("API encountered error: %d: %s\n", status, err.Error())
+type statusErr struct {
+	err    error
+	status int
+}
+
+func (e statusErr) Error() string {
+	return e.err.Error()
+}
+
+func (e statusErr) Status() int {
+	return e.status
+}
+
+func WithStatus(status int, err error) error {
+	return statusErr{err: err, status: status}
+}
+
+type errorPayload struct {
+	enum      string `json:"error"`
+	requestId string `json:"request_id"`
+}
+
+func Error(w http.ResponseWriter, r *http.Request, err error) {
+	var payload errorPayload
+	var status int
+
+	payload.requestId = middleware.GetReqID(r.Context())
+	log.Printf("Error in %s: %s", payload.requestId, err)
 
 	var enum enumErr
-	var payload *ErrorPayload
 	if ok := errors.As(err, &enum); ok {
-		payload = &ErrorPayload{enum.Enum()}
+		payload.enum = enum.enum
 	} else {
-		payload = &ErrorPayload{"unknown_error"}
+		payload.enum = Unknown
 	}
+
+	var st statusErr
+	if ok := errors.As(err, &st); ok {
+		status = st.status
+	} else {
+		status = 500
+	}
+
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
 }
