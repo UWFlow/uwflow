@@ -35,7 +35,7 @@ func verifyGoogleIDToken(idToken string) (string, error) {
 	)
 	response, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("verifying google id token: %w", err.Error())
+		return "", fmt.Errorf("sending google token verification response over https: %v", err)
 	}
 
 	// attempt to extract "user_id" from Google API response
@@ -43,7 +43,7 @@ func verifyGoogleIDToken(idToken string) (string, error) {
 	body := googleVerifyTokenResponse{}
 	err = json.NewDecoder(response.Body).Decode(&body)
 	if err != nil {
-		return "", fmt.Errorf("verifying google id token: %w", err.Error())
+		return "", fmt.Errorf("decoding google token verification API response: %v", err)
 	}
 	// response will only contain "error_description"
 	// field if verification fails
@@ -72,36 +72,33 @@ func registerGoogleUser(state *state.State, googleID string, idToken string) (in
 		tokenClaims.Name, tokenClaims.PictureUrl, tokenClaims.Email, "google",
 	).Scan(&userID)
 	if err != nil {
-		return 0, fmt.Errorf("registering new google user: %w", err.Error())
+		return 0, fmt.Errorf("inserting new user info into db: %v", err)
 	}
 	_, err = state.Db.Exec(
 		"INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)",
 		userID, googleID,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("registering new google user: %w", err.Error())
+		return 0, fmt.Errorf("inserting (flow_id, google_id) pair into db: %v", err)
 	}
 	return userID, nil
 }
 
-func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.Request) {
+func authenticateGoogleUser(state *state.State, r *http.Request) (*AuthResponse, error, int) {
 	body := googleAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("google", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("google_auth_bad_request", fmt.Errorf("decoding google auth request: %v", err)), http.StatusBadRequest
 	}
 	if body.IDToken == "" {
-		serde.Error(w, serde.WithEnum("google", fmt.Errorf("expected id_token in request")), http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("google_auth_bad_request", fmt.Errorf("decoding google auth request: expected id token")), http.StatusBadRequest
 	}
 
 	// Validate Google id token using Google API
 	// tokenInfo, err := verifyGoogleIDToken(body.IDToken)
 	googleID, err := verifyGoogleIDToken(body.IDToken)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("google", err), http.StatusUnauthorized)
-		return
+		return nil, serde.WithEnum("google_auth", fmt.Errorf("verifying google id token: %v", err)), http.StatusBadRequest
 	}
 
 	// tokenInfo provides the user's unique Google id as UserId
@@ -118,15 +115,21 @@ func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.R
 		// provide required profile info including name and profile pic url
 		userID, err = registerGoogleUser(state, googleID, body.IDToken)
 		if err != nil {
-			serde.Error(w, serde.WithEnum("google", err), http.StatusInternalServerError)
-			return
+			return nil, serde.WithEnum("google_auth", fmt.Errorf("registering new google user: %v", err)), http.StatusInternalServerError
 		}
 	}
 
-	encoder := json.NewEncoder(w)
-	jwt := AuthResponse{
+	jwt := &AuthResponse{
 		Token: serde.MakeAndSignHasuraJWT(userID, state.Env.JwtKey),
 		ID:    userID,
 	}
-	encoder.Encode(jwt)
+	return jwt, nil, http.StatusOK
+}
+
+func AuthenticateGoogleUser(state *state.State, w http.ResponseWriter, r *http.Request) {
+	response, err, status := authenticateGoogleUser(state, r)
+	if err != nil {
+		serde.Error(w, err, status)
+	}
+	json.NewEncoder(w).Encode(response)
 }

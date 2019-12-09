@@ -54,16 +54,14 @@ func GenerateRandomString(n int) (string, error) {
 	return string(bytes), nil
 }
 
-func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+func sendEmail(state *state.State, r *http.Request) (error, int) {
 	body := sendEmailRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email %w", err.Error())), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: %v", err)), http.StatusBadRequest
 	}
 	if body.Email == nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: expected email in request")), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: expected email")), http.StatusBadRequest
 	}
 
 	// Check db if email exists and get corresponding user_id
@@ -74,22 +72,19 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		*body.Email,
 	).Scan(&userID, &join_source)
 	if err != nil || join_source != "email" {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: not an email user")), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_email_not_found", fmt.Errorf("checking email with db: not an email user")), http.StatusBadRequest
 	}
 
 	// generate unique code which expires in 1 hour
 	expiry := time.Now().Add(time.Hour)
 	code, err := GenerateRandomString(6)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password", fmt.Errorf("generating one-time reset code: %v", err)), http.StatusInternalServerError
 	}
 
 	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %v", err)), http.StatusInternalServerError
 	}
 
 	// Attempt to insert generated code and userID into secret.password_reset table
@@ -98,18 +93,24 @@ func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
 		userID, code, expiry,
 	)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("preparing email: %w", err.Error())), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password", fmt.Errorf("saving user one-time reset code to db: %v", err)), http.StatusInternalServerError
 	}
+	return nil, http.StatusOK
+}
 
-	w.WriteHeader(http.StatusOK)
+func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+	err, status := sendEmail(state, r)
+	if err != nil {
+		serde.Error(w, err, status)
+	}
+	w.WriteHeader(status)
 }
 
 func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	key, ok := queryParams["key"]
 	if !ok {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expected param key=KEY")), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("reset_password_bad_request", fmt.Errorf("verifying reset code: expected param key=KEY")), http.StatusBadRequest)
 		return
 	}
 
@@ -120,23 +121,21 @@ func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request)
 		key[0], time.Now(),
 	).Scan(&keyExists)
 	if err != nil || !keyExists {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: provided key not found or is expired")), http.StatusForbidden)
+		serde.Error(w, serde.WithEnum("reset_password_invalid_code", fmt.Errorf("verifying reset code: provided key not found or is expired")), http.StatusForbidden)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
+func resetPassword(state *state.State, r *http.Request) (error, int) {
 	body := resetPasswordRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: %v", err)), http.StatusBadRequest
 	}
 	if body.Key == nil || body.Password == nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expected key, password in request")), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: expected code, password")), http.StatusBadRequest
 	}
 
 	// Check that password reset key is valid and fetch corresponding userID and expiry
@@ -147,29 +146,33 @@ func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
 		*body.Key,
 	).Scan(&userID, &expiry)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusBadRequest)
-		return
+		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking for reset code in db: %v", err)), http.StatusForbidden
 	}
 
 	// Check that key is not expired
 	if !(expiry.After(time.Now())) {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: expired key")), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking reset code expiry: %v", err)), http.StatusForbidden
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(*body.Password), bcryptCost)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password", fmt.Errorf("generating new password hash: %v", err)), http.StatusInternalServerError
 	}
 	_, err = state.Db.Exec(
 		`UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2`,
 		passwordHash, userID,
 	)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("forgot_password", fmt.Errorf("verifying reset code: %w", err.Error())), http.StatusInternalServerError)
-		return
+		return serde.WithEnum("reset_password", fmt.Errorf("inserting new user credentials: %v", err)), http.StatusInternalServerError
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return nil, http.StatusOK
+}
+
+func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
+	err, status := resetPassword(state, r)
+	if err != nil {
+		serde.Error(w, err, status)
+	}
+	w.WriteHeader(status)
 }

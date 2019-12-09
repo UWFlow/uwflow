@@ -66,7 +66,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 	levels := LevelRegexp.FindAllStringSubmatchIndex(text, -1)
 	courses := CourseRegexp.FindAllStringSubmatchIndex(text, -1)
 	if len(terms) != len(levels) {
-		return nil, fmt.Errorf("extracting course history: some terms lack academic level")
+		return nil, fmt.Errorf("some terms lack academic level")
 	}
 	history := make([]TermSummary, len(terms))
 	for i, j := 0, 0; i < len(terms); i++ {
@@ -74,7 +74,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 		year := text[terms[i][4]:terms[i][5]]
 		term, err := util.TermSeasonYearToId(season, year)
 		if err != nil {
-			return nil, fmt.Errorf("extracting course history: \"%s %s\" is not a term: %w", season, year, err.Error())
+			return nil, fmt.Errorf("\"%s %s\" is not a term: %v", season, year, err)
 		}
 		history[i].Term = term
 		history[i].Level = text[levels[i][2]:levels[i][3]]
@@ -97,7 +97,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 func extractProgramName(text string) (string, error) {
 	start := strings.LastIndex(text, "Program:")
 	if start == -1 {
-		return "", fmt.Errorf("extracting program name: program name not found")
+		return "", fmt.Errorf("program name not found")
 	}
 	start += 8 // skip "Program:"
 
@@ -106,27 +106,27 @@ func extractProgramName(text string) (string, error) {
 			return strings.TrimSpace(text[start:end]), nil
 		}
 	}
-	return "", fmt.Errorf("extracting program name: unexpected end of transcript")
+	return "", fmt.Errorf("unexpected end of transcript")
 }
 
 func Parse(text string) (*TranscriptSummary, error) {
 	submatches := StudentIdRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
-		return nil, fmt.Errorf("parsing transcript: student number not found")
+		return nil, fmt.Errorf("finding submatches for student id: no matches")
 	}
 	studentNumber, err := strconv.Atoi(text[submatches[2]:submatches[3]])
 	if err != nil {
-		return nil, fmt.Errorf("parsing transcript: parsing student number: %w", err.Error())
+		return nil, fmt.Errorf("converting student number to int: %v", err)
 	}
 
 	programName, err := extractProgramName(text)
 	if err != nil {
-		return nil, fmt.Errorf("parsing transcript: %w", err.Error())
+		return nil, fmt.Errorf("extracting program name: %v", err)
 	}
 
 	courseHistory, err := extractCourseHistory(text)
 	if err != nil {
-		return nil, fmt.Errorf("parsing transcript: %w", err.Error())
+		return nil, fmt.Errorf("extracting course history: %v", err)
 	}
 
 	result := &TranscriptSummary{

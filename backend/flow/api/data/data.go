@@ -95,7 +95,7 @@ func HandleSearch(state *state.State, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			serde.Error(
 				w,
-				serde.WithEnum("search", fmt.Errorf("failed to encode response: %w", err.Error())),
+				serde.WithEnum("search", fmt.Errorf("failed to encode response: %v", err)),
 				http.StatusInternalServerError,
 			)
 		}
