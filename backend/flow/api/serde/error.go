@@ -16,6 +16,10 @@ const (
 	EmailTakenByGoogle   = "email_taken_by_google"
 	EmailWrongPassword   = "email_wrong_password"
 
+  FbNoEmail = "facebook_no_email"
+
+  ResetInvalidKey = "reset_invalid_key"
+
 	ScheduleIsOld = "schedule_old"
 
 	Unknown = "unknown"

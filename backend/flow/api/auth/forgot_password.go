@@ -11,16 +11,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"flow/api/serde"
-	"flow/common/state"
+	"flow/common/db"
 )
 
 type sendEmailRequest struct {
-	Email *string `json:"email"`
+	Email string `json:"email"`
 }
 
 type resetPasswordRequest struct {
-	Key      *string `json:"key"`
-	Password *string `json:"password"`
+	Key      string `json:"key"`
+	Password string `json:"password"`
 }
 
 // GenerateRandomBytes returns securely generated random bytes.
@@ -53,125 +53,120 @@ func GenerateRandomString(n int) (string, error) {
 	return string(bytes), nil
 }
 
-func sendEmail(state *state.State, r *http.Request) (error, int) {
-	body := sendEmailRequest{}
+func SendEmail(tx *db.Tx, r *http.Request) error {
+	var body sendEmailRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: %w", err)), http.StatusBadRequest
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-	if body.Email == nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: expected email")), http.StatusBadRequest
+	if body.Email == "" {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email", err))
 	}
 
 	// Check db if email exists and get corresponding user_id
-	var userID int
-	var join_source string
-	err = state.Db.QueryRow(
+	var userId int
+	var joinSource string
+	err = tx.QueryRow(
 		`SELECT id, join_source FROM public.user WHERE email = $1`,
-		*body.Email,
-	).Scan(&userID, &join_source)
-	if err != nil || join_source != "email" {
-		return serde.WithEnum("reset_password_email_not_found", fmt.Errorf("checking email with db: not an email user")), http.StatusBadRequest
+		body.Email,
+	).Scan(&userId, &joinSource)
+	if err != nil || joinSource != "email" {
+		return serde.WithStatus(
+      http.StatusBadRequest,
+      serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered")),
+    )
 	}
 
-	// generate unique code which expires in 1 hour
+	// generate unique key which expires in 1 hour
 	expiry := time.Now().Add(time.Hour)
-	code, err := GenerateRandomString(6)
+	key, err := GenerateRandomString(6)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("generating one-time reset code: %w", err)), http.StatusInternalServerError
+		return fmt.Errorf("generating reset key: %w", err)
 	}
 
-	err = SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
+	err = SendAutomatedEmail([]string{body.Email}, key, "Body")
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %w", err)), http.StatusInternalServerError
+		return fmt.Errorf("sending reset email: %w", err)
 	}
 
-	// Attempt to insert generated code and userID into secret.password_reset table
-	_, err = state.Db.Exec(
+	_, err = tx.Exec(
 		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)`,
-		userID, code, expiry,
+		userId, key, expiry,
 	)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("saving user one-time reset code to db: %w", err)), http.StatusInternalServerError
+		return fmt.Errorf("writing password_reset: %w", err)
 	}
-	return nil, http.StatusOK
+
+	return nil
 }
 
-func SendEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
-	err, status := sendEmail(state, r)
-	if err != nil {
-		serde.Error(w, err, status)
-	}
-	w.WriteHeader(status)
-}
-
-func VerifyResetCode(state *state.State, w http.ResponseWriter, r *http.Request) {
+func VerifyResetCode(tx *db.Tx, r *http.Request) error {
 	queryParams := r.URL.Query()
 	key, ok := queryParams["key"]
 	if !ok {
-		serde.Error(w, serde.WithEnum("reset_password_bad_request", fmt.Errorf("verifying reset code: expected param key=KEY")), http.StatusBadRequest)
-		return
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing param key=KEY"))
 	}
 
-	// Check that key exists in secret.password_reset table
 	var keyExists bool
-	err := state.Db.QueryRow(
+	err := tx.QueryRow(
 		`SELECT EXISTS(SELECT 1 FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)`,
 		key[0], time.Now(),
 	).Scan(&keyExists)
 	if err != nil || !keyExists {
-		serde.Error(w, serde.WithEnum("reset_password_invalid_code", fmt.Errorf("verifying reset code: provided key not found or is expired")), http.StatusForbidden)
-		return
+		return serde.WithStatus(
+      http.StatusForbidden,
+      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key not found or is expired")),
+    )
 	}
-
-	w.WriteHeader(http.StatusOK)
+  return nil
 }
 
-func resetPassword(state *state.State, r *http.Request) (error, int) {
-	body := resetPasswordRequest{}
+func ResetPassword(tx *db.Tx, w http.ResponseWriter, r *http.Request) error {
+	var body resetPasswordRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: %w", err)), http.StatusBadRequest
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-	if body.Key == nil || body.Password == nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: expected code, password")), http.StatusBadRequest
+  defer r.Body.Close()
+
+	if body.Key == "" || body.Password == "" {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no code or password"))
 	}
 
-	// Check that password reset key is valid and fetch corresponding userID and expiry
+	// Check that password reset key is valid and fetch corresponding userId and expiry
 	var expiry time.Time
-	var userID int
-	err = state.Db.QueryRow(
+	var userId int
+	err = tx.QueryRow(
 		`SELECT user_id, expiry FROM secret.password_reset WHERE verify_key = $1`,
-		*body.Key,
-	).Scan(&userID, &expiry)
+		body.Key,
+	).Scan(&userId, &expiry)
 	if err != nil {
-		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking for reset code in db: %w", err)), http.StatusForbidden
+		return serde.WithStatus(
+      http.StatusForbidden,
+      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key %s does not exist: %w", body.Key, err)),
+    )
 	}
 
 	// Check that key is not expired
 	if !(expiry.After(time.Now())) {
-		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking reset code expiry: %w", err)), http.StatusForbidden
+		return serde.WithStatus(
+      http.StatusForbidden,
+      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key expired at %v", expiry)),
+    )
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(*body.Password), bcryptCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcryptCost)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("generating new password hash: %w", err)), http.StatusInternalServerError
+		return fmt.Errorf("hasing new password: %w", err)
 	}
-	_, err = state.Db.Exec(
+
+	_, err = tx.Exec(
 		`UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2`,
-		passwordHash, userID,
+		hash, userId,
 	)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("inserting new user credentials: %w", err)), http.StatusInternalServerError
+		return fmt.Errorf("inserting new user_email: %w", err)
 	}
 
-	return nil, http.StatusOK
-}
-
-func ResetPassword(state *state.State, w http.ResponseWriter, r *http.Request) {
-	err, status := resetPassword(state, r)
-	if err != nil {
-		serde.Error(w, err, status)
-	}
-	w.WriteHeader(status)
+	return nil
 }
