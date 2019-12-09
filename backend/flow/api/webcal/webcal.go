@@ -179,17 +179,17 @@ func PostgresToWebcalEvents(state *state.State, events []*PostgresEvent) ([]*Web
 func HandleWebcal(state *state.State, w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(chi.URLParam(r, "userId"))
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
 		return
 	}
 	events, err := ExtractUserEvents(state, userId)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
 		return
 	}
 	webcalEvents, err := PostgresToWebcalEvents(state, events)
 	if err != nil {
-		serde.Error(w, err.Error(), http.StatusBadRequest)
+		serde.Error(w, serde.WithEnum("webcal", err), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "text/calendar")

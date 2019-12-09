@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"flow/api/serde"
@@ -49,7 +48,7 @@ func authenticate(conn *db.Conn, email string, password []byte) (int, error) {
 	if err != nil || join_source != "email" {
 		// Always attempt auth to prevent enumeration of registered emails
 		bcrypt.CompareHashAndPassword([]byte(fakeHash), password)
-		return id, err
+		return id, serde.WithEnum("email_login_invalid_email", fmt.Errorf("querying user info for email %s: not an email user", email))
 	}
 
 	err = conn.QueryRow(
@@ -57,46 +56,51 @@ func authenticate(conn *db.Conn, email string, password []byte) (int, error) {
 		id,
 	).Scan(&hash)
 	if err != nil {
-		return id, err
-	} else {
-		err := bcrypt.CompareHashAndPassword(hash, password)
-		return id, err
+		return id, serde.WithEnum("email_login_invalid_password", fmt.Errorf("fetching password hash for user_id: %w", err))
 	}
+
+	err = bcrypt.CompareHashAndPassword(hash, password)
+	if err != nil {
+		return 0, serde.WithEnum("email_login_invalid_password", fmt.Errorf("comparing hash and password: %w", err))
+	}
+	return id, nil
 }
 
-func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+func authenticateEmail(state *state.State, r *http.Request) (*AuthResponse, error, int) {
 	body := EmailAuthLoginRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("malformed JSON: %v", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("email_login_bad_request", fmt.Errorf("decoding email auth request: %w", err)), http.StatusBadRequest
 	}
 
 	if body.Email == "" || body.Password == "" {
-		serde.Error(w, "expected {email, password}", http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("email_login_bad_request", fmt.Errorf("decoding email auth request: empty email, password")), http.StatusBadRequest
 	}
 
 	id, err := authenticate(state.Db, body.Email, []byte(body.Password))
 	if err != nil {
-		// Do not reveal what went wrong: this could be exploitable.
-		// However, it is still a good idea to retain the error in the logs.
-		log.Printf("Error: %v\n", err)
-		serde.Error(w, "invalid credentials", http.StatusUnauthorized)
-		return
+		return nil, fmt.Errorf("authenticating email user: %w", err), http.StatusUnauthorized
 	}
 
-	data := AuthResponse{
+	data := &AuthResponse{
 		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
 		ID:    id,
 	}
-	json.NewEncoder(w).Encode(data)
+	return data, nil, http.StatusOK
+}
+
+func AuthenticateEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+	response, err, status := authenticateEmail(state, r)
+	if err != nil {
+		serde.Error(w, err, status)
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func register(conn *db.Conn, name string, email string, password []byte) (int, error) {
 	tx, err := conn.Begin()
 	if err != nil {
-		return 0, fmt.Errorf("failed to open transaction: %v", err)
+		return 0, fmt.Errorf("connecting to db: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -109,9 +113,14 @@ func register(conn *db.Conn, name string, email string, password []byte) (int, e
 		email,
 	).Scan(&emailExists)
 	if emailErr != nil {
-		return 0, emailErr
+		return 0, serde.WithEnum("email_register", fmt.Errorf("checking if email exists in db: %w", emailErr))
 	} else if emailExists {
-		return 0, fmt.Errorf("email already exists")
+		var joinSource string
+		err = tx.QueryRow(`SELECT join_source FROM public.user WHERE email = $1`).Scan(&joinSource)
+		if err != nil {
+			return 0, serde.WithEnum("email_register", fmt.Errorf("checking if email exists in db: %w", emailErr))
+		}
+		return 0, serde.WithEnum(fmt.Sprintf("email_register_exists_%s", joinSource), fmt.Errorf("checking if email exists in db: email already exists for %s user", joinSource))
 	}
 
 	var userId int
@@ -120,13 +129,13 @@ func register(conn *db.Conn, name string, email string, password []byte) (int, e
 		name, email, "email",
 	).Scan(&userId)
 	if dbErr != nil {
-		return 0, fmt.Errorf("failed to create user: %v", dbErr)
+		return 0, serde.WithEnum("email_register", fmt.Errorf("inserting new email user into db: %w", dbErr))
 	}
 
 	// Store the password hash as a column
 	passwordHash, hashErr := bcrypt.GenerateFromPassword(password, bcryptCost)
 	if hashErr != nil {
-		return 0, fmt.Errorf("failed to hash password: %v", hashErr)
+		return 0, serde.WithEnum("email_register", fmt.Errorf("hashing password: %w", hashErr))
 	}
 
 	_, writeErr := tx.Exec(
@@ -134,39 +143,44 @@ func register(conn *db.Conn, name string, email string, password []byte) (int, e
 		userId, passwordHash,
 	)
 	if writeErr != nil {
-		return 0, fmt.Errorf("failed to insert credentials: %v", writeErr)
+		return 0, serde.WithEnum("email_register", fmt.Errorf("writing user_id, password_hash to db: %w", writeErr))
 	}
 
 	commitErr := tx.Commit()
 	if commitErr != nil {
-		return 0, fmt.Errorf("failed to commit transaction: %v", commitErr)
+		return 0, serde.WithEnum("email_register", fmt.Errorf("committing: %w", commitErr))
 	}
 
 	return userId, nil
 }
 
-func RegisterEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+func registerEmail(state *state.State, r *http.Request) (*AuthResponse, error, int) {
 	body := EmailAuthRegisterRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("malformed JSON: %v", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("email_register_bad_request", fmt.Errorf("decoding email register request: %w", err)), http.StatusBadRequest
 	}
 
 	if body.Email == nil || body.Password == nil || body.Name == nil {
-		serde.Error(w, "expected {name, email, password}", http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("email_register_bad_request", fmt.Errorf("decoding email register request: empty name, email, or password")), http.StatusBadRequest
 	}
 
 	id, err := register(state.Db, *body.Name, *body.Email, []byte(*body.Password))
 	if err != nil {
-		serde.Error(w, fmt.Sprintf("failed to register: %v", err), http.StatusBadRequest)
-		return
+		return nil, serde.WithEnum("email", fmt.Errorf("registering email user: %w", err)), http.StatusUnauthorized
 	}
 
-	data := AuthResponse{
+	data := &AuthResponse{
 		Token: serde.MakeAndSignHasuraJWT(id, state.Env.JwtKey),
 		ID:    id,
 	}
-	json.NewEncoder(w).Encode(data)
+	return data, nil, http.StatusOK
+}
+
+func RegisterEmail(state *state.State, w http.ResponseWriter, r *http.Request) {
+	response, err, status := registerEmail(state, r)
+	if err != nil {
+		serde.Error(w, err, status)
+	}
+	json.NewEncoder(w).Encode(response)
 }
