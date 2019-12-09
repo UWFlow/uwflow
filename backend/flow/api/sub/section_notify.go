@@ -18,7 +18,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 	body := sectionNotifyRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return fmt.Errorf("decoding subscribe to section request: %v", err), http.StatusBadRequest
+		return fmt.Errorf("decoding subscribe to section request: %w", err), http.StatusBadRequest
 	}
 	if body.SectionID == nil {
 		return fmt.Errorf("decoding subscribe to section request: expected sectionID"), http.StatusBadRequest
@@ -26,7 +26,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 
 	userID, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		return fmt.Errorf("get userId from request: %v", err), http.StatusUnauthorized
+		return fmt.Errorf("get userId from request: %w", err), http.StatusUnauthorized
 	}
 
 	// Check section id is valid and fetch course id
@@ -36,7 +36,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 		*body.SectionID,
 	).Scan(&courseID)
 	if err != nil {
-		return fmt.Errorf("fetching course id for given section id: %v", err), http.StatusBadRequest
+		return fmt.Errorf("fetching course id for given section id: %w", err), http.StatusBadRequest
 	}
 
 	// Check if already subscribed to course
@@ -51,7 +51,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 		)`, courseID,
 	).Scan(&alreadySubscribedToCourse)
 	if err != nil {
-		return fmt.Errorf("checking if already subscribed to course: %v", err), http.StatusInternalServerError
+		return fmt.Errorf("checking if already subscribed to course: %w", err), http.StatusInternalServerError
 	}
 
 	if !alreadySubscribedToCourse {
@@ -60,12 +60,12 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 			`SELECT email FROM public.user WHERE id = $1`, userID,
 		).Scan(&email)
 		if err != nil {
-			return fmt.Errorf("fetching email for given user id: %v", err), http.StatusInternalServerError
+			return fmt.Errorf("fetching email for given user id: %w", err), http.StatusInternalServerError
 		}
 
 		err = SendAutomatedEmail(state, []string{email}, "New Subscription", "Body")
 		if err != nil {
-			return fmt.Errorf("sending email for initial subscription: %v", err), http.StatusInternalServerError
+			return fmt.Errorf("sending email for initial subscription: %w", err), http.StatusInternalServerError
 		}
 	}
 
@@ -75,7 +75,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 		userID, *body.SectionID,
 	)
 	if err != nil {
-		return fmt.Errorf("inserting subscription to db: %v", err), http.StatusInternalServerError
+		return fmt.Errorf("inserting subscription to db: %w", err), http.StatusInternalServerError
 	}
 
 	return nil, http.StatusOK
@@ -84,7 +84,7 @@ func subscribeToSection(state *state.State, r *http.Request) (error, int) {
 func SubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Request) {
 	err, status := subscribeToSection(state, r)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("subscribe_notification", fmt.Errorf("handling subscribe to section request: %v", err)), status)
+		serde.Error(w, serde.WithEnum("subscribe_notification", fmt.Errorf("handling subscribe to section request: %w", err)), status)
 	}
 	w.WriteHeader(status)
 }
@@ -94,7 +94,7 @@ func unsubscribeToSection(state *state.State, r *http.Request) (error, int) {
 	body := sectionNotifyRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return fmt.Errorf("decoding unsubscribe to section request: %v", err), http.StatusBadRequest
+		return fmt.Errorf("decoding unsubscribe to section request: %w", err), http.StatusBadRequest
 	}
 	if body.SectionID == nil {
 		return fmt.Errorf("decoding unsubscribe to section request: expected section id"), http.StatusBadRequest
@@ -102,7 +102,7 @@ func unsubscribeToSection(state *state.State, r *http.Request) (error, int) {
 
 	userID, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		return fmt.Errorf("fetching user id from request: %v", err), http.StatusUnauthorized
+		return fmt.Errorf("fetching user id from request: %w", err), http.StatusUnauthorized
 	}
 
 	// delete from section_subscription table
@@ -111,7 +111,7 @@ func unsubscribeToSection(state *state.State, r *http.Request) (error, int) {
 		userID, *body.SectionID,
 	)
 	if err != nil {
-		return fmt.Errorf("deleting subscription from db: %v", err), http.StatusInternalServerError
+		return fmt.Errorf("deleting subscription from db: %w", err), http.StatusInternalServerError
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("deleting subscription from db: (section id, user id) subscription pair not found"), http.StatusInternalServerError
@@ -123,7 +123,7 @@ func unsubscribeToSection(state *state.State, r *http.Request) (error, int) {
 func UnsubscribeToSection(state *state.State, w http.ResponseWriter, r *http.Request) {
 	err, status := unsubscribeToSection(state, r)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("unsubscribe_notification", fmt.Errorf("handling unsubscribe to section request: %v", err)), status)
+		serde.Error(w, serde.WithEnum("unsubscribe_notification", fmt.Errorf("handling unsubscribe to section request: %w", err)), status)
 	}
 	w.WriteHeader(status)
 }

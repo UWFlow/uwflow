@@ -44,7 +44,7 @@ func extractTerm(text string) (int, error) {
 	year := text[submatches[4]:submatches[5]]
 	term, err := util.TermSeasonYearToId(season, year)
 	if err != nil {
-		return 0, fmt.Errorf("parsing term season, year info: \"%s %s\" is not a term: %v", season, year, err)
+		return 0, fmt.Errorf("parsing term season, year info: \"%s %s\" is not a term: %w", season, year, err)
 	} else {
 		return term, nil
 	}
@@ -59,7 +59,7 @@ func extractClassNumbers(text string) ([]int, error) {
 		matchText := text[submatch[2]:submatch[3]]
 		classNumbers[i], err = strconv.Atoi(matchText)
 		if err != nil {
-			return nil, fmt.Errorf("converting class number string matches to int: %s is not a class number: %v", matchText, err)
+			return nil, fmt.Errorf("converting class number string matches to int: %s is not a class number: %w", matchText, err)
 		}
 	}
 	return classNumbers, nil
@@ -68,11 +68,11 @@ func extractClassNumbers(text string) ([]int, error) {
 func Parse(text string) (*ScheduleSummary, error) {
 	term, err := extractTerm(text)
 	if err != nil {
-		return nil, fmt.Errorf("extracting term: %v", err)
+		return nil, fmt.Errorf("extracting term: %w", err)
 	}
 	classNumbers, err := extractClassNumbers(text)
 	if err != nil {
-		return nil, fmt.Errorf("extracting class numbers: %v", err)
+		return nil, fmt.Errorf("extracting class numbers: %w", err)
 	}
 	summary := &ScheduleSummary{
 		Term:         term,

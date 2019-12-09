@@ -58,7 +58,7 @@ func sendEmail(state *state.State, r *http.Request) (error, int) {
 	body := sendEmailRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: %v", err)), http.StatusBadRequest
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: %w", err)), http.StatusBadRequest
 	}
 	if body.Email == nil {
 		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding send password reset email request: expected email")), http.StatusBadRequest
@@ -79,12 +79,12 @@ func sendEmail(state *state.State, r *http.Request) (error, int) {
 	expiry := time.Now().Add(time.Hour)
 	code, err := GenerateRandomString(6)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("generating one-time reset code: %v", err)), http.StatusInternalServerError
+		return serde.WithEnum("reset_password", fmt.Errorf("generating one-time reset code: %w", err)), http.StatusInternalServerError
 	}
 
 	err = sub.SendAutomatedEmail(state, []string{*body.Email}, code, "Body")
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %v", err)), http.StatusInternalServerError
+		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %w", err)), http.StatusInternalServerError
 	}
 
 	// Attempt to insert generated code and userID into secret.password_reset table
@@ -93,7 +93,7 @@ func sendEmail(state *state.State, r *http.Request) (error, int) {
 		userID, code, expiry,
 	)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("saving user one-time reset code to db: %v", err)), http.StatusInternalServerError
+		return serde.WithEnum("reset_password", fmt.Errorf("saving user one-time reset code to db: %w", err)), http.StatusInternalServerError
 	}
 	return nil, http.StatusOK
 }
@@ -132,7 +132,7 @@ func resetPassword(state *state.State, r *http.Request) (error, int) {
 	body := resetPasswordRequest{}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: %v", err)), http.StatusBadRequest
+		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: %w", err)), http.StatusBadRequest
 	}
 	if body.Key == nil || body.Password == nil {
 		return serde.WithEnum("reset_password_bad_request", fmt.Errorf("decoding reset password request: expected code, password")), http.StatusBadRequest
@@ -146,24 +146,24 @@ func resetPassword(state *state.State, r *http.Request) (error, int) {
 		*body.Key,
 	).Scan(&userID, &expiry)
 	if err != nil {
-		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking for reset code in db: %v", err)), http.StatusForbidden
+		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking for reset code in db: %w", err)), http.StatusForbidden
 	}
 
 	// Check that key is not expired
 	if !(expiry.After(time.Now())) {
-		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking reset code expiry: %v", err)), http.StatusForbidden
+		return serde.WithEnum("reset_password_invalid_code", fmt.Errorf("checking reset code expiry: %w", err)), http.StatusForbidden
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(*body.Password), bcryptCost)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("generating new password hash: %v", err)), http.StatusInternalServerError
+		return serde.WithEnum("reset_password", fmt.Errorf("generating new password hash: %w", err)), http.StatusInternalServerError
 	}
 	_, err = state.Db.Exec(
 		`UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2`,
 		passwordHash, userID,
 	)
 	if err != nil {
-		return serde.WithEnum("reset_password", fmt.Errorf("inserting new user credentials: %v", err)), http.StatusInternalServerError
+		return serde.WithEnum("reset_password", fmt.Errorf("inserting new user credentials: %w", err)), http.StatusInternalServerError
 	}
 
 	return nil, http.StatusOK

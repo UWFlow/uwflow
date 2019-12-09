@@ -29,7 +29,7 @@ type TranscriptParseResponse struct {
 func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResponse, error, int) {
 	userId, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		return nil, fmt.Errorf("extracting user id: %v", err), http.StatusUnauthorized
+		return nil, fmt.Errorf("extracting user id: %w", err), http.StatusUnauthorized
 	}
 
 	file, header, err := r.FormFile("file")
@@ -42,7 +42,7 @@ func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResp
 	fileContents.ReadFrom(file)
 	text, err := PdfToText(fileContents.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("converting transcript: %v", err), http.StatusBadRequest
+		return nil, fmt.Errorf("converting transcript: %w", err), http.StatusBadRequest
 	}
 
 	result, err := transcript.Parse(text)
@@ -52,7 +52,7 @@ func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResp
 
 	tx, err := state.Db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("opening transaction: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("opening transaction: %w", err), http.StatusInternalServerError
 	}
 	defer tx.Rollback()
 
@@ -61,7 +61,7 @@ func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResp
 		result.ProgramName, userId,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("updating user record: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("updating user record: %w", err), http.StatusInternalServerError
 	}
 
 	var response TranscriptParseResponse
@@ -76,14 +76,14 @@ func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResp
 				course, userId, summary.Term, summary.Level,
 			)
 			if err != nil {
-				return nil, fmt.Errorf("updating user record: %v", err), http.StatusInternalServerError
+				return nil, fmt.Errorf("updating user record: %w", err), http.StatusInternalServerError
 			}
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("committing transaction: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("committing transaction: %w", err), http.StatusInternalServerError
 	} else {
 		log.Printf("Imported transcript for user %d: %v\n", userId, result)
 		return &response, nil, http.StatusOK
@@ -102,13 +102,13 @@ func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request
 func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse, error, int) {
 	userId, err := serde.UserIdFromRequest(state, r)
 	if err != nil {
-		return nil, fmt.Errorf("extracting user id: %v", err), http.StatusUnauthorized
+		return nil, fmt.Errorf("extracting user id: %w", err), http.StatusUnauthorized
 	}
 
 	req := ScheduleParseRequest{}
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, fmt.Errorf("malformed JSON: %v", err), http.StatusBadRequest
+		return nil, fmt.Errorf("malformed JSON: %w", err), http.StatusBadRequest
 	}
 
 	scheduleSummary, err := schedule.Parse(req.Text)
@@ -121,7 +121,7 @@ func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse
 
 	tx, err := state.Db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("opening transaction: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("opening transaction: %w", err), http.StatusInternalServerError
 	}
 	defer tx.Rollback()
 
@@ -129,7 +129,7 @@ func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse
 		`DELETE FROM user_course_taken WHERE term_id = $1`, scheduleSummary.Term,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("clearing sections: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("clearing sections: %w", err), http.StatusInternalServerError
 	}
 	for _, classNumber := range scheduleSummary.ClassNumbers {
 		tag, err := tx.Exec(
@@ -139,7 +139,7 @@ func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse
 			userId, classNumber, scheduleSummary.Term,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("storing sections: %v", err), http.StatusInternalServerError
+			return nil, fmt.Errorf("storing sections: %w", err), http.StatusInternalServerError
 		}
 		if tag.RowsAffected() == 0 {
 			return nil, fmt.Errorf("class number %d not found in term %d", classNumber, scheduleSummary.Term), http.StatusBadRequest
@@ -155,7 +155,7 @@ func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("committing: %v", err), http.StatusInternalServerError
+		return nil, fmt.Errorf("committing: %w", err), http.StatusInternalServerError
 	} else {
 		response := &ScheduleParseResponse{
 			SectionsImported: len(scheduleSummary.ClassNumbers),

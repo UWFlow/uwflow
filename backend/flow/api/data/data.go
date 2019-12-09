@@ -54,7 +54,7 @@ GROUP BY p.id, pr.filled_count
 func dump(state *state.State) (*Response, error) {
 	rows, err := state.Db.Query(CourseQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query database: %v", err)
+		return nil, fmt.Errorf("failed to query database: %w", err)
 	}
 	defer rows.Close()
 
@@ -63,14 +63,14 @@ func dump(state *state.State) (*Response, error) {
 		var c Course
 		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.RatingCount, &c.Profs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read rows: %v", err)
+			return nil, fmt.Errorf("failed to read rows: %w", err)
 		}
 		response.Courses = append(response.Courses, c)
 	}
 
 	rows, err = state.Db.Query(ProfQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query database: %v", err)
+		return nil, fmt.Errorf("failed to query database: %w", err)
 	}
 	defer rows.Close()
 
@@ -78,7 +78,7 @@ func dump(state *state.State) (*Response, error) {
 		var p Prof
 		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.RatingCount, &p.Courses)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read rows: %v", err)
+			return nil, fmt.Errorf("failed to read rows: %w", err)
 		}
 		response.Profs = append(response.Profs, p)
 	}
@@ -95,7 +95,7 @@ func HandleSearch(state *state.State, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			serde.Error(
 				w,
-				serde.WithEnum("search", fmt.Errorf("failed to encode response: %v", err)),
+				serde.WithEnum("search", fmt.Errorf("failed to encode response: %w", err)),
 				http.StatusInternalServerError,
 			)
 		}
