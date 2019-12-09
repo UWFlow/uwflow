@@ -68,7 +68,7 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 	return response, nil
 }
 
-func LoginFacebook(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*AuthResponse, error) {
+func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body fbAuthLoginRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {

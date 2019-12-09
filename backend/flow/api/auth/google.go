@@ -83,7 +83,7 @@ func registerGoogle(tx *db.Tx, googleId string, idToken string) (*AuthResponse, 
 	return response, nil
 }
 
-func LoginGoogle(tx *db.Tx, r *http.Request) (*AuthResponse, error) {
+func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body googleLoginRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {

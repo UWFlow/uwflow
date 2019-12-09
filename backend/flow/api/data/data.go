@@ -49,7 +49,7 @@ FROM prof p
 GROUP BY p.id, pr.filled_count
 `
 
-func HandleSearch(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*dumpResponse, error) {
+func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 	rows, err := tx.Query(courseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("querying courses: %w", err)

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"flow/api/parse"
+	"flow/api/parse/pdf"
 	"flow/api/parse/transcript"
 )
 
@@ -55,7 +55,7 @@ func TestPdfToText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not open fixture: %v", err)
 	}
-	text, err := parse.PdfToText(bytes)
+	text, err := pdf.ToText(bytes)
 	if err != nil {
 		t.Fatalf("could not convert file: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestParseTranscript(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not open transcript fixture: %v", err)
 	}
-	text, err := parse.PdfToText(bytes)
+	text, err := pdf.ToText(bytes)
 	if err != nil {
 		t.Fatalf("could not convert transcript: %v", err)
 	}

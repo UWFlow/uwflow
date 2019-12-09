@@ -60,22 +60,22 @@ func WithStatus(status int, err error) error {
 }
 
 type errorPayload struct {
-	enum      string `json:"error"`
-	requestId string `json:"request_id"`
+	Enum      string `json:"error"`
+	RequestId string `json:"request_id"`
 }
 
 func Error(w http.ResponseWriter, r *http.Request, err error) {
 	var payload errorPayload
 	var status int
 
-	payload.requestId = middleware.GetReqID(r.Context())
-	log.Printf("Error in %s: %s", payload.requestId, err)
+	payload.RequestId = middleware.GetReqID(r.Context())
+	log.Printf("Error in %s: %s", payload.RequestId, err)
 
 	var enum enumErr
 	if ok := errors.As(err, &enum); ok {
-		payload.enum = enum.enum
+		payload.Enum = enum.enum
 	} else {
-		payload.enum = Unknown
+		payload.Enum = Unknown
 	}
 
 	var st statusErr

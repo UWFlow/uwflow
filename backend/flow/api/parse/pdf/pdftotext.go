@@ -1,4 +1,4 @@
-package parse
+package pdf
 
 // #cgo CFLAGS: -O2 -Wall -I/usr/include/poppler/cpp
 // #cgo LDFLAGS: -lpoppler-cpp
@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-func PdfToText(data []byte) (string, error) {
+func ToText(data []byte) (string, error) {
 	// Is this safe? Kind of: `data`, a []byte is a continguous array in Go,
 	// so we can safely point a C-land (const char *) to it,
 	// *provided* that C code does not attempt to find the end of the string,

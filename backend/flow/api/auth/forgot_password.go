@@ -121,7 +121,7 @@ func VerifyResetCode(tx *db.Tx, r *http.Request) error {
   return nil
 }
 
-func ResetPassword(tx *db.Tx, w http.ResponseWriter, r *http.Request) error {
+func ResetPassword(tx *db.Tx, r *http.Request) error {
 	var body resetPasswordRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {

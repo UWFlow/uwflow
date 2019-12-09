@@ -47,7 +47,7 @@ func loginEmail(tx *db.Tx, email string, password []byte) (*AuthResponse, error)
 	return &response, nil
 }
 
-func LoginEmail(tx *db.Tx, r *http.Request) (*AuthResponse, error) {
+func LoginEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body emailLoginRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -112,7 +112,7 @@ type emailRegisterRequest struct {
 	Password string `json:"password"`
 }
 
-func RegisterEmail(tx *db.Tx, r *http.Request) (*AuthResponse, error) {
+func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body emailRegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {

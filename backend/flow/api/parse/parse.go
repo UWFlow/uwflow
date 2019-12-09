@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"flow/api/parse/pdf"
 	"flow/api/parse/schedule"
 	"flow/api/parse/transcript"
 	"flow/api/serde"
@@ -26,7 +27,7 @@ type transcriptResponse struct {
 	CoursesImported int `json:"courses_imported"`
 }
 
-func HandleTranscript(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*transcriptResponse, error) {
+func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
@@ -40,7 +41,7 @@ func HandleTranscript(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*trans
 	var fileContents bytes.Buffer
 	fileContents.Grow(int(header.Size))
 	fileContents.ReadFrom(file)
-	text, err := PdfToText(fileContents.Bytes())
+	text, err := pdf.ToText(fileContents.Bytes())
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting transcript: %w", err))
 	}
@@ -76,7 +77,7 @@ func HandleTranscript(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*trans
 	return &response, nil
 }
 
-func HandleSchedule(tx *db.Tx, w http.ResponseWriter, r *http.Request) (*scheduleResponse, error) {
+func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
