@@ -74,7 +74,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 		year := text[terms[i][4]:terms[i][5]]
 		term, err := util.TermSeasonYearToId(season, year)
 		if err != nil {
-			return nil, fmt.Errorf("\"%s %s\" is not a term: %v", season, year, err)
+			return nil, fmt.Errorf("\"%s %s\" is not a term: %w", season, year, err)
 		}
 		history[i].Term = term
 		history[i].Level = text[levels[i][2]:levels[i][3]]
@@ -112,21 +112,21 @@ func extractProgramName(text string) (string, error) {
 func Parse(text string) (*TranscriptSummary, error) {
 	submatches := StudentIdRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
-		return nil, fmt.Errorf("student number not found")
+		return nil, fmt.Errorf("finding submatches for student id: no matches")
 	}
 	studentNumber, err := strconv.Atoi(text[submatches[2]:submatches[3]])
 	if err != nil {
-		return nil, fmt.Errorf("student number is malformed: %v", err)
+		return nil, fmt.Errorf("converting student number to int: %w", err)
 	}
 
 	programName, err := extractProgramName(text)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extracting program name: %w", err)
 	}
 
 	courseHistory, err := extractCourseHistory(text)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extracting course history: %w", err)
 	}
 
 	result := &TranscriptSummary{
