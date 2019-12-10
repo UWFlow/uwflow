@@ -44,9 +44,9 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 	).Scan(&userId, &joinSource)
 	if err != nil || joinSource != "email" {
 		return serde.WithStatus(
-      http.StatusBadRequest,
-      serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered")),
-    )
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered")),
+		)
 	}
 
 	// generate unique key which expires in 1 hour
@@ -81,11 +81,11 @@ func VerifyResetCode(tx *db.Tx, r *http.Request) error {
 	).Scan(&keyExists)
 	if err != nil || !keyExists {
 		return serde.WithStatus(
-      http.StatusForbidden,
-      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key not found or is expired")),
-    )
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key not found or is expired")),
+		)
 	}
-  return nil
+	return nil
 }
 
 func ResetPassword(tx *db.Tx, r *http.Request) error {
@@ -94,7 +94,7 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	if err != nil {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-  defer r.Body.Close()
+	defer r.Body.Close()
 
 	if body.Key == "" || body.Password == "" {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no code or password"))
@@ -109,17 +109,17 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	).Scan(&userId, &expiry)
 	if err != nil {
 		return serde.WithStatus(
-      http.StatusForbidden,
-      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key %s does not exist: %w", body.Key, err)),
-    )
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key %s does not exist: %w", body.Key, err)),
+		)
 	}
 
 	// Check that key is not expired
 	if !(expiry.After(time.Now())) {
 		return serde.WithStatus(
-      http.StatusForbidden,
-      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key expired at %v", expiry)),
-    )
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key expired at %v", expiry)),
+		)
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcryptCost)

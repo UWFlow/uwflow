@@ -13,7 +13,7 @@ DELETE FROM course_section
 WHERE term_id < $1
 `
 
-const DeleteProfQuery= `
+const DeleteProfQuery = `
 DELETE FROM prof p
 WHERE NOT EXISTS (
     SELECT FROM review

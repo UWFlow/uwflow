@@ -1,22 +1,21 @@
 package serde
 
 import (
-  "encoding/json"
-  "fmt"
-  "net/http"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
-  "flow/common/db"
+	"flow/common/db"
 )
-
 
 type DirectHandlerFunc func(*db.Conn, http.ResponseWriter, *http.Request) error
 
 func WithDbDirect(conn *db.Conn, handler DirectHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-    err := handler(conn, w, r)
-    if err != nil {
-      Error(w, r, err)
-    }
+		err := handler(conn, w, r)
+		if err != nil {
+			Error(w, r, err)
+		}
 	}
 }
 
@@ -81,7 +80,7 @@ func WithDbNoResponse(conn *db.Conn, handler NoResponseHandlerFunc) http.Handler
 		if err != nil {
 			Error(w, r, err)
 		} else {
-      w.WriteHeader(http.StatusOK)
-    }
+			w.WriteHeader(http.StatusOK)
+		}
 	}
 }

@@ -65,9 +65,9 @@ func registerGoogle(tx *db.Tx, googleId string, idToken string) (*AuthResponse, 
 		return nil, fmt.Errorf("fetching token claims: invalid id token")
 	}
 
-  response, err := InsertUser(
-    tx, tokenClaims.Name, tokenClaims.Email, "google", &tokenClaims.PictureUrl,
-  )
+	response, err := InsertUser(
+		tx, tokenClaims.Name, tokenClaims.Email, "google", &tokenClaims.PictureUrl,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("writing user: %w", err)
 	}
@@ -89,7 +89,7 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-  defer r.Body.Close()
+	defer r.Body.Close()
 
 	if body.IdToken == "" {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing id token"))
@@ -99,35 +99,35 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	googleId, err := verifyGoogleIdToken(body.IdToken)
 	if err != nil {
 		return nil, serde.WithStatus(
-      http.StatusBadRequest,
-      fmt.Errorf("verifying token: %w", err),
-    )
+			http.StatusBadRequest,
+			fmt.Errorf("verifying token: %w", err),
+		)
 	}
 
 	// tokenInfo provides the user's unique Google id as UserId
 	// so we can check if the Google id already exists
 	var (
-    secretId string
-    userId int
-  )
+		secretId string
+		userId   int
+	)
 	tx.QueryRow(
-		`SELECT u.id, u.secret_id ` +
-    `FROM secret.user_google ug ` +
-    `JOIN "user" u ON u.id = ug.user_id ` +
-    `WHERE ug.google_id = $1`,
+		`SELECT u.id, u.secret_id `+
+			`FROM secret.user_google ug `+
+			`JOIN "user" u ON u.id = ug.user_id `+
+			`WHERE ug.google_id = $1`,
 		googleId,
 	).Scan(&userId, &secretId)
 
 	// If the Google id is new, we must register the user
 	if userId != 0 {
-    return &AuthResponse{SecretId: secretId, UserId: userId, Token: serde.MakeAndSignHasuraJWT(userId)}, nil
-  }
-  // the raw id token needs to be parsed here since tokenInfo does not
-  // provide required profile info including name and profile pic url
-  res, err := registerGoogle(tx, googleId, body.IdToken)
-  if err != nil {
-    return nil, fmt.Errorf("registering: %w", err)
-  }
+		return &AuthResponse{SecretId: secretId, UserId: userId, Token: serde.MakeAndSignHasuraJWT(userId)}, nil
+	}
+	// the raw id token needs to be parsed here since tokenInfo does not
+	// provide required profile info including name and profile pic url
+	res, err := registerGoogle(tx, googleId, body.IdToken)
+	if err != nil {
+		return nil, fmt.Errorf("registering: %w", err)
+	}
 
 	return res, nil
 }

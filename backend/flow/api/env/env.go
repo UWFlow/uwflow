@@ -1,15 +1,15 @@
 package env
 
 import (
-  "log"
+	"log"
 
-  "flow/common/env"
+	"flow/common/env"
 )
 
 var Global *env.Environment
 
 func init() {
-  var err error
+	var err error
 
 	Global, err = env.Get()
 

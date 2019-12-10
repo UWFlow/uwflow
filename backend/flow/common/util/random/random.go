@@ -21,15 +21,15 @@ const (
 	allLetters = uppercase + "abcdefghijklmnopqrstuvwxyz"
 )
 const (
-  lenUppercase = len(uppercase)
-  lenAllLetters = len(allLetters)
+	lenUppercase  = len(uppercase)
+	lenAllLetters = len(allLetters)
 )
 
 type Alphabet int
 
 const (
-  Uppercase Alphabet = iota
-  AllLetters
+	Uppercase Alphabet = iota
+	AllLetters
 )
 
 // String returns a securely generated random string.

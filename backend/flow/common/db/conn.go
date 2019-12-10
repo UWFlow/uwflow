@@ -36,7 +36,6 @@ func (c *Conn) BeginWithContext(ctx context.Context) (*Tx, error) {
 	return &Tx{ctx: ctx, tx: tx}, nil
 }
 
-
 func (c *Conn) Exec(query string, args ...interface{}) (pgconn.CommandTag, error) {
 	return c.pool.Exec(c.ctx, query, args...)
 }

@@ -61,7 +61,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	var fbCredentials [][]interface{}
 
 	for i, user := range users {
-    secretId, _ := random.String(SecretIdLength, random.Uppercase)
+		secretId, _ := random.String(SecretIdLength, random.Uppercase)
 
 		fullName := strings.TrimSpace(user.FirstName + " " + user.LastName)
 		idMap.User[user.Id] = i + 1

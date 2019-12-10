@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"flow/api/serde"
 	"flow/api/env"
+	"flow/api/serde"
 	"flow/common/db"
 )
 
@@ -21,13 +21,13 @@ type fbAppTokenResponse struct {
 }
 
 type fbUserInfo struct {
-  Id   string `json:"id"`
-  Name string `json:"name"`
-  Email string `json:"name"`
+	Id    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"name"`
 }
 
 type fbUserInfoResponse struct {
-  Data fbUserInfo `json:"data"`
+	Data fbUserInfo `json:"data"`
 }
 
 // Fetches name and email from FB Graph API. Requires user access token and permission to access profile info.
@@ -52,7 +52,7 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 
 	profilePicUrl := fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", userInfo.Id)
 
-  response, err := InsertUser(tx, userInfo.Name, userInfo.Email, "facebook", &profilePicUrl)
+	response, err := InsertUser(tx, userInfo.Name, userInfo.Email, "facebook", &profilePicUrl)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user: %w", err)
 	}
@@ -80,23 +80,23 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	userInfo, err := getFbUserInfo(fmt.Sprintf("%s|%s", env.Global.FbAppId, env.Global.FbAppSecret))
 
-  var response = &AuthResponse{}
+	var response = &AuthResponse{}
 	tx.QueryRow(
-    "SELECT u.id, u.secret_id " +
-    "FROM secret.user_fb " +
-    "JOIN user u ON u.id = uf.user_id " +
-    "WHERE uf.fb_id = $1",
-    userInfo.Id,
-  ).Scan(&response.UserId, &response.SecretId)
+		"SELECT u.id, u.secret_id "+
+			"FROM secret.user_fb "+
+			"JOIN user u ON u.id = uf.user_id "+
+			"WHERE uf.fb_id = $1",
+		userInfo.Id,
+	).Scan(&response.UserId, &response.SecretId)
 
 	if response.UserId != 0 {
-    response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
-    return response, nil
-  }
+		response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
+		return response, nil
+	}
 
-  response, err = registerFbUser(tx, userInfo)
-  if err != nil {
-    return nil, fmt.Errorf("registering fb user: %w", err)
-  }
-  return response, nil
+	response, err = registerFbUser(tx, userInfo)
+	if err != nil {
+		return nil, fmt.Errorf("registering fb user: %w", err)
+	}
+	return response, nil
 }

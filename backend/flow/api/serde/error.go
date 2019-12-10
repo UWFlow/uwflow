@@ -10,40 +10,40 @@ import (
 )
 
 const (
-  //// Email registration
-  // Email is already taken by one of the following account categories
+	//// Email registration
+	// Email is already taken by one of the following account categories
 	EmailTakenByEmail    = "email_taken_by_email"
 	EmailTakenByFacebook = "email_taken_by_facebook"
 	EmailTakenByGoogle   = "email_taken_by_google"
 
-  //// Email login
-  // There is no user with given email
-	EmailNotRegistered   = "email_not_registered"
-  // There is a user with given email, but the given password is incorrect
-	EmailWrongPassword   = "email_wrong_password"
+	//// Email login
+	// There is no user with given email
+	EmailNotRegistered = "email_not_registered"
+	// There is a user with given email, but the given password is incorrect
+	EmailWrongPassword = "email_wrong_password"
 
-  //// Facebook login
-  // Facebook account did not give permission to query email
-  NoFacebookEmail = "no_facebook_email"
+	//// Facebook login
+	// Facebook account did not give permission to query email
+	NoFacebookEmail = "no_facebook_email"
 
-  //// Password reset
-  // Password reset key is invalid or expired
-  InvalidResetKey = "invalid_reset_key"
+	//// Password reset
+	// Password reset key is invalid or expired
+	InvalidResetKey = "invalid_reset_key"
 
-  //// Schedule import
-  // Schedule is for a previous term
+	//// Schedule import
+	// Schedule is for a previous term
 	OldSchedule = "old_schedule"
 
-  //// Generic
-  // This is a more specific condition than BadRequest
-  // Things like name/email/password too short
+	//// Generic
+	// This is a more specific condition than BadRequest
+	// Things like name/email/password too short
 	ConstraintVoilation = "constraint_violation"
 
-  //// Fallbacks
-  // These do not map exactly to 400 and 500 status codes respectively:
-  // - BadRequest represents all otherwise unidentified client errors
-  // - InternalError represents all otherwise unidentified server errors
-  BadRequest = "bad_request"
+	//// Fallbacks
+	// These do not map exactly to 400 and 500 status codes respectively:
+	// - BadRequest represents all otherwise unidentified client errors
+	// - InternalError represents all otherwise unidentified server errors
+	BadRequest    = "bad_request"
 	InternalError = "internal_error"
 )
 
@@ -112,11 +112,11 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	if ok := errors.As(err, &en); ok {
 		payload.Enum = en.enum
 	} else {
-    if status / 100 == 4 {
-      payload.Enum = BadRequest
-    } else {
-      payload.Enum = InternalError
-    }
+		if status/100 == 4 {
+			payload.Enum = BadRequest
+		} else {
+			payload.Enum = InternalError
+		}
 	}
 
 	w.WriteHeader(status)
