@@ -112,6 +112,11 @@ type emailRegisterRequest struct {
 	Password string `json:"password"`
 }
 
+const (
+	MinPasswordLength = 6
+	MinEmailLength    = 6
+)
+
 func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body emailRegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -120,7 +125,24 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	if body.Email == "" || body.Password == "" || body.Name == "" {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty name, email, or password"))
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("empty name, email, or password")),
+		)
+	}
+
+	if len(body.Password) < MinPasswordLength {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("password is too short")),
+		)
+	}
+
+	if len(body.Email) < MinEmailLength {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("email is too short")),
+		)
 	}
 
 	resp, err := registerEmail(tx, body.Name, body.Email, []byte(body.Password))

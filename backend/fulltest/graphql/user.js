@@ -24,10 +24,10 @@ function testDeleteUser(data) {
   check(graphql(DELETE_MUTATION, {user_id: 42}, data.email.token), {
     "unrelated user not deleted": (r) => r.json(AFFECTED_ROWS) == 0,
   });
-  check(graphql(DELETE_MUTATION, {user_id: data.email.id}, data.email.token), {
+  check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), {
     "email user deleted": (r) => r.json(AFFECTED_ROWS) == 1,
   });
-  check(graphql(DELETE_MUTATION, {user_id: data.email.id}, data.email.token), {
+  check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), {
     "repeated deletion rejected": (r) => r.json(AFFECTED_ROWS) == 0,
   });
 }
@@ -36,7 +36,7 @@ function testGetUser(data) {
   check(graphql(GET_QUERY, {user_id: 42}, data.email.token), {
     "unrelated user not fetched": (r) => r.json(DATA).length == 0,
   });
-  check(getUser(GET_QUERY, {user_id: data.email.id}, data.email.token), {
+  check(getUser(GET_QUERY, {user_id: data.email.user_id}, data.email.token), {
     "email user fetched": (r) => r.json(DATA).length == 1,
   });
 }

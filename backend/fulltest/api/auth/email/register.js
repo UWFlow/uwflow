@@ -11,34 +11,53 @@ function register(email, name, password) {
 }
 
 function testRegister(data) {
-  [
-    ["", "", ""], ["email", "", ""], ["", "name", ""], ["email", "name", ""],
-  ].forEach(cred => check(register(...cred), withLog({
-    "empty fields forbidden": (r) => r.status == 400,
-  })));
-
-  const testUser = {
-    name: `Test User ${__VU}`,
-    email: `test+${__VU}@test.test`,
-    password: `test${__VU}`,
-  };
-
-  const res = register(testUser.email, testUser.name, testUser.password);
-  check(res, withLog({
-    "valid registration accepted": (r) => r.status == 200,
-    "has token and user_id": (r) => keysAre(r.json(), ["token", "user_id"]),
-  }));
-
-  data.email = Object.assign(
-    {token: res.json("token"), id: res.json("user_id")},
-    testUser,
-  );
-
   check(register(testUser.email, testUser.name, testUser.password), withLog({
     "existing email forbidden": (r) => r.status == 400,
   }));
 }
 
 export default function(data) {
-  group("email register", () => testRegister(data));
+  group("email register", function() {
+    group("empty fields", function() {
+      [
+        ["", "", ""], ["email", "", ""], ["", "name", ""], ["email", "name", ""]
+      ].forEach(cred => check(register(...cred), withLog({
+        "status": (r) => r.status == 400,
+        "error message": (r) => r.json("error") == "constraint_violation",
+      })));
+    });
+    group("short fields", function() {
+      const email = "test@test.test", password = "password", name = "First Last";
+      [
+        [email, name, "pass"], ["@a.b", name, password],
+      ].forEach(cred => check(register(...cred), withLog({
+        "status": (r) => r.status == 400,
+        "error message": (r) => r.json("error") == "constraint_violation",
+      })));
+    });
+
+    const testUser = {
+      name: `Test User ${__VU}`,
+      email: `test+${__VU}@test.test`,
+      password: `password${__VU}`,
+    };
+    const res = register(testUser.email, testUser.name, testUser.password);
+
+    group("valid registration", function() {
+      check(res, withLog({
+        "status": (r) => r.status == 200,
+        "fields": (r) => keysAre(r.json(), ["token", "user_id", "secret_id"]),
+      }));
+    });
+
+    data.email = Object.assign(res.json(), testUser);
+
+    group("duplicate registration", function() {
+      const res = register(testUser.email, testUser.name, testUser.password);
+      check(res, withLog({
+        "status": (r) => r.status == 401,
+        "error message": (r) => r.json("error") == "email_taken_by_email",
+      }));
+    });
+  });
 }

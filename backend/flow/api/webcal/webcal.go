@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -109,8 +108,16 @@ WHERE us.user_id = $1
   AND src.end_seconds IS NOT NULL
 `
 
-func extractUserEvents(conn *db.Conn, userId int) ([]*postgresEvent, error) {
+const userIdQuery = `SELECT id FROM "user" WHERE secret_id = $1`
+
+func extractUserEvents(conn *db.Conn, secretId string) ([]*postgresEvent, error) {
 	var events []*postgresEvent
+
+	var userId int
+	err := conn.QueryRow(userIdQuery, secretId).Scan(&userId)
+	if err != nil {
+		return nil, fmt.Errorf("no user with secret id %s", secretId)
+	}
 
 	rows, err := conn.Query(selectEventQuery, userId)
 	if err != nil {
@@ -180,19 +187,16 @@ func postgresToWebcalEvents(events []*postgresEvent) ([]*webcalEvent, error) {
 }
 
 func HandleWebcal(conn *db.Conn, w http.ResponseWriter, r *http.Request) error {
-	userId, err := strconv.Atoi(chi.URLParam(r, "userId"))
-	if err != nil {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing user id: %w", err))
-	}
+	secretId := chi.URLParam(r, "secretId")
 
-	events, err := extractUserEvents(conn, userId)
+	events, err := extractUserEvents(conn, secretId)
 	if err != nil {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("extracting events: %w", err))
+		return serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting events: %w", err))
 	}
 
 	webcalEvents, err := postgresToWebcalEvents(events)
 	if err != nil {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting events: %w", err))
+		return fmt.Errorf("converting events: %w", err)
 	}
 
 	w.Header().Set("Content-Type", "text/calendar")

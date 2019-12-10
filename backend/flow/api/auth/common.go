@@ -17,7 +17,7 @@ type AuthResponse struct {
 // Length of secret_id for newly registered users
 const SecretIdLength = 16
 
-const InsertUserQuery = `
+const insertUserQuery = `
 INSERT INTO "user"(full_name, email, join_source, picture_url, secret_id)
 VALUES ($1, $2, $3, $4, $5) RETURNING id
 `
@@ -32,7 +32,7 @@ func InsertUser(tx *db.Tx, name, email, joinSource string, pictureUrl *string) (
 	}
 
 	err = tx.QueryRow(
-		InsertUserQuery, name, email, joinSource, pictureUrl, response.SecretId,
+		insertUserQuery, name, email, joinSource, pictureUrl, response.SecretId,
 	).Scan(&response.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user: %w", err)

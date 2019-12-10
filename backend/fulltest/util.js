@@ -1,9 +1,11 @@
+import { check, group } from "k6";
+
 export function keysAre(object, keys) {
   const union = new Set(Object.keys(object), keys);
   return union.size == keys.length;
 }
 
-export function logIfFalse(response, name, predicate) {
+export function logOnFailure(response, name, predicate) {
   var result, detail;
   var exception = null;
   try {
@@ -32,7 +34,7 @@ export function logIfFalse(response, name, predicate) {
 export function withLog(tests) {
   for (const name in tests) {
     const predicate = tests[name];
-    tests[name] = (r) => logIfFalse(r, name, predicate);
+    tests[name] = (r) => logOnFailure(r, name, predicate);
   }
   return tests;
 }

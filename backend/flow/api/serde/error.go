@@ -37,7 +37,7 @@ const (
 	//// Generic
 	// This is a more specific condition than BadRequest
 	// Things like name/email/password too short
-	ConstraintVoilation = "constraint_violation"
+	ConstraintViolation = "constraint_violation"
 
 	//// Fallbacks
 	// These do not map exactly to 400 and 500 status codes respectively:

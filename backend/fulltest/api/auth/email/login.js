@@ -10,20 +10,26 @@ function login(email, password) {
   return http.post(ENDPOINT, JSON.stringify(payload));
 }
 
-function testLogin(data) { 
-  check(login("not an email", "not a password"), withLog({
-    "nonexistent email rejected": (r) => r.status == 401,
-  }));
-  check(login(data.email.email, "not the password"), withLog({
-    "incorrect password rejected": (r) => r.status == 401,
-  }));
-  check(login(data.email.email, data.email.password), withLog({
-    "correct credentials accepted": (r) => r.status == 200,
-    "has token and user_id": (r) => keysAre(r.json(), ["token", "user_id"]),
-    "user_id matches": (r) => r.json("user_id") == data.email.id,
-  }));
-}
-
 export default function(data) {
-  group("email login", () => testLogin(data));
+  group("email login", function() {
+    group("nonexistent email", function() {
+      check(login("not an email", "not a password"), withLog({
+        "status": (r) => r.status == 401,
+        "error message": (r) => r.json("error") == "email_not_registered",
+      }));
+    });
+    group("incorrect password", function() {
+      check(login(data.email.email, "not the password"), withLog({
+        "status": (r) => r.status == 401,
+        "error message": (r) => r.json("error") == "email_wrong_password",
+      }));
+    });
+    group("correct credentials", function() {
+      check(login(data.email.email, data.email.password), withLog({
+        "status": (r) => r.status == 200,
+        "keys": (r) => keysAre(r.json(), ["token", "user_id", "secret_id"]),
+        "user_id matches registration": (r) => r.json("user_id") == data.email.user_id,
+      }));
+    });
+  });
 }

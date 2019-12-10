@@ -5,17 +5,17 @@ import { withLog } from "/src/util.js";
 
 const ENDPOINT = API_URL + "/schedule/ical";
 
-function getCalendar(userId, token) {
-  return http.get(ENDPOINT + `/${userId}.ics`);
+function getCalendar(secret_id) {
+  return http.get(ENDPOINT + `/${secret_id}.ics`);
 }
 
 function testCalendar(data) {
-  check(getCalendar(data.email.secretId), withLog({
+  check(getCalendar(data.email.secret_id), withLog({
     "calendar served": (r) => r.status == 201,
     "correct MIME type": (r) => r.headers["Content-Type"] == "text/calendar",
   }));
   check(getCalendar("notanid"), withLog({
-    "error on nonexistent secret id": (r) => r.status == 400,
+    "error on nonexistent secret id": (r) => r.status == 401,
   }));
 }
 

@@ -40,7 +40,7 @@ func SetupRouter(conn *db.Conn) *chi.Mux {
 	router.Post("/auth/forgot-password/reset", serde.WithDbNoResponse(conn, auth.ResetPassword))
 
 	router.Get("/data/search", serde.WithDbResponse(conn, data.HandleSearch))
-	router.Get("/schedule/ical/{userId}", serde.WithDbDirect(conn, webcal.HandleWebcal))
+	router.Get("/schedule/ical/{secretId}.ics", serde.WithDbDirect(conn, webcal.HandleWebcal))
 
 	return router
 }

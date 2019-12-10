@@ -74,7 +74,7 @@ CREATE TABLE "user" (
   picture_url TEXT,
   email TEXT
     CONSTRAINT user_email_unique UNIQUE,
-    CONSTRAINT email_length CHECK (LENGTH(email) <= 256),
+    CONSTRAINT email_length CHECK (6 <= LENGTH(email) AND LENGTH(email) <= 256),
   join_source JOIN_SOURCE NOT NULL
 );
 
