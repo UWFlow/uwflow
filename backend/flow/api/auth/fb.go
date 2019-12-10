@@ -47,7 +47,7 @@ func getFbUserInfo(accessToken string) (*fbUserInfo, error) {
 
 func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 	if userInfo.Email == "" {
-		return nil, serde.WithEnum(serde.FbNoEmail, fmt.Errorf("FB account has no email"))
+		return nil, serde.WithEnum(serde.NoFacebookEmail, fmt.Errorf("no email"))
 	}
 
 	profilePicUrl := fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", userInfo.Id)

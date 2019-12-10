@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 
 	"flow/api/serde"
 	"flow/common/db"
+	"flow/common/util/random"
 )
 
 type sendEmailRequest struct {
@@ -23,35 +23,7 @@ type resetPasswordRequest struct {
 	Password string `json:"password"`
 }
 
-// GenerateRandomBytes returns securely generated random bytes.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func GenerateRandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
-}
-
-// GenerateRandomString returns a securely generated random string.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func GenerateRandomString(n int) (string, error) {
-	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	bytes, err := GenerateRandomBytes(n)
-	if err != nil {
-		return "", err
-	}
-	for i, b := range bytes {
-		bytes[i] = letters[b%byte(len(letters))]
-	}
-	return string(bytes), nil
-}
+const verifyKeyLength = 6
 
 func SendEmail(tx *db.Tx, r *http.Request) error {
 	var body sendEmailRequest
@@ -79,14 +51,9 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 
 	// generate unique key which expires in 1 hour
 	expiry := time.Now().Add(time.Hour)
-	key, err := GenerateRandomString(6)
+	key, err := random.String(verifyKeyLength, random.AllLetters)
 	if err != nil {
 		return fmt.Errorf("generating reset key: %w", err)
-	}
-
-	err = SendAutomatedEmail([]string{body.Email}, key, "Body")
-	if err != nil {
-		return fmt.Errorf("sending reset email: %w", err)
 	}
 
 	_, err = tx.Exec(
@@ -115,7 +82,7 @@ func VerifyResetCode(tx *db.Tx, r *http.Request) error {
 	if err != nil || !keyExists {
 		return serde.WithStatus(
       http.StatusForbidden,
-      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key not found or is expired")),
+      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key not found or is expired")),
     )
 	}
   return nil
@@ -143,7 +110,7 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	if err != nil {
 		return serde.WithStatus(
       http.StatusForbidden,
-      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key %s does not exist: %w", body.Key, err)),
+      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key %s does not exist: %w", body.Key, err)),
     )
 	}
 
@@ -151,7 +118,7 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	if !(expiry.After(time.Now())) {
 		return serde.WithStatus(
       http.StatusForbidden,
-      serde.WithEnum(serde.ResetInvalidKey, fmt.Errorf("key expired at %v", expiry)),
+      serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key expired at %v", expiry)),
     )
 	}
 

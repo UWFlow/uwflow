@@ -96,7 +96,7 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if scheduleSummary.Term < util.CurrentTermId() {
 		return nil, serde.WithStatus(
 			http.StatusBadRequest,
-			serde.WithEnum(serde.ScheduleIsOld, fmt.Errorf("term %d has passed", scheduleSummary.Term)),
+			serde.WithEnum(serde.OldSchedule, fmt.Errorf("term %d has passed", scheduleSummary.Term)),
 		)
 	}
 

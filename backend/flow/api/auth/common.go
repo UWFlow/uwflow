@@ -2,11 +2,10 @@ package auth
 
 import (
 	"fmt"
-	"net/smtp"
 
-	"flow/api/env"
 	"flow/api/serde"
 	"flow/common/db"
+	"flow/common/util/random"
 )
 
 type AuthResponse struct {
@@ -16,7 +15,7 @@ type AuthResponse struct {
 }
 
 // Length of secret_id for newly registered users
-const SecretLength = 12
+const SecretIdLength = 16
 
 const InsertUserQuery = `
 INSERT INTO "user"(full_name, email, join_source, picture_url, secret_id)
@@ -27,7 +26,7 @@ func InsertUser(tx *db.Tx, name, email, joinSource string, pictureUrl *string) (
 	var response AuthResponse
 	var err error
 
-	response.SecretId, err = GenerateRandomString(SecretLength)
+	response.SecretId, err = random.String(SecretIdLength, random.Uppercase)
 	if err != nil {
 		return nil, fmt.Errorf("generating secret id: %w", err)
 	}
@@ -42,19 +41,4 @@ func InsertUser(tx *db.Tx, name, email, joinSource string, pictureUrl *string) (
 	response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
 
 	return &response, nil
-}
-
-func SendAutomatedEmail(to []string, subject string, body string) error {
-	// Set up authentication information for Gmail server
-	from := env.Global.GmailUser
-	auth := smtp.PlainAuth("", from, env.Global.GmailAppPassword, "smtp.gmail.com")
-	msg := []byte(fmt.Sprintf("To: %s\r\n", to[0]) +
-		fmt.Sprintf("Subject: %s\r\n", subject) +
-		"\r\n" +
-		fmt.Sprintf("%s\r\n", body))
-	err := smtp.SendMail("smtp.gmail.com:587", auth, from, to, msg)
-	if err != nil {
-		return fmt.Errorf("failed to send email to %w", to[0])
-	}
-	return nil
 }

@@ -65,6 +65,8 @@ CREATE TYPE JOIN_SOURCE AS ENUM ('email', 'facebook', 'google');
 
 CREATE TABLE "user" (
   id SERIAL PRIMARY KEY,
+  secret_id TEXT NOT NULL UNIQUE
+    CONSTRAINT secret_id_length CHECK (LENGTH(secret_id) = 16),
   full_name TEXT NOT NULL
     CONSTRAINT user_full_name_length CHECK (LENGTH(full_name) <= 256),
   program TEXT

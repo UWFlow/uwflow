@@ -10,19 +10,41 @@ import (
 )
 
 const (
-	EmailNotRegistered   = "email_not_registered"
+  //// Email registration
+  // Email is already taken by one of the following account categories
 	EmailTakenByEmail    = "email_taken_by_email"
 	EmailTakenByFacebook = "email_taken_by_facebook"
 	EmailTakenByGoogle   = "email_taken_by_google"
+
+  //// Email login
+  // There is no user with given email
+	EmailNotRegistered   = "email_not_registered"
+  // There is a user with given email, but the given password is incorrect
 	EmailWrongPassword   = "email_wrong_password"
 
-  FbNoEmail = "facebook_no_email"
+  //// Facebook login
+  // Facebook account did not give permission to query email
+  NoFacebookEmail = "no_facebook_email"
 
-  ResetInvalidKey = "reset_invalid_key"
+  //// Password reset
+  // Password reset key is invalid or expired
+  InvalidResetKey = "invalid_reset_key"
 
-	ScheduleIsOld = "schedule_old"
+  //// Schedule import
+  // Schedule is for a previous term
+	OldSchedule = "old_schedule"
 
-	Unknown = "unknown"
+  //// Generic
+  // This is a more specific condition than BadRequest
+  // Things like name/email/password too short
+	ConstraintVoilation = "constraint_violation"
+
+  //// Fallbacks
+  // These do not map exactly to 400 and 500 status codes respectively:
+  // - BadRequest represents all otherwise unidentified client errors
+  // - InternalError represents all otherwise unidentified server errors
+  BadRequest = "bad_request"
+	InternalError = "internal_error"
 )
 
 type enumErr struct {
@@ -30,12 +52,16 @@ type enumErr struct {
 	enum string
 }
 
+func (e enumErr) Enum() string {
+	return e.enum
+}
+
 func (e enumErr) Error() string {
 	return e.err.Error()
 }
 
-func (e enumErr) Enum() string {
-	return e.enum
+func (e enumErr) Unwrap() error {
+	return e.err
 }
 
 func WithEnum(enum string, err error) error {
@@ -55,6 +81,10 @@ func (e statusErr) Status() int {
 	return e.status
 }
 
+func (e statusErr) Unwrap() error {
+	return e.err
+}
+
 func WithStatus(status int, err error) error {
 	return statusErr{err: err, status: status}
 }
@@ -71,18 +101,22 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	payload.RequestId = middleware.GetReqID(r.Context())
 	log.Printf("Error in %s: %s", payload.RequestId, err)
 
-	var enum enumErr
-	if ok := errors.As(err, &enum); ok {
-		payload.Enum = enum.enum
-	} else {
-		payload.Enum = Unknown
-	}
-
 	var st statusErr
 	if ok := errors.As(err, &st); ok {
 		status = st.status
 	} else {
-		status = 500
+		status = http.StatusInternalServerError
+	}
+
+	var en enumErr
+	if ok := errors.As(err, &en); ok {
+		payload.Enum = en.enum
+	} else {
+    if status / 100 == 4 {
+      payload.Enum = BadRequest
+    } else {
+      payload.Enum = InternalError
+    }
 	}
 
 	w.WriteHeader(status)
