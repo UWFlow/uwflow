@@ -4,21 +4,26 @@ import { API_URL } from "/src/const.js";
 import { withLog } from "/src/util.js";
 
 const ENDPOINT = API_URL + "/schedule/ical";
+const EXPECTED = open("/src/fixtures/calendar.txt");
 
 function getCalendar(secret_id) {
   return http.get(ENDPOINT + `/${secret_id}.ics`);
 }
 
-function testCalendar(data) {
-  check(getCalendar(data.email.secret_id), withLog({
-    "calendar served": (r) => r.status == 201,
-    "correct MIME type": (r) => r.headers["Content-Type"] == "text/calendar",
-  }));
-  check(getCalendar("notanid"), withLog({
-    "error on nonexistent secret id": (r) => r.status == 401,
-  }));
-}
-
 export default function(data) {
-  group("calendar", () => testCalendar(data));
+  group("calendar", function() {
+    group("valid", function() {
+      check(getCalendar(data.email.secret_id), withLog({
+        "status": (r) => r.status == 201,
+        "MIME type": (r) => r.headers["Content-Type"] == "text/calendar",
+        // DTSTAMP entries reflect time of query, therefore have to be expunged
+        "correct body": (r) => r.body.replace(/DTSTAMP:.*\n/g, '') == EXPECTED,
+      }));
+    });
+    group("invalid", function() {
+      check(getCalendar("notanid"), withLog({
+        "status": (r) => r.status == 401,
+      }));
+    });
+  });
 }

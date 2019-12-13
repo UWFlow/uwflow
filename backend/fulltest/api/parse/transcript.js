@@ -1,6 +1,7 @@
 import http from "k6/http";
 import { check, group } from "k6";
 import { API_URL } from "/src/const.js";
+import { withLog } from "/src/util.js";
 
 const ENDPOINT = API_URL + "/parse/transcript";
 const VALID_TRANSCRIPT = open("/src/fixtures/transcript.pdf", "b");
@@ -11,19 +12,23 @@ function uploadTranscript(file, token) {
   return http.post(ENDPOINT, payload, {headers});
 }
 
-function testTranscript(data) { 
-  check(uploadTranscript(VALID_TRANSCRIPT, ""), {
-    "auth required": (r) => r.status == 401,
+export default function(data) { 
+  group("transcript", function() {
+    group("unauthorized", function() {
+      check(uploadTranscript(VALID_TRANSCRIPT, ""), withLog({
+        "status": (r) => r.status == 401,
+      }));
+    });
+    group("valid", function() {
+      check(uploadTranscript(VALID_TRANSCRIPT, data.email.token), withLog({
+        "status": (r) => r.status == 200,
+        "course count": (r) => r.json("courses_imported") == 27,
+      }));
+    });
+    group("malformed", function() {
+      check(uploadTranscript("not a transcript", data.email.token), withLog({
+        "status": (r) => r.status == 400,
+      }));
+    });
   });
-  check(uploadTranscript(VALID_TRANSCRIPT, data.email.token), {
-    "valid transcript accepted": (r) => r.status == 200,
-    "all courses imported": (r) => r.json("courses_imported") == 27,
-  });
-  check(uploadTranscript("not a transcript", data.email.token), {
-    "invalid transcript rejected": (r) => r.status == 400,
-  });
-}
-
-export default function(data) {
-  group("transcript", () => testTranscript(data));
 }

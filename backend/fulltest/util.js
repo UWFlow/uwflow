@@ -19,7 +19,7 @@ export function logOnFailure(response, name, predicate) {
     try {
       detail = JSON.stringify(response.json());
     } catch(_) {
-      detail = response;
+      detail = response.body;
     }
     if (exception === null) {
       console.log(`[*] ${name}: ${detail}`);

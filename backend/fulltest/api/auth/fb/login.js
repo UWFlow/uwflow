@@ -20,17 +20,6 @@ function getAccessToken(number) {
   return res.json("data")[number].access_token;
 }
 
-function testLogin(data) {
-  check(login(token), withLog({
-    "correct credentials accepted": (r) => r.status == 200,
-  }));
-  const second = login(token);
-  check(login(token), withLog({
-    "correct credentials accepted": (r) => r.status == 200,
-    "has token and user_id": (r) => keysAre(r.json(), ["token", "user_id", "secret_id"]),
-  }));
-}
-
 export default function(data) {
   group("facebook login", function() {
     const token = getAccessToken(__VU);

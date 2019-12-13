@@ -6,6 +6,3 @@ export function graphql(mutation, variables, token) {
   const headers = {"Authorization": `Bearer ${token}`};
   return http.post(GRAPHQL_URL, JSON.stringify(payload), {headers});
 }
-
-export const AFFECTED_ROWS = "data.mutate.affected_rows";
-export const DATA = "data.get";

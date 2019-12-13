@@ -1,6 +1,6 @@
 import { check, group } from "k6";
-import { test } from "/src/util.js";
-import { graphql, AFFECTED_ROWS, DATA } from "/src/graphql/common.js";
+import { graphql, AFFECTED_ROWS } from "/src/graphql/common.js";
+import { withLog } from "/src/util.js";
 
 const DELETE_MUTATION = `
 mutation mutate($user_id: Int!) {
@@ -14,6 +14,7 @@ query get($user_id: Int!) {
   user(where: {id: {_eq: $user_id}}) {
     id
     full_name
+    email
     picture_url
     program
     secret_id
@@ -21,27 +22,44 @@ query get($user_id: Int!) {
 }`;
 
 function testDeleteUser(data) {
-  check(graphql(DELETE_MUTATION, {user_id: 42}, data.email.token), {
-    "unrelated user not deleted": (r) => r.json(AFFECTED_ROWS) == 0,
-  });
-  check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), {
-    "email user deleted": (r) => r.json(AFFECTED_ROWS) == 1,
-  });
-  check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), {
-    "repeated deletion rejected": (r) => r.json(AFFECTED_ROWS) == 0,
+  group("delete", function() {
+    group("unauthorized", function() {
+      check(graphql(DELETE_MUTATION, {user_id: 42}, data.email.token), withLog({
+        "count": (r) => r.json("data.delete_user.affected_rows") == 0,
+      }));
+    });
+    group("valid", function() {
+      check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), withLog({
+        "count": (r) => r.json("data.delete_user.affected_rows") == 1,
+      }));
+    });
+    group("nonexistent", function() {
+      check(graphql(DELETE_MUTATION, {user_id: data.email.user_id}, data.email.token), withLog({
+        "count": (r) => r.json("data.delete_user.affected_rows") == 0,
+      }));
+    });
   });
 }
 
 function testGetUser(data) {
-  check(graphql(GET_QUERY, {user_id: 42}, data.email.token), {
-    "unrelated user not fetched": (r) => r.json(DATA).length == 0,
-  });
-  check(getUser(GET_QUERY, {user_id: data.email.user_id}, data.email.token), {
-    "email user fetched": (r) => r.json(DATA).length == 1,
+  group("get", function () {
+    group("user", function() {
+      check(graphql(GET_QUERY, {user_id: 42}, data.email.token), withLog({
+        "count": (r) => r.json("data.user").length == 0,
+      }));
+    });
+    group("valid", function() {
+      check(graphql(GET_QUERY, {user_id: data.email.user_id}, data.email.token), withLog({
+        "count": (r) => r.json("data.user").length == 1,
+        "matches": (r) => r.json("data.user.0.email") == data.email.email,
+      }));
+    });
   });
 }
 
 export default function(data) {
-  group("get user", () => testGetUser(data));
-  group("delete user", () => testDeleteUser(data));
+  group("user", function() {
+    testGetUser(data);
+    testDeleteUser(data);
+  });
 }
