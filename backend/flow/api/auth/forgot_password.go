@@ -115,7 +115,7 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	}
 
 	// Check that key is not expired
-	if !(expiry.After(time.Now())) {
+	if !expiry.After(time.Now()) {
 		return serde.WithStatus(
 			http.StatusForbidden,
 			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key expired at %v", expiry)),

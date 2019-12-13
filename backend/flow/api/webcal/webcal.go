@@ -156,7 +156,7 @@ func postgresToWebcalEvent(event *postgresEvent, date time.Time) *webcalEvent {
 
 	var summary = strings.ToUpper(event.CourseCode)
 	if event.IsExam {
-		summary = fmt.Sprintf("%s FINAL", summary)
+		summary = fmt.Sprintf("%s - FINAL", summary)
 	} else {
 		summary = fmt.Sprintf("%s - %s", summary, event.SectionName)
 	}

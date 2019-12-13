@@ -82,7 +82,7 @@ func registerEmail(tx *db.Tx, name string, email string, password []byte) (*Auth
 		case "google":
 			cause = serde.EmailTakenByGoogle
 		}
-		return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", email, cause))
+		return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", email, joinSource))
 	}
 
 	response, err := InsertUser(tx, name, email, "email", nil)
