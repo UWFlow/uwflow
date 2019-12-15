@@ -23,17 +23,19 @@ export default function(data) {
         ["", "", ""], ["email", "", ""], ["", "name", ""], ["email", "name", ""]
       ].forEach(cred => check(register(...cred), withLog({
         "status": (r) => r.status == 400,
-        "error message": (r) => r.json("error") == "constraint_violation",
+        "error message": (r) => r.json("error") == "bad_request",
       })));
     });
     group("short fields", function() {
       const email = "test@test.test", password = "password", name = "First Last";
-      [
-        [email, name, "pass"], ["@a.b", name, password],
-      ].forEach(cred => check(register(...cred), withLog({
+      check(register(email, name, "pass"), withLog({
         "status": (r) => r.status == 400,
-        "error message": (r) => r.json("error") == "constraint_violation",
-      })));
+        "error message": (r) => r.json("error") == "password_too_short",
+      }));
+      check(register("@a.b", name, password), withLog({
+        "status": (r) => r.status == 400,
+        "error message": (r) => r.json("error") == "email_too_short",
+      }));
     });
 
     const testUser = {
