@@ -3,7 +3,7 @@ import { check, group } from "k6";
 import { API_URL } from "/src/const.js";
 import { withLog } from "/src/util.js";
 
-const ENDPOINT = API_URL + "/schedule/ical";
+const ENDPOINT = API_URL + "/calendar";
 const EXPECTED = open("/src/fixtures/calendar.txt");
 
 function getCalendar(secret_id) {
