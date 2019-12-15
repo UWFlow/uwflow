@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgconn v1.1.0
 	github.com/jackc/pgx/v4 v4.1.2
 	github.com/tidwall/pretty v1.0.0 // indirect
-	go.mongodb.org/mongo-driver v1.1.3
+	go.mongodb.org/mongo-driver v1.2.0
 	go.uber.org/zap v1.13.0
-	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f
+	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 )

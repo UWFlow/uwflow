@@ -7,169 +7,199 @@ import (
 	"log"
 	"net/http"
 
+	"flow/api/parse/pdf"
 	"flow/api/parse/schedule"
 	"flow/api/parse/transcript"
 	"flow/api/serde"
-	"flow/common/state"
+	"flow/common/db"
 	"flow/common/util"
 )
 
-type ScheduleParseRequest struct {
-	Text string `json:"text"`
-}
-
-type ScheduleParseResponse struct {
-	SectionsImported int `json:"sections_imported"`
-}
-
-type TranscriptParseResponse struct {
+type transcriptResponse struct {
 	CoursesImported int `json:"courses_imported"`
 }
 
-func handleTranscript(state *state.State, r *http.Request) (*TranscriptParseResponse, error, int) {
-	userId, err := serde.UserIdFromRequest(state, r)
-	if err != nil {
-		return nil, fmt.Errorf("extracting user id: %w", err), http.StatusUnauthorized
+const updateProgramQuery = `
+UPDATE "user" SET program = $1 WHERE id = $2
+`
+
+const deleteTranscriptQuery = `
+DELETE FROM user_course_taken
+WHERE term_id <= $1 AND user_id = $2
+`
+
+const insertTranscriptQuery = `
+INSERT INTO user_course_taken(course_id, user_id, term_id, level)
+SELECT id, $2, $3, $4 FROM course WHERE code = $1
+`
+
+func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transcriptResponse, error) {
+	// Refuse to import empty transcript: we probably failed to parse it correctly
+	if len(summary.TermSummaries) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptyTranscript, fmt.Errorf("empty transcript")),
+		)
 	}
 
-	file, header, err := r.FormFile("file")
+	_, err := tx.Exec(updateProgramQuery, summary.ProgramName, userId)
 	if err != nil {
-		return nil, fmt.Errorf("expected form/multipart: {file}"), http.StatusBadRequest
+		return nil, fmt.Errorf("updating user program: %w", err)
 	}
 
-	fileContents := new(bytes.Buffer)
-	fileContents.Grow(int(header.Size))
-	fileContents.ReadFrom(file)
-	text, err := PdfToText(fileContents.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("converting transcript: %w", err), http.StatusBadRequest
+	var maxTermId int
+	for _, termSummary := range summary.TermSummaries {
+		if termSummary.TermId > maxTermId {
+			maxTermId = termSummary.TermId
+		}
 	}
 
-	result, err := transcript.Parse(text)
+	_, err = tx.Exec(deleteTranscriptQuery, maxTermId, userId)
 	if err != nil {
-		return nil, err, http.StatusBadRequest
+		return nil, fmt.Errorf("deleting old courses: %w", err)
 	}
 
-	tx, err := state.Db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("opening transaction: %w", err), http.StatusInternalServerError
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec(
-		`UPDATE "user" SET program = $1 WHERE id = $2`,
-		result.ProgramName, userId,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("updating user record: %w", err), http.StatusInternalServerError
-	}
-
-	var response TranscriptParseResponse
-	for _, summary := range result.CourseHistory {
-		response.CoursesImported += len(summary.Courses)
-		for _, course := range summary.Courses {
-			// If (course, user, term) combination exists, do not add it again
-			_, err = tx.Exec(
-				`INSERT INTO user_course_taken(course_id, user_id, term_id, level) `+
-					`SELECT id, $2, $3, $4 FROM course WHERE code = $1 `+
-					`ON CONFLICT DO NOTHING`,
-				course, userId, summary.Term, summary.Level,
-			)
+	var response transcriptResponse
+	for _, termSummary := range summary.TermSummaries {
+		response.CoursesImported += len(termSummary.Courses)
+		for _, course := range termSummary.Courses {
+			_, err = tx.Exec(insertTranscriptQuery, course, userId, termSummary.TermId, termSummary.Level)
 			if err != nil {
-				return nil, fmt.Errorf("updating user record: %w", err), http.StatusInternalServerError
+				return nil, fmt.Errorf("updating user_course_taken: %w", err)
 			}
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, fmt.Errorf("committing transaction: %w", err), http.StatusInternalServerError
-	} else {
-		log.Printf("Imported transcript for user %d: %v\n", userId, result)
-		return &response, nil, http.StatusOK
-	}
+	return &response, nil
 }
 
-func HandleTranscript(state *state.State, w http.ResponseWriter, r *http.Request) {
-	response, err, status := handleTranscript(state, r)
+func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
+	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
-		serde.Error(w, serde.WithEnum("transcript", err), status)
+		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
 	}
-	json.NewEncoder(w).Encode(response)
 
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("expected form/multipart: {file}"))
+	}
+
+	var fileContents bytes.Buffer
+	fileContents.Grow(int(header.Size))
+	fileContents.ReadFrom(file)
+	text, err := pdf.ToText(fileContents.Bytes())
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting to text: %w", err))
+	}
+
+	summary, err := transcript.Parse(text)
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
+	}
+
+	response, err := saveTranscript(tx, summary, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("Imported transcript for user %d: %+v", userId, summary)
+	return response, nil
 }
 
-func handleSchedule(state *state.State, r *http.Request) (*ScheduleParseResponse, error, int) {
-	userId, err := serde.UserIdFromRequest(state, r)
-	if err != nil {
-		return nil, fmt.Errorf("extracting user id: %w", err), http.StatusUnauthorized
+type scheduleResponse struct {
+	SectionsImported int `json:"sections_imported"`
+}
+
+const insertCourseTakenQuery = `
+INSERT INTO user_course_taken(user_id, term_id, course_id)
+SELECT $1, $2, course_id FROM course_section
+WHERE term_id = $2 AND class_number = $3
+ON CONFLICT DO NOTHING
+`
+
+const deleteCourseTakenQuery = `
+DELETE FROM user_course_taken WHERE term_id = $1
+`
+
+const updateScheduleQuery = `
+INSERT INTO user_schedule(user_id, section_id)
+SELECT $1, id FROM course_section
+WHERE class_number = $2 AND term_id = $3
+`
+
+func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleResponse, error) {
+	// Refuse to import old schedule: there are no sections in database, so we will fail
+	if summary.TermId < util.CurrentTermId() {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.OldSchedule, fmt.Errorf("term %d has passed", summary.TermId)),
+		)
 	}
 
-	req := ScheduleParseRequest{}
+	// Refuse to import empty schedule: we probably failed to parse it
+	if len(summary.ClassNumbers) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptySchedule, fmt.Errorf("empty schedule")),
+		)
+	}
+
+	_, err := tx.Exec(deleteCourseTakenQuery, summary.TermId)
+	if err != nil {
+		return nil, fmt.Errorf("deleting old user_course_taken: %w", err)
+	}
+
+	for _, classNumber := range summary.ClassNumbers {
+		tag, err := tx.Exec(updateScheduleQuery, userId, classNumber, summary.TermId)
+		if err != nil {
+			return nil, fmt.Errorf("writing user_schedule: %w", err)
+		}
+
+		// If we didn't end up writing anything, the join must have been empty,
+		// so there was no section with the given number.
+		// We probably misparsed or the user messed with the schedule.
+		if tag.RowsAffected() == 0 {
+			return nil, serde.WithStatus(
+				http.StatusBadRequest,
+				fmt.Errorf("class number %d not found in term %d", classNumber, summary.TermId),
+			)
+		}
+
+		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, classNumber)
+		if err != nil {
+			return nil, fmt.Errorf("writing user_course_taken: %w", err)
+		}
+	}
+
+	return &scheduleResponse{SectionsImported: len(summary.ClassNumbers)}, nil
+}
+
+type scheduleRequest struct {
+	Text string `json:"text"`
+}
+
+func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
+	userId, err := serde.UserIdFromRequest(r)
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
+	}
+
+	var req scheduleRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, fmt.Errorf("malformed JSON: %w", err), http.StatusBadRequest
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
 
-	scheduleSummary, err := schedule.Parse(req.Text)
+	summary, err := schedule.Parse(req.Text)
 	if err != nil {
-		return nil, err, http.StatusBadRequest
-	}
-	if scheduleSummary.Term < util.CurrentTermId() {
-		return nil, fmt.Errorf("cannot import schedule for past term %d", scheduleSummary.Term), http.StatusBadRequest
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
 	}
 
-	tx, err := state.Db.Begin()
+	response, err := saveSchedule(tx, summary, userId)
 	if err != nil {
-		return nil, fmt.Errorf("opening transaction: %w", err), http.StatusInternalServerError
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec(
-		`DELETE FROM user_course_taken WHERE term_id = $1`, scheduleSummary.Term,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("clearing sections: %w", err), http.StatusInternalServerError
-	}
-	for _, classNumber := range scheduleSummary.ClassNumbers {
-		tag, err := tx.Exec(
-			`INSERT INTO user_schedule(user_id, section_id) `+
-				`SELECT $1, id FROM course_section `+
-				`WHERE class_number = $2 AND term_id = $3`,
-			userId, classNumber, scheduleSummary.Term,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("storing sections: %w", err), http.StatusInternalServerError
-		}
-		if tag.RowsAffected() == 0 {
-			return nil, fmt.Errorf("class number %d not found in term %d", classNumber, scheduleSummary.Term), http.StatusBadRequest
-		}
-		tx.Exec(
-			`INSERT INTO user_course_taken(user_id, term_id, course_id) `+
-				`SELECT $1, $2, course_id FROM course_section `+
-				`WHERE term_id = $2 AND class_number = $3`+
-				`ON CONFLICT DO NOTHING`,
-			userId, scheduleSummary.Term, classNumber,
-		)
+		return nil, fmt.Errorf("saving: %w", err)
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, fmt.Errorf("committing: %w", err), http.StatusInternalServerError
-	} else {
-		response := &ScheduleParseResponse{
-			SectionsImported: len(scheduleSummary.ClassNumbers),
-		}
-		log.Printf("Imported schedule for user %d: %v\n", userId, scheduleSummary)
-		return response, nil, http.StatusOK
-	}
-}
-
-func HandleSchedule(state *state.State, w http.ResponseWriter, r *http.Request) {
-	response, err, status := handleSchedule(state, r)
-	if err != nil {
-		serde.Error(w, serde.WithEnum("schedule", err), status)
-	}
-	json.NewEncoder(w).Encode(response)
-
+	log.Printf("Imported schedule for user %d: %+v", userId, summary)
+	return response, nil
 }

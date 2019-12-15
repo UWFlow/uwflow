@@ -4,62 +4,94 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"flow/api/auth"
+	"flow/api/calendar"
 	"flow/api/data"
+	"flow/api/env"
 	"flow/api/parse"
-	"flow/api/sub"
-	"flow/api/webcal"
-	"flow/common/state"
+	"flow/api/serde"
+
+	"flow/common/db"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-type StatefulHandlerFunc func(*state.State, http.ResponseWriter, *http.Request)
-
-func WithState(s *state.State, handler StatefulHandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Put db connection in request context before entering
-		reqState := &state.State{Db: s.Db.With(r.Context()), Env: s.Env, Log: s.Log}
-		handler(reqState, w, r)
-	}
-}
-
-func SetupRouter(state *state.State) *chi.Mux {
+func setupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
+
 	router.Use(
-		// Reponses are always JSON, but requests may not be (e.g. PDF uploads)
+		// Responses are typically JSON, with the notable exception of webcal.
+		// We set the most common type here and override it as necessary.
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Logger,
 		middleware.Recoverer,
+		middleware.RequestID,
+		middleware.Timeout(10*time.Second),
 	)
 
-	router.Post("/auth/email/login", WithState(state, auth.AuthenticateEmail))
-	router.Post("/auth/email/register", WithState(state, auth.RegisterEmail))
-	router.Post("/parse/transcript", WithState(state, parse.HandleTranscript))
-	router.Post("/parse/schedule", WithState(state, parse.HandleSchedule))
-	router.Post("/auth/google/login", WithState(state, auth.AuthenticateGoogleUser))
-	router.Post("/auth/facebook/login", WithState(state, auth.AuthenticateFbUser))
-	router.Post("/auth/forgot-password/send-email", WithState(state, auth.SendEmail))
-	router.Post("/auth/forgot-password/verify", WithState(state, auth.VerifyResetCode))
-	router.Post("/auth/forgot-password/reset", WithState(state, auth.ResetPassword))
+	router.Post(
+		"/auth/email/login",
+		serde.WithDbResponse(conn, auth.LoginEmail, "email login"),
+	)
+	router.Post(
+		"/auth/email/register",
+		serde.WithDbResponse(conn, auth.RegisterEmail, "email register"),
+	)
+	router.Post(
+		"/auth/facebook/login",
+		serde.WithDbResponse(conn, auth.LoginFacebook, "facebook login"),
+	)
+	router.Post(
+		"/auth/google/login",
+		serde.WithDbResponse(conn, auth.LoginGoogle, "google login"),
+	)
 
-	router.Get("/data/search", WithState(state, data.HandleSearch))
-	router.Get("/schedule/ical/{userId}", WithState(state, webcal.HandleWebcal))
+	router.Post(
+		"/auth/forgot-password/send-email",
+		serde.WithDbNoResponse(conn, auth.SendEmail, "password reset initiation"),
+	)
+	router.Post(
+		"/auth/forgot-password/verify",
+		serde.WithDbNoResponse(conn, auth.VerifyKey, "password reset verification"),
+	)
+	router.Post(
+		"/auth/forgot-password/reset",
+		serde.WithDbNoResponse(conn, auth.ResetPassword, "password reset completion"),
+	)
 
-	router.Post("/section_notify/subscribe", WithState(state, sub.SubscribeToSection))
-	router.Post("/section_notify/unsubscribe", WithState(state, sub.UnsubscribeToSection))
+	router.Post(
+		"/parse/transcript",
+		serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
+	)
+	router.Post(
+		"/parse/schedule",
+		serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
+	)
+
+	router.Get(
+		"/data/search",
+		serde.WithDbResponse(conn, data.HandleSearch, "search data dump"),
+	)
+
+	router.Get(
+		"/calendar/{secretId}.ics",
+		serde.WithDbDirect(conn, calendar.HandleCalendar, "calendar generation"),
+	)
 
 	return router
 }
 
 func main() {
-	state, err := state.New(context.Background(), "api")
+	conn, err := db.ConnectPool(context.Background(), env.Global)
 	if err != nil {
-		log.Fatalf("Failed to initialize: %v", err)
+		log.Fatalf("Error: %s", err)
 	}
 
-	router := SetupRouter(state)
-	log.Fatalf("Server error: %v", http.ListenAndServe(":"+state.Env.ApiPort, router))
+	router := setupRouter(conn)
+	socket := ":" + env.Global.ApiPort
+
+	http.ListenAndServe(socket, router)
 }
