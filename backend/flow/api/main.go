@@ -20,7 +20,8 @@ import (
 func SetupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
-		// Reponses are always JSON, but requests may not be (e.g. PDF uploads)
+		// Responses are typically JSON, with the notable exception of webcal.
+		// We set the most common type here and override it as necessary.
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Logger,
 		middleware.Recoverer,

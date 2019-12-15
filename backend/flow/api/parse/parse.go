@@ -27,6 +27,20 @@ type transcriptResponse struct {
 	CoursesImported int `json:"courses_imported"`
 }
 
+const updateProgramQuery = `
+UPDATE "user" SET program = $1 WHERE id = $2
+`
+
+const deleteTranscriptQuery = `
+DELETE FROM user_course_taken
+WHERE term_id <= $1 AND user_id = $2
+`
+
+const insertTranscriptQuery = `
+INSERT INTO user_course_taken(course_id, user_id, term_id, level)
+SELECT id, $2, $3, $4 FROM course WHERE code = $1
+`
+
 func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -51,22 +65,28 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, err)
 	}
 
-	_, err = tx.Exec(`UPDATE "user" SET program = $1 WHERE id = $2`, result.ProgramName, userId)
+	_, err = tx.Exec(updateProgramQuery, result.ProgramName, userId)
 	if err != nil {
 		return nil, fmt.Errorf("updating user program: %w", err)
+	}
+
+	var maxTermId int
+	for _, summary := range result.CourseHistory {
+		if summary.Term > maxTermId {
+			maxTermId = summary.Term
+		}
+	}
+
+	_, err = tx.Exec(deleteTranscriptQuery, maxTermId, userId)
+	if err != nil {
+		return nil, fmt.Errorf("deleting old courses: %w", err)
 	}
 
 	var response transcriptResponse
 	for _, summary := range result.CourseHistory {
 		response.CoursesImported += len(summary.Courses)
 		for _, course := range summary.Courses {
-			// If (course, user, term) combination exists, do not add it again
-			_, err = tx.Exec(
-				`INSERT INTO user_course_taken(course_id, user_id, term_id, level) `+
-					`SELECT id, $2, $3, $4 FROM course WHERE code = $1 `+
-					`ON CONFLICT DO NOTHING`,
-				course, userId, summary.Term, summary.Level,
-			)
+			_, err = tx.Exec(insertTranscriptQuery, course, userId, summary.Term, summary.Level)
 			if err != nil {
 				return nil, fmt.Errorf("updating user_course_taken: %w", err)
 			}

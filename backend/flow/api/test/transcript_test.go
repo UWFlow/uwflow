@@ -15,7 +15,7 @@ var expectedPreamble = `  University of Waterloo                                
 
 var expectedSummary = transcript.TranscriptSummary{
 	StudentNumber: 20705374,
-	ProgramName:   "Computer Science/Digital Hardware Option, Honours, Co-operative Program",
+	ProgramName:   "Computer Science/Digital Hardware Option",
 	CourseHistory: []transcript.TermSummary{
 		{
 			Term:    1179,

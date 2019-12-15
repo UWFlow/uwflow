@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	//"flow/api/env"
 	"flow/api/serde"
 	"flow/common/db"
 )
@@ -15,28 +14,25 @@ type fbAuthLoginRequest struct {
 }
 
 type fbUserInfo struct {
-	Id    string `json:"id"`
+	FbId  string `json:"id"`
 	Name  string `json:"name"`
-	Email string `json:"name"`
+	Email string `json:"email"`
 }
 
-type fbUserInfoResponse struct {
-	Data fbUserInfo `json:"data"`
-}
-
-const baseFacebookUrl = "https://graph.facebook.com/"
+const baseFacebookUrl = "https://graph.facebook.com"
 
 func getFbUserInfo(accessToken string) (*fbUserInfo, error) {
 	url := fmt.Sprintf("%s/me?fields=name,email&access_token=%s", baseFacebookUrl, accessToken)
+	fmt.Println(url)
 	response, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("fetching user info from fb graph API: %w", err)
+		return nil, fmt.Errorf("calling fb graph api: %w", err)
 	}
 	defer response.Body.Close()
 
-	var res fbUserInfoResponse
+	var res fbUserInfo
 	json.NewDecoder(response.Body).Decode(&res)
-	return &res.Data, nil
+	return &res, nil
 }
 
 func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
@@ -44,7 +40,7 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 		return nil, serde.WithEnum(serde.NoFacebookEmail, fmt.Errorf("no email"))
 	}
 
-	profilePicUrl := fmt.Sprintf("https://graph.facebook.com/%s/picture?type=large", userInfo.Id)
+	profilePicUrl := fmt.Sprintf("%s/%s/picture?type=large", baseFacebookUrl, userInfo.FbId)
 
 	response, err := InsertUser(tx, userInfo.Name, userInfo.Email, "facebook", &profilePicUrl)
 	if err != nil {
@@ -53,7 +49,7 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 
 	_, err = tx.Exec(
 		"INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)",
-		response.UserId, userInfo.Id,
+		response.UserId, userInfo.FbId,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user_fb: %w", err)
@@ -75,15 +71,18 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
+
 	if body.AccessToken == "" {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no access token"))
 	}
 
-	//fmt.Sprintf("%s|%s", env.Global.FbAppId, env.Global.FbAppSecret)
 	userInfo, err := getFbUserInfo(body.AccessToken)
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting fb user info: %w", err))
+	}
 
 	var response = &AuthResponse{}
-	tx.QueryRow(selectFbUserQuery, userInfo.Id).Scan(&response.UserId, &response.SecretId)
+	tx.QueryRow(selectFbUserQuery, userInfo.FbId).Scan(&response.UserId, &response.SecretId)
 
 	if response.UserId != 0 {
 		response.Token = serde.MakeAndSignHasuraJWT(response.UserId)

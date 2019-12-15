@@ -25,6 +25,14 @@ type resetPasswordRequest struct {
 
 const verifyKeyLength = 6
 
+const updatePasswordResetQuery = `
+INSERT INTO secret.password_reset(user_id, verify_key, expiry)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE
+  verify_key = EXCLUDED.verify_key,
+  expiry = EXCLUDED.expiry
+`
+
 func SendEmail(tx *db.Tx, r *http.Request) error {
 	var body sendEmailRequest
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -56,10 +64,7 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 		return fmt.Errorf("generating reset key: %w", err)
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)`,
-		userId, key, expiry,
-	)
+	_, err = tx.Exec(updatePasswordResetQuery, userId, key, expiry)
 	if err != nil {
 		return fmt.Errorf("writing password_reset: %w", err)
 	}

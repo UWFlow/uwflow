@@ -102,7 +102,7 @@ func extractProgramName(text string) (string, error) {
 	start += 8 // skip "Program:"
 
 	for end := start; end < len(text); end++ {
-		if text[end] == '\n' {
+		if text[end] == ',' || text[end] == '\n' {
 			return strings.TrimSpace(text[start:end]), nil
 		}
 	}
