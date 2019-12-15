@@ -17,7 +17,7 @@ export default function(data) {
         "status": (r) => r.status == 201,
         "MIME type": (r) => r.headers["Content-Type"] == "text/calendar",
         // DTSTAMP entries reflect time of query, therefore have to be expunged
-        "correct body": (r) => r.body.replace(/DTSTAMP:.*\n/g, '') == EXPECTED,
+        "correct body": (r) => r.body.replace(/DTSTAMP.*\n/g, '') == EXPECTED,
       }));
     });
     group("invalid", function() {

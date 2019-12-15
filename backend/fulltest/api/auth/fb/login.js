@@ -15,7 +15,7 @@ function getAccessToken(number) {
   const secret = __ENV.FB_APP_SECRET;
   const param = `access_token=${app_id}|${secret}`;
   const res = http.get(
-    `https://graph.facebook.com/v5.0/${app_id}/accounts/test-users?${param}`,
+    `https://graph.facebook.com/${app_id}/accounts/test-users?${param}`,
   );
   return res.json("data")[number].access_token;
 }
@@ -35,7 +35,7 @@ export default function(data) {
       check(second, withLog({
         "status": (r) => r.status == 200,
         "matches first login": (r) => {
-          r.json("user_id") == first.json("user_id") &&
+          return r.json("user_id") == first.json("user_id") &&
             r.json("secret_id") == r.json("secret_id")
         },
       }));
