@@ -16,7 +16,12 @@ $PREFIX docker volume rm -f backend_postgres
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"
 
-$PREFIX docker-compose up -d --build
+# Update to latest published images
+$PREFIX docker-compose pull
+# Build local changes, if any
+"$DIR/build.sh"
+# Launch all containers
+$PREFIX docker-compose up -d
 
 # Wait for migrations to be applied by selecting from a random table
 while ! $PREFIX docker exec postgres \
