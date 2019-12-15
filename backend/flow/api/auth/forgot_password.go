@@ -28,9 +28,7 @@ const verifyKeyLength = 6
 const updatePasswordResetQuery = `
 INSERT INTO secret.password_reset(user_id, verify_key, expiry)
 VALUES ($1, $2, $3)
-ON CONFLICT (user_id) DO UPDATE
-  verify_key = EXCLUDED.verify_key,
-  expiry = EXCLUDED.expiry
+ON CONFLICT (user_id) DO UPDATE SET verify_key = EXCLUDED.verify_key, expiry = EXCLUDED.expiry
 `
 
 func SendEmail(tx *db.Tx, r *http.Request) error {

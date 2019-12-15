@@ -58,18 +58,18 @@ func registerGoogle(tx *db.Tx, googleId string, idToken string) (*AuthResponse, 
 	// we can safely extract the desired jwt claims from the token
 	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &googleTokenClaims{})
 	if err != nil {
-		return nil, fmt.Errorf("parsing jwt: invalid id token")
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing jwt: invalid id token"))
 	}
 	tokenClaims, ok := token.Claims.(*googleTokenClaims)
 	if !ok {
-		return nil, fmt.Errorf("fetching token claims: invalid id token")
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("fetching token claims: invalid id token"))
 	}
 
 	response, err := InsertUser(
 		tx, tokenClaims.Name, tokenClaims.Email, "google", &tokenClaims.PictureUrl,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("writing user: %w", err)
+		return nil, serde.WithEnum(serde.EmailTaken, fmt.Errorf("writing user: %w", err))
 	}
 
 	_, err = tx.Exec(
@@ -92,7 +92,10 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	defer r.Body.Close()
 
 	if body.IdToken == "" {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing id token"))
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("missing id token")),
+		)
 	}
 
 	// Validate Google id token using Google API

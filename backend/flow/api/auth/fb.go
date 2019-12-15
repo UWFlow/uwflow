@@ -23,7 +23,6 @@ const baseFacebookUrl = "https://graph.facebook.com"
 
 func getFbUserInfo(accessToken string) (*fbUserInfo, error) {
 	url := fmt.Sprintf("%s/me?fields=name,email&access_token=%s", baseFacebookUrl, accessToken)
-	fmt.Println(url)
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("calling fb graph api: %w", err)
@@ -44,7 +43,7 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 
 	response, err := InsertUser(tx, userInfo.Name, userInfo.Email, "facebook", &profilePicUrl)
 	if err != nil {
-		return nil, fmt.Errorf("inserting user: %w", err)
+		return nil, serde.WithEnum(serde.EmailTaken, fmt.Errorf("inserting user: %w", err))
 	}
 
 	_, err = tx.Exec(
@@ -59,11 +58,13 @@ func registerFbUser(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
 }
 
 const selectFbUserQuery = `
-SELECT u.id, u.secret_id 
+SELECT u.id, u.secret_id, u.email
 FROM secret.user_fb uf
   JOIN "user" u ON u.id = uf.user_id
 WHERE uf.fb_id = $1
 `
+
+const updateFbEmailQuery = `UPDATE "user" SET email = $2 WHERE id = $1`
 
 func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body fbAuthLoginRequest
@@ -73,7 +74,10 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	if body.AccessToken == "" {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no access token"))
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("no access token")),
+		)
 	}
 
 	userInfo, err := getFbUserInfo(body.AccessToken)
@@ -81,10 +85,14 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting fb user info: %w", err))
 	}
 
+	var email string
 	var response = &AuthResponse{}
-	tx.QueryRow(selectFbUserQuery, userInfo.FbId).Scan(&response.UserId, &response.SecretId)
+	tx.QueryRow(selectFbUserQuery, userInfo.FbId).Scan(&response.UserId, &response.SecretId, &email)
 
 	if response.UserId != 0 {
+		if email == "" {
+			_, err = tx.Exec(updateFbEmailQuery, response.UserId, email)
+		}
 		response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
 		return response, nil
 	}

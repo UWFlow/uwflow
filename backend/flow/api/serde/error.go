@@ -12,6 +12,7 @@ import (
 const (
 	//// Email registration
 	// Email is already taken by one of the following account categories
+	EmailTaken           = "email_taken"
 	EmailTakenByEmail    = "email_taken_by_email"
 	EmailTakenByFacebook = "email_taken_by_facebook"
 	EmailTakenByGoogle   = "email_taken_by_google"
@@ -31,8 +32,14 @@ const (
 	InvalidResetKey = "invalid_reset_key"
 
 	//// Schedule import
+	// Schedule contains no sections
+	EmptySchedule = "empty_schedule"
 	// Schedule is for a previous term
 	OldSchedule = "old_schedule"
+
+	//// Transcript import
+	// Transcript contains no terms
+	EmptyTranscript = "empty_transcript"
 
 	//// Generic
 	// This is a more specific condition than BadRequest

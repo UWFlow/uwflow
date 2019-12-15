@@ -65,6 +65,14 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, err)
 	}
 
+	// Refuse to import empty transcript: we probably failed to parse it correctly
+	if len(result.CourseHistory) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptyTranscript, fmt.Errorf("empty transcript")),
+		)
+	}
+
 	_, err = tx.Exec(updateProgramQuery, result.ProgramName, userId)
 	if err != nil {
 		return nil, fmt.Errorf("updating user program: %w", err)
@@ -97,6 +105,13 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 	return &response, nil
 }
 
+const insertScheduleQuery = `
+INSERT INTO user_course_taken(user_id, term_id, course_id)
+SELECT $1, $2, course_id FROM course_section
+WHERE term_id = $2 AND class_number = $3
+ON CONFLICT DO NOTHING
+`
+
 func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -111,12 +126,22 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	scheduleSummary, err := schedule.Parse(req.Text)
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusBadRequest, err)
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing schedule: %w", err))
 	}
+
+	// Refuse to import old schedule: there are no sections in database, so we will fail
 	if scheduleSummary.Term < util.CurrentTermId() {
 		return nil, serde.WithStatus(
 			http.StatusBadRequest,
 			serde.WithEnum(serde.OldSchedule, fmt.Errorf("term %d has passed", scheduleSummary.Term)),
+		)
+	}
+
+	// Refuse to import empty schedule: we probably failed to parse it
+	if len(scheduleSummary.ClassNumbers) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptySchedule, fmt.Errorf("empty schedule")),
 		)
 	}
 
@@ -141,19 +166,13 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 			)
 		}
 
-		_, err = tx.Exec(
-			`INSERT INTO user_course_taken(user_id, term_id, course_id) `+
-				`SELECT $1, $2, course_id FROM course_section `+
-				`WHERE term_id = $2 AND class_number = $3`+
-				`ON CONFLICT DO NOTHING`,
-			userId, scheduleSummary.Term, classNumber,
-		)
+		_, err = tx.Exec(insertScheduleQuery, userId, scheduleSummary.Term, classNumber)
 		if err != nil {
 			return nil, fmt.Errorf("writing user_course_taken: %w", err)
 		}
 	}
 
 	response := scheduleResponse{SectionsImported: len(scheduleSummary.ClassNumbers)}
-	log.Printf("Imported schedule for user %d: %v", userId, scheduleSummary)
+	log.Printf("Imported schedule for user %d: %+v", userId, scheduleSummary)
 	return &response, nil
 }
