@@ -505,7 +505,7 @@ CREATE TABLE secret.user_google (
 );
 
 CREATE TABLE secret.password_reset (
-  user_id INT
+  user_id INT PRIMARY KEY
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,

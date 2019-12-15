@@ -87,18 +87,10 @@ func sendEmail(state *state.State, r *http.Request) (error, int) {
 		return serde.WithEnum("reset_password", fmt.Errorf("sending password reset email: %w", err)), http.StatusInternalServerError
 	}
 
-	// delete previous reset code if exists
-	_, err = state.Db.Exec(
-		"DELETE FROM secret.password_reset WHERE user_id = $1",
-		userID,
-	)
-	if err != nil {
-		return fmt.Errorf("deleting previous reset code from db: %w", err), http.StatusInternalServerError
-	}
-
 	// Attempt to insert generated code and userID into secret.password_reset table
 	_, err = state.Db.Exec(
-		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)`,
+		`INSERT INTO secret.password_reset(user_id, verify_key, expiry) VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE SET verify_key = $2, expiry = $3`,
 		userID, code, expiry,
 	)
 	if err != nil {
