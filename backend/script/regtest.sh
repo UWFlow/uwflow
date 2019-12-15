@@ -7,7 +7,7 @@ DIR="$(dirname $(realpath $0))"
 # - network=host is used because the container
 #   does not use the host address resolution otherwise, which is inconvenient
 # - insecure-skip-tls-verify is to ignore that the cert is self-signed
-docker run --rm -i \
+$PREFIX docker run --rm -i \
   --env-file "$BACKEND_DIR/.env" \
   -v "$BACKEND_DIR/regtest":/src:ro \
   --network=host \
