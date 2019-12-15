@@ -1,0 +1,57 @@
+version: 2.1
+executors:
+  docker-publisher:
+    environment:
+      API_IMAGE: neuwflow/api
+      MONGO_IMAGE: neuwflow/mongo
+      UW_IMAGE: neuwflow/uw
+    machine: true
+jobs:
+  build:
+    executor: docker-publisher
+    environment:
+      BUILD_DIR: ./backend/flow
+    steps:
+      - checkout
+      - run:
+          name: Build API
+          command: docker build --target api -t $API_IMAGE:latest $BUILD_DIR
+      - run:
+          name: Build Mongo importer
+          command: docker build --target mongo -t $MONGO_IMAGE:latest $BUILD_DIR
+      - run:
+          name: Build UW importer
+          command: docker build --target uw -t $UW_IMAGE:latest $BUILD_DIR
+      - run:
+          name: Archive all images
+          command: docker save -o image.tar $API_IMAGE $MONGO_IMAGE $UW_IMAGE
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image.tar
+  publish:
+    executor: docker-publisher
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load archived images
+          command: docker load -i /tmp/workspace/image.tar
+      - run:
+          name: Publish Docker images to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login --username "$DOCKERHUB_USER" --password-stdin
+            docker push $API_IMAGE:latest
+            docker push $MONGO_IMAGE:latest
+            docker push $UW_IMAGE:latest
+workflows:
+  version: 2
+  normal:
+    jobs:
+      - build
+      - publish:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
