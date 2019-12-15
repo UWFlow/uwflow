@@ -83,40 +83,50 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 	for i, user := range users {
 		secretId, _ := random.String(SecretIdLength, random.Uppercase)
 
-		fullName := strings.TrimSpace(user.FirstName + " " + user.LastName)
+		firstName := strings.TrimSpace(user.FirstName)
+		lastName := strings.TrimSpace(user.LastName)
 		idMap.User[user.Id] = i + 1
 
 		if user.ProgramName != nil {
-			programName := *user.ProgramName
+			programName := strings.TrimSpace(*user.ProgramName)
 			// If the program name is longer than 256 characters,
 			// it's almost certainly not actually a program name.
 			// We have some users with entire transcipts as "program names".
 			// We take the liberty of dropping such long strings here.
 			if len(programName) > 256 {
 				user.ProgramName = nil
+				// If the name is one of the known bad names, map it to the correct one
 			} else if val, found := programNameMap[programName]; found {
 				user.ProgramName = val
+				// If the name has a comma, then just use the part before it
 			} else if idx := strings.IndexByte(programName, ','); idx != -1 {
 				user.ProgramName = util.StringToPointer(programName[:idx])
+				// Otherwise, just store the trimmed name
+			} else {
+				user.ProgramName = util.StringToPointer(programName)
 			}
 		}
 
 		// Only add email users with valid email and password
 		// Not sure why there are email users without password?
 		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
-			preparedUsers[i] = []interface{}{secretId, fullName, user.ProgramName, user.Email, "email"}
+			preparedUsers[i] = []interface{}{
+				secretId, firstName, lastName, user.ProgramName, user.Email, "email",
+			}
 			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Password})
 		}
 
 		if user.FbId != nil {
-			preparedUsers[i] = []interface{}{secretId, fullName, user.ProgramName, user.Email, "facebook"}
+			preparedUsers[i] = []interface{}{
+				secretId, firstName, lastName, user.ProgramName, user.Email, "facebook",
+			}
 			fbCredentials = append(fbCredentials, []interface{}{i + 1, user.FbId})
 		}
 	}
 
 	userCount, err := tx.CopyFrom(
 		db.Identifier{"user"},
-		[]string{"secret_id", "full_name", "program", "email", "join_source"},
+		[]string{"secret_id", "first_name", "last_name", "program", "email", "join_source"},
 		preparedUsers,
 	)
 	if err != nil {
