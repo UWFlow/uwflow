@@ -165,18 +165,6 @@ CREATE TABLE section_meeting (
   is_tba BOOLEAN NOT NULL
 );
 
-CREATE TABLE section_subscription (
-  user_id INT NOT NULL
-    REFERENCES "user"(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  section_id INT NOT NULL
-    REFERENCES course_section(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT section_subscription_unique UNIQUE(section_id, user_id)
-);
-
 CREATE TABLE user_schedule (
   user_id INT NOT NULL
     REFERENCES "user"(id)
@@ -333,6 +321,14 @@ CREATE TRIGGER review_check_course_taken
 BEFORE INSERT ON review
 FOR EACH ROW
 EXECUTE PROCEDURE check_course_taken();
+
+CREATE FUNCTION sendmail_notify()
+RETURNS TRIGGER AS $$
+    BEGIN
+        PERFORM pg_notify('queue', TG_ARGV[0]);
+        RETURN NULL;
+    END;
+$$ LANGUAGE plpgsql;
 
 -- END PUBLIC FUNCTIONS
 
@@ -510,17 +506,63 @@ CREATE TABLE secret.user_google (
   google_id TEXT NOT NULL
 );
 
-CREATE TABLE secret.password_reset (
-  user_id INT PRIMARY KEY
-    REFERENCES "user"(id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE,
-  verify_key TEXT NOT NULL
-    CONSTRAINT key_length CHECK (LENGTH(verify_key) = 6),
-  expiry TIMESTAMPTZ NOT NULL
+-- END SECRET TABLES
+
+CREATE SCHEMA queue;
+
+CREATE TABLE queue.password_reset(
+    user_id INT PRIMARY KEY
+      REFERENCES "user"(id)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+    user_email TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    secret_code TEXT NOT NULL
+      CONSTRAINT key_length CHECK (LENGTH(secret_code) = 6),
+    expiry TIMESTAMPTZ NOT NULL,
+    seen BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ
 );
 
--- END SECRET TABLES
+CREATE TABLE queue.section_subscribed(
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL
+      REFERENCES "user"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    section_id INT NOT NULL
+      REFERENCES course_section(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    user_email TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    seen BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ,
+    CONSTRAINT section_subscribed_unique UNIQUE(section_id, user_id)
+);
+
+CREATE TABLE queue.section_vacated(
+    id SERIAL PRIMARY KEY,
+    user_email TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    section_names TEXT[] NOT NULL,
+    seen BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ
+);
+
+CREATE TRIGGER notify_password_reset AFTER INSERT ON queue.password_reset
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('password_reset');
+
+CREATE TRIGGER notify_section_subscribed AFTER INSERT ON queue.section_subscribed
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_subscribed');
+
+CREATE TRIGGER notify_section_vacated AFTER INSERT ON queue.section_vacated
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_vacated');
 
 -- tables used by importers and workers internally
 CREATE SCHEMA work;
