@@ -10,15 +10,20 @@ import (
 )
 
 type fbUserInfo struct {
-	FbId  string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	FbId      string `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
 }
 
-const baseFacebookUrl = "https://graph.facebook.com"
+const (
+	baseFacebookUrl    = "https://graph.facebook.com"
+	facebookUserUrl    = baseFacebookUrl + "/me?fields=first_name,last_name,email&access_token=%s"
+	facebookPictureUrl = baseFacebookUrl + "/%s/picture?type=large"
+)
 
 func getFacebookUserInfo(accessToken string) (*fbUserInfo, error) {
-	url := fmt.Sprintf("%s/me?fields=name,email&access_token=%s", baseFacebookUrl, accessToken)
+	url := fmt.Sprintf(facebookUserUrl, accessToken)
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("calling graph api: %w", err)
@@ -37,19 +42,23 @@ const insertUserFbQuery = `
 INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)
 `
 
-func registerFacebook(tx *db.Tx, userInfo *fbUserInfo) (*AuthResponse, error) {
-	if userInfo.Email == "" {
+func registerFacebook(tx *db.Tx, fbUser *fbUserInfo) (*authResponse, error) {
+	if fbUser.Email == "" {
 		return nil, serde.WithEnum(serde.NoFacebookEmail, fmt.Errorf("no email"))
 	}
 
-	profilePicUrl := fmt.Sprintf("%s/%s/picture?type=large", baseFacebookUrl, userInfo.FbId)
+	pictureUrl := fmt.Sprintf(facebookPictureUrl, fbUser.FbId)
+	user := userInfo{
+		Email: fbUser.Email, FirstName: fbUser.FirstName, LastName: fbUser.LastName,
+		JoinSource: "facebook", PictureUrl: &pictureUrl,
+	}
 
-	response, err := InsertUser(tx, userInfo.Name, userInfo.Email, "facebook", &profilePicUrl)
+	response, err := InsertUser(tx, &user)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.Exec(insertUserFbQuery, response.UserId, userInfo.FbId)
+	_, err = tx.Exec(insertUserFbQuery, response.UserId, fbUser.FbId)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user_fb: %w", err)
 	}
@@ -68,15 +77,15 @@ const updateFbEmailQuery = `
 UPDATE "user" SET email = $2 WHERE id = $1
 `
 
-func loginFacebook(tx *db.Tx, accessToken string) (*AuthResponse, error) {
-	userInfo, err := getFacebookUserInfo(accessToken)
+func loginFacebook(tx *db.Tx, accessToken string) (*authResponse, error) {
+	fbUser, err := getFacebookUserInfo(accessToken)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting user info: %w", err))
 	}
 
 	var email string
-	var response = &AuthResponse{}
-	err = tx.QueryRow(selectFbUserQuery, userInfo.FbId).Scan(&response.UserId, &response.SecretId, &email)
+	var response = new(authResponse)
+	err = tx.QueryRow(selectFbUserQuery, fbUser.FbId).Scan(&response.UserId, &response.SecretId, &email)
 
 	if err == nil {
 		if email == "" {
@@ -89,7 +98,7 @@ func loginFacebook(tx *db.Tx, accessToken string) (*AuthResponse, error) {
 		return response, nil
 	}
 
-	response, err = registerFacebook(tx, userInfo)
+	response, err = registerFacebook(tx, fbUser)
 	if err != nil {
 		return nil, fmt.Errorf("registering fb user: %w", err)
 	}
