@@ -44,7 +44,10 @@ func loginEmail(tx *db.Tx, email string, password []byte) (*AuthResponse, error)
 		return nil, serde.WithEnum(serde.EmailWrongPassword, fmt.Errorf("comparing hash and password: %w", err))
 	}
 
-	response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
+	response.Token, err = serde.NewSignedJwt(response.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("signing jwt: %w", err)
+	}
 
 	return &response, nil
 }

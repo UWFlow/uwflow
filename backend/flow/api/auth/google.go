@@ -111,7 +111,7 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 		secretId string
 		userId   int
 	)
-	tx.QueryRow(
+	err = tx.QueryRow(
 		`SELECT u.id, u.secret_id `+
 			`FROM secret.user_google ug `+
 			`JOIN "user" u ON u.id = ug.user_id `+
@@ -119,15 +119,20 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 		googleId,
 	).Scan(&userId, &secretId)
 
-	// If the Google id is new, we must register the user
-	if userId != 0 {
-		return &AuthResponse{SecretId: secretId, UserId: userId, Token: serde.MakeAndSignHasuraJWT(userId)}, nil
+	// If the previous select did not fail, the Google ID is already registered
+	if err == nil {
+		token, err := serde.NewSignedJwt(userId)
+		if err != nil {
+			return nil, fmt.Errorf("signing jwt: %w", err)
+		}
+		return &AuthResponse{SecretId: secretId, UserId: userId, Token: token}, nil
 	}
-	// the raw id token needs to be parsed here since tokenInfo does not
-	// provide required profile info including name and profile pic url
+
+	// The raw id token needs to be parsed here since tokenInfo does not
+	// provide required profile info including name and profile pic url.
 	res, err := registerGoogle(tx, googleId, body.IdToken)
 	if err != nil {
-		return nil, fmt.Errorf("registering: %w", err)
+		return nil, err
 	}
 
 	return res, nil

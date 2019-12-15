@@ -42,6 +42,8 @@ const (
 	EmptyTranscript = "empty_transcript"
 
 	//// Generic
+	// JWT token is expired
+	ExpiredJwt = "expired_jwt"
 	// This is a more specific condition than BadRequest
 	// Things like name/email/password too short
 	ConstraintViolation = "constraint_violation"
@@ -119,10 +121,10 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	if ok := errors.As(err, &en); ok {
 		payload.Enum = en.enum
 	} else {
-		if status/100 == 4 {
-			payload.Enum = BadRequest
-		} else {
+		if status >= 500 {
 			payload.Enum = InternalError
+		} else {
+			payload.Enum = BadRequest
 		}
 	}
 

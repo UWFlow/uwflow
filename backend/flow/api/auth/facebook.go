@@ -82,7 +82,10 @@ func loginFacebook(tx *db.Tx, accessToken string) (*AuthResponse, error) {
 		if email == "" {
 			_, err = tx.Exec(updateFbEmailQuery, response.UserId, email)
 		}
-		response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
+		response.Token, err = serde.NewSignedJwt(response.UserId)
+		if err != nil {
+			return nil, fmt.Errorf("signing jwt: %w", err)
+		}
 		return response, nil
 	}
 

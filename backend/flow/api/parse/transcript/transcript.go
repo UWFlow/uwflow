@@ -10,8 +10,8 @@ import (
 )
 
 type TermSummary struct {
-	// Terms are numbers of the form 1189 (Fall 2018)
-	Term int
+	// Term ids are numbers of the form 1189 (Fall 2018)
+	TermId int
 	// Levels are similar to 1A, 5C (delayed graduation).
 	Level string
 	// Course codes are similar to CS 145, STAT 920, PD 1, CHINA 120R.
@@ -19,7 +19,7 @@ type TermSummary struct {
 }
 
 func (ts TermSummary) Equals(other TermSummary) bool {
-	if ts.Term != other.Term || ts.Level != other.Level {
+	if ts.TermId != other.TermId || ts.Level != other.Level {
 		return false
 	}
 	for i, course := range ts.Courses {
@@ -30,21 +30,21 @@ func (ts TermSummary) Equals(other TermSummary) bool {
 	return true
 }
 
-type TranscriptSummary struct {
+type Summary struct {
 	StudentNumber int
 	ProgramName   string
-	CourseHistory []TermSummary
+	TermSummaries []TermSummary
 }
 
-func (ts TranscriptSummary) Equals(other TranscriptSummary) bool {
+func (ts Summary) Equals(other Summary) bool {
 	if ts.StudentNumber != other.StudentNumber || ts.ProgramName != other.ProgramName {
 		return false
 	}
-	if len(ts.CourseHistory) != len(other.CourseHistory) {
+	if len(ts.TermSummaries) != len(other.TermSummaries) {
 		return false
 	}
-	for i, summary := range ts.CourseHistory {
-		if !summary.Equals(other.CourseHistory[i]) {
+	for i, summary := range ts.TermSummaries {
+		if !summary.Equals(other.TermSummaries[i]) {
 			return false
 		}
 	}
@@ -60,7 +60,7 @@ var (
 	TermRegexp      = regexp.MustCompile(`(Fall|Winter|Spring)\s+(\d{4})`)
 )
 
-func extractCourseHistory(text string) ([]TermSummary, error) {
+func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
 	terms := TermRegexp.FindAllStringSubmatchIndex(text, -1)
 	levels := LevelRegexp.FindAllStringSubmatchIndex(text, -1)
@@ -76,7 +76,7 @@ func extractCourseHistory(text string) ([]TermSummary, error) {
 		if err != nil {
 			return nil, fmt.Errorf("\"%s %s\" is not a term: %w", season, year, err)
 		}
-		history[i].Term = term
+		history[i].TermId = term
 		history[i].Level = text[levels[i][2]:levels[i][3]]
 		// Pre-allocate: average student should have about 5 courses per term
 		history[i].Courses = make([]string, 0, 5)
@@ -109,14 +109,14 @@ func extractProgramName(text string) (string, error) {
 	return "", fmt.Errorf("unexpected end of transcript")
 }
 
-func Parse(text string) (*TranscriptSummary, error) {
+func Parse(text string) (*Summary, error) {
 	submatches := StudentIdRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
-		return nil, fmt.Errorf("finding submatches for student id: no matches")
+		return nil, fmt.Errorf("student id not found")
 	}
 	studentNumber, err := strconv.Atoi(text[submatches[2]:submatches[3]])
 	if err != nil {
-		return nil, fmt.Errorf("converting student number to int: %w", err)
+		return nil, fmt.Errorf("student number not an int: %w", err)
 	}
 
 	programName, err := extractProgramName(text)
@@ -124,15 +124,15 @@ func Parse(text string) (*TranscriptSummary, error) {
 		return nil, fmt.Errorf("extracting program name: %w", err)
 	}
 
-	courseHistory, err := extractCourseHistory(text)
+	termSummaries, err := extractTermSummaries(text)
 	if err != nil {
-		return nil, fmt.Errorf("extracting course history: %w", err)
+		return nil, fmt.Errorf("extracting term summaries: %w", err)
 	}
 
-	result := &TranscriptSummary{
+	result := &Summary{
 		StudentNumber: studentNumber,
 		ProgramName:   programName,
-		CourseHistory: courseHistory,
+		TermSummaries: termSummaries,
 	}
 	return result, nil
 }

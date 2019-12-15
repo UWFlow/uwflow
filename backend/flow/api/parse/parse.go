@@ -15,14 +15,6 @@ import (
 	"flow/common/util"
 )
 
-type scheduleRequest struct {
-	Text string `json:"text"`
-}
-
-type scheduleResponse struct {
-	SectionsImported int `json:"sections_imported"`
-}
-
 type transcriptResponse struct {
 	CoursesImported int `json:"courses_imported"`
 }
@@ -41,6 +33,46 @@ INSERT INTO user_course_taken(course_id, user_id, term_id, level)
 SELECT id, $2, $3, $4 FROM course WHERE code = $1
 `
 
+func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transcriptResponse, error) {
+	// Refuse to import empty transcript: we probably failed to parse it correctly
+	if len(summary.TermSummaries) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptyTranscript, fmt.Errorf("empty transcript")),
+		)
+	}
+
+	_, err := tx.Exec(updateProgramQuery, summary.ProgramName, userId)
+	if err != nil {
+		return nil, fmt.Errorf("updating user program: %w", err)
+	}
+
+	var maxTermId int
+	for _, termSummary := range summary.TermSummaries {
+		if termSummary.TermId > maxTermId {
+			maxTermId = termSummary.TermId
+		}
+	}
+
+	_, err = tx.Exec(deleteTranscriptQuery, maxTermId, userId)
+	if err != nil {
+		return nil, fmt.Errorf("deleting old courses: %w", err)
+	}
+
+	var response transcriptResponse
+	for _, termSummary := range summary.TermSummaries {
+		response.CoursesImported += len(termSummary.Courses)
+		for _, course := range termSummary.Courses {
+			_, err = tx.Exec(insertTranscriptQuery, course, userId, termSummary.TermId, termSummary.Level)
+			if err != nil {
+				return nil, fmt.Errorf("updating user_course_taken: %w", err)
+			}
+		}
+	}
+
+	return &response, nil
+}
+
 func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -57,60 +89,94 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 	fileContents.ReadFrom(file)
 	text, err := pdf.ToText(fileContents.Bytes())
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting transcript: %w", err))
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting to text: %w", err))
 	}
 
-	result, err := transcript.Parse(text)
+	summary, err := transcript.Parse(text)
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusBadRequest, err)
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
 	}
 
-	// Refuse to import empty transcript: we probably failed to parse it correctly
-	if len(result.CourseHistory) == 0 {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.EmptyTranscript, fmt.Errorf("empty transcript")),
-		)
-	}
-
-	_, err = tx.Exec(updateProgramQuery, result.ProgramName, userId)
+	response, err := saveTranscript(tx, summary, userId)
 	if err != nil {
-		return nil, fmt.Errorf("updating user program: %w", err)
+		return nil, err
 	}
 
-	var maxTermId int
-	for _, summary := range result.CourseHistory {
-		if summary.Term > maxTermId {
-			maxTermId = summary.Term
-		}
-	}
-
-	_, err = tx.Exec(deleteTranscriptQuery, maxTermId, userId)
-	if err != nil {
-		return nil, fmt.Errorf("deleting old courses: %w", err)
-	}
-
-	var response transcriptResponse
-	for _, summary := range result.CourseHistory {
-		response.CoursesImported += len(summary.Courses)
-		for _, course := range summary.Courses {
-			_, err = tx.Exec(insertTranscriptQuery, course, userId, summary.Term, summary.Level)
-			if err != nil {
-				return nil, fmt.Errorf("updating user_course_taken: %w", err)
-			}
-		}
-	}
-
-	log.Printf("Imported transcript for user %d: %+v", userId, result)
-	return &response, nil
+	log.Printf("Imported transcript for user %d: %+v", userId, summary)
+	return response, nil
 }
 
-const insertScheduleQuery = `
+type scheduleResponse struct {
+	SectionsImported int `json:"sections_imported"`
+}
+
+const insertCourseTakenQuery = `
 INSERT INTO user_course_taken(user_id, term_id, course_id)
 SELECT $1, $2, course_id FROM course_section
 WHERE term_id = $2 AND class_number = $3
 ON CONFLICT DO NOTHING
 `
+
+const deleteCourseTakenQuery = `
+DELETE FROM user_course_taken WHERE term_id = $1
+`
+
+const updateScheduleQuery = `
+INSERT INTO user_schedule(user_id, section_id)
+SELECT $1, id FROM course_section
+WHERE class_number = $2 AND term_id = $3
+`
+
+func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleResponse, error) {
+	// Refuse to import old schedule: there are no sections in database, so we will fail
+	if summary.TermId < util.CurrentTermId() {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.OldSchedule, fmt.Errorf("term %d has passed", summary.TermId)),
+		)
+	}
+
+	// Refuse to import empty schedule: we probably failed to parse it
+	if len(summary.ClassNumbers) == 0 {
+		return nil, serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmptySchedule, fmt.Errorf("empty schedule")),
+		)
+	}
+
+	_, err := tx.Exec(deleteCourseTakenQuery, summary.TermId)
+	if err != nil {
+		return nil, fmt.Errorf("deleting old user_course_taken: %w", err)
+	}
+
+	for _, classNumber := range summary.ClassNumbers {
+		tag, err := tx.Exec(updateScheduleQuery, userId, classNumber, summary.TermId)
+		if err != nil {
+			return nil, fmt.Errorf("writing user_schedule: %w", err)
+		}
+
+		// If we didn't end up writing anything, the join must have been empty,
+		// so there was no section with the given number.
+		// We probably misparsed or the user messed with the schedule.
+		if tag.RowsAffected() == 0 {
+			return nil, serde.WithStatus(
+				http.StatusBadRequest,
+				fmt.Errorf("class number %d not found in term %d", classNumber, summary.TermId),
+			)
+		}
+
+		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, classNumber)
+		if err != nil {
+			return nil, fmt.Errorf("writing user_course_taken: %w", err)
+		}
+	}
+
+	return &scheduleResponse{SectionsImported: len(summary.ClassNumbers)}, nil
+}
+
+type scheduleRequest struct {
+	Text string `json:"text"`
+}
 
 func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
@@ -124,55 +190,16 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
 
-	scheduleSummary, err := schedule.Parse(req.Text)
+	summary, err := schedule.Parse(req.Text)
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing schedule: %w", err))
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
 	}
 
-	// Refuse to import old schedule: there are no sections in database, so we will fail
-	if scheduleSummary.Term < util.CurrentTermId() {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.OldSchedule, fmt.Errorf("term %d has passed", scheduleSummary.Term)),
-		)
-	}
-
-	// Refuse to import empty schedule: we probably failed to parse it
-	if len(scheduleSummary.ClassNumbers) == 0 {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.EmptySchedule, fmt.Errorf("empty schedule")),
-		)
-	}
-
-	_, err = tx.Exec(`DELETE FROM user_course_taken WHERE term_id = $1`, scheduleSummary.Term)
+	response, err := saveSchedule(tx, summary, userId)
 	if err != nil {
-		return nil, fmt.Errorf("deleting old user_course_taken: %w", err)
-	}
-	for _, classNumber := range scheduleSummary.ClassNumbers {
-		tag, err := tx.Exec(
-			`INSERT INTO user_schedule(user_id, section_id) `+
-				`SELECT $1, id FROM course_section `+
-				`WHERE class_number = $2 AND term_id = $3`,
-			userId, classNumber, scheduleSummary.Term,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("writing user_schedule: %w", err)
-		}
-		if tag.RowsAffected() == 0 {
-			return nil, serde.WithStatus(
-				http.StatusBadRequest,
-				fmt.Errorf("class number %d not found in term %d", classNumber, scheduleSummary.Term),
-			)
-		}
-
-		_, err = tx.Exec(insertScheduleQuery, userId, scheduleSummary.Term, classNumber)
-		if err != nil {
-			return nil, fmt.Errorf("writing user_course_taken: %w", err)
-		}
+		return nil, fmt.Errorf("saving: %w", err)
 	}
 
-	response := scheduleResponse{SectionsImported: len(scheduleSummary.ClassNumbers)}
-	log.Printf("Imported schedule for user %d: %+v", userId, scheduleSummary)
-	return &response, nil
+	log.Printf("Imported schedule for user %d: %+v", userId, summary)
+	return response, nil
 }

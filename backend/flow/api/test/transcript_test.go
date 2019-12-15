@@ -13,37 +13,37 @@ var expectedPreamble = `  University of Waterloo                                
   Waterloo Ontario Canada N2L3G1
                                                    Undergraduate Unofficial Transcript`
 
-var expectedSummary = transcript.TranscriptSummary{
+var expectedSummary = transcript.Summary{
 	StudentNumber: 20705374,
 	ProgramName:   "Computer Science/Digital Hardware Option",
-	CourseHistory: []transcript.TermSummary{
+	TermSummaries: []transcript.TermSummary{
 		{
-			Term:    1179,
+			TermId:  1179,
 			Level:   "1A",
 			Courses: []string{"cs145", "math145", "math147", "psych101", "spcom223"},
 		},
 		{
-			Term:    1181,
+			TermId:  1181,
 			Level:   "1B",
 			Courses: []string{"cs146", "ece124", "engl306a", "math146", "math148", "pd1", "stat230"},
 		},
 		{
-			Term:    1185,
+			TermId:  1185,
 			Level:   "2A",
 			Courses: []string{"coop1", "pd11"},
 		},
 		{
-			Term:    1189,
+			TermId:  1189,
 			Level:   "2A",
 			Courses: []string{"cs241e", "cs245", "cs246e", "ece222", "math249"},
 		},
 		{
-			Term:    1191,
+			TermId:  1191,
 			Level:   "2B",
 			Courses: []string{"coop2", "pd10", "wkrpt200m"},
 		},
 		{
-			Term:    1195,
+			TermId:  1195,
 			Level:   "2B",
 			Courses: []string{"cs240e", "cs370", "math245", "math247", "stat231"},
 		},

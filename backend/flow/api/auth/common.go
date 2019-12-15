@@ -38,26 +38,29 @@ func InsertUser(tx *db.Tx, name, email, joinSource string, pictureUrl *string) (
 		return nil, fmt.Errorf("generating secret id: %w", err)
 	}
 
+	err = tx.QueryRow(selectJoinSourceQuery, email).Scan(&joinSource)
+	if err == nil {
+		var cause string
+		switch joinSource {
+		case "email":
+			cause = serde.EmailTakenByEmail
+		case "facebook":
+			cause = serde.EmailTakenByFacebook
+		case "google":
+			cause = serde.EmailTakenByGoogle
+		}
+		return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", email, joinSource))
+	}
+
 	err = tx.QueryRow(insertUserQuery, name, email, joinSource, pictureUrl, response.SecretId).Scan(&response.UserId)
 	if err != nil {
-		var joinSource string
-		err := tx.QueryRow(selectJoinSourceQuery, email).Scan(&joinSource)
-		if err == nil {
-			var cause string
-			switch joinSource {
-			case "email":
-				cause = serde.EmailTakenByEmail
-			case "facebook":
-				cause = serde.EmailTakenByFacebook
-			case "google":
-				cause = serde.EmailTakenByGoogle
-			}
-			return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", email, joinSource))
-		}
 		return nil, fmt.Errorf("inserting user: %w", err)
 	}
 
-	response.Token = serde.MakeAndSignHasuraJWT(response.UserId)
+	response.Token, err = serde.NewSignedJwt(response.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("signing jwt: %w", err)
+	}
 
 	return &response, nil
 }

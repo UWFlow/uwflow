@@ -23,51 +23,64 @@ type CombinedClaims struct {
 	jwt.StandardClaims
 }
 
-func MakeAndSignHasuraJWT(userId int) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, CombinedClaims{
+const ExpirationPeriod = time.Hour
+
+func NewSignedJwt(userId int) (string, error) {
+	now := time.Now()
+
+	claims := CombinedClaims{
 		StandardClaims: jwt.StandardClaims{
-			IssuedAt: time.Now().Unix(),
+			IssuedAt:  now.Unix(),
+			NotBefore: now.Unix(),
+			ExpiresAt: now.Add(ExpirationPeriod).Unix(),
 		},
 		Hasura: HasuraClaims{
-			[]string{"user"},
-			"user",
-			strconv.Itoa(userId),
+			AllowedRoles: []string{"user"},
+			DefaultRole:  "user",
+			UserId:       strconv.Itoa(userId),
 		},
-	})
-	jwtString, err := token.SignedString(env.Global.JwtKey)
-	if err != nil {
-		panic(err)
 	}
-	return jwtString
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwtString, err := token.SignedString(env.Global.JwtKey)
+
+	if err != nil {
+		return "", err
+	}
+
+	return jwtString, nil
+}
+
+func globalKey(t *jwt.Token) (interface{}, error) {
+	return env.Global.JwtKey, nil
 }
 
 func UserIdFromRequest(request *http.Request) (int, error) {
 	var tokenString string
+
 	if authStrings, ok := request.Header["Authorization"]; ok {
 		tokenString = strings.TrimPrefix(authStrings[0], "Bearer ")
 	} else {
 		return 0, fmt.Errorf("no authorization header")
 	}
 
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		&CombinedClaims{},
-		func(t *jwt.Token) (interface{}, error) {
-			return env.Global.JwtKey, nil
-		},
-	)
+	token, err := jwt.ParseWithClaims(tokenString, new(CombinedClaims), globalKey)
 	if err != nil {
+		if vErr, ok := err.(*jwt.ValidationError); ok {
+			if vErr.Errors&jwt.ValidationErrorExpired != 0 {
+				return 0, WithEnum(ExpiredJwt, fmt.Errorf("expired token"))
+			}
+			return 0, fmt.Errorf("invalid token: %w", vErr)
+		}
 		return 0, fmt.Errorf("malformed token: %w", err)
 	}
 
-	if claims, ok := token.Claims.(*CombinedClaims); ok && token.Valid {
-		userId, err := strconv.Atoi(claims.Hasura.UserId)
-		if err != nil {
-			return 0, fmt.Errorf("invalid user id: %w", err)
-		} else {
-			return userId, nil
-		}
-	} else {
-		return 0, fmt.Errorf("invalid auth token: %w", err)
+	// This will work because ParseWithClaims encountered no error
+	claims := token.Claims.(*CombinedClaims)
+	userId, err := strconv.Atoi(claims.Hasura.UserId)
+	if err != nil {
+		return 0, fmt.Errorf("invalid user id: %w", err)
 	}
+
+	return userId, nil
 }
