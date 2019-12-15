@@ -31,7 +31,7 @@ type dumpResponse struct {
 const courseQuery = `
 SELECT
   c.id, c.code, c.name, cr.filled_count AS review_count,
-  ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL) AS profs
+  COALESCE(ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL), ARRAY[]::TEXT[]) AS profs
 FROM course c
  INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
   LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
@@ -40,8 +40,9 @@ GROUP BY c.id, cr.filled_count
 `
 
 const profQuery = `
-SELECT p.id, p.code, p.name, pr.filled_count AS review_count,
-ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL) AS courses
+SELECT
+  p.id, p.code, p.name, pr.filled_count AS review_count,
+  COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses
 FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
