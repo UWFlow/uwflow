@@ -30,11 +30,11 @@ fi
 # Prefix docker commands with sudo if it appears necessary
 if docker info >/dev/null 2>/dev/null
 then
-  PREFIX=""
+  export PREFIX=""
 else
   if sudo docker info >/dev/null 2>/dev/null
   then
-    PREFIX="sudo"
+    export PREFIX="sudo"
   else
     fail "Cannot run docker info: is Docker installed?"
   fi
