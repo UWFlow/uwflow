@@ -1,5 +1,4 @@
 #!/bin/sh
-# Restart 
 
 DIR="$(dirname $(realpath $0))"
 . "$DIR/common.sh"
