@@ -1,15 +1,13 @@
 package data
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"flow/api/serde"
-	"flow/common/state"
+	"flow/common/db"
 )
 
-type Course struct {
+type course struct {
 	Id          int      `json:"id"`
 	Code        string   `json:"code"`
 	Name        string   `json:"name"`
@@ -17,7 +15,7 @@ type Course struct {
 	RatingCount int      `json:"rating_count"`
 }
 
-type Prof struct {
+type prof struct {
 	Id          int      `json:"id"`
 	Code        string   `json:"code"`
 	Name        string   `json:"name"`
@@ -25,15 +23,15 @@ type Prof struct {
 	RatingCount int      `json:"rating_count"`
 }
 
-type Response struct {
-	Courses []Course `json:"courses"`
-	Profs   []Prof   `json:"profs"`
+type dumpResponse struct {
+	Courses []course `json:"courses"`
+	Profs   []prof   `json:"profs"`
 }
 
-const CourseQuery = `
+const courseQuery = `
 SELECT
   c.id, c.code, c.name, cr.filled_count AS review_count,
-  ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL) AS profs
+  COALESCE(ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL), ARRAY[]::TEXT[]) AS profs
 FROM course c
  INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
   LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
@@ -41,9 +39,10 @@ FROM course c
 GROUP BY c.id, cr.filled_count
 `
 
-const ProfQuery = `
-SELECT p.id, p.code, p.name, pr.filled_count AS review_count,
-ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL) AS courses
+const profQuery = `
+SELECT
+  p.id, p.code, p.name, pr.filled_count AS review_count,
+  COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses
 FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
@@ -51,53 +50,37 @@ FROM prof p
 GROUP BY p.id, pr.filled_count
 `
 
-func dump(state *state.State) (*Response, error) {
-	rows, err := state.Db.Query(CourseQuery)
+func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
+	rows, err := tx.Query(courseQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query database: %w", err)
+		return nil, fmt.Errorf("querying courses: %w", err)
 	}
 	defer rows.Close()
 
-	var response Response
+	var response dumpResponse
 	for rows.Next() {
-		var c Course
+		var c course
 		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.RatingCount, &c.Profs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read rows: %w", err)
+			return nil, fmt.Errorf("reading course row: %w", err)
 		}
 		response.Courses = append(response.Courses, c)
 	}
 
-	rows, err = state.Db.Query(ProfQuery)
+	rows, err = tx.Query(profQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query database: %w", err)
+		return nil, fmt.Errorf("querying profs: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var p Prof
+		var p prof
 		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.RatingCount, &p.Courses)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read rows: %w", err)
+			return nil, fmt.Errorf("reading prof row: %w", err)
 		}
 		response.Profs = append(response.Profs, p)
 	}
 
 	return &response, nil
-}
-
-func HandleSearch(state *state.State, w http.ResponseWriter, r *http.Request) {
-	res, err := dump(state)
-	if err != nil {
-		serde.Error(w, serde.WithEnum("search", err), http.StatusInternalServerError)
-	} else {
-		err := json.NewEncoder(w).Encode(res)
-		if err != nil {
-			serde.Error(
-				w,
-				serde.WithEnum("search", fmt.Errorf("failed to encode response: %w", err)),
-				http.StatusInternalServerError,
-			)
-		}
-	}
 }

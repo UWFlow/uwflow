@@ -1032,8 +1032,10 @@
         permission:
           allow_aggregations: false
           columns:
-          - full_name
           - id
+          - secret_id
+          - email
+          - full_name
           - picture_url
           - program
           filter:

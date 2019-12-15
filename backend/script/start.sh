@@ -1,5 +1,4 @@
 #!/bin/sh
-# Restart 
 
 DIR="$(dirname $(realpath $0))"
 . "$DIR/common.sh"
@@ -9,20 +8,6 @@ DIR="$(dirname $(realpath $0))"
 # Bring backend environment variables into this script's scope
 cd "$BACKEND_DIR"
 export $(cat .env | xargs)
-
-# Prefix docker commands with sudo if the user is not in the `docker` group
-# If there is no `sudo` executable, then assume we don't need it anyway
-if docker info >/dev/null 2>/dev/null
-then
-  PREFIX=""
-else
-  if sudo docker info >/dev/null 2>/dev/null
-  then
-    PREFIX="sudo"
-  else
-    fail "Cannot run docker info: is Docker installed?"
-  fi
-fi
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down --remove-orphans

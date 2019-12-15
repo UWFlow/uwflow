@@ -12,11 +12,11 @@ services:
     ports:
       - $API_PORT:$API_PORT
     restart: always
-  nginx:
-    container_name: nginx
+  frontend:
+    container_name: frontend
     entrypoint: /nginx/run.sh
     env_file: .env
-    image: nginx:alpine
+    image: neuwflow/frontend:latest
     ports:
       - $NGINX_HTTP_PORT:$NGINX_HTTP_PORT
       - $NGINX_HTTPS_PORT:$NGINX_HTTPS_PORT

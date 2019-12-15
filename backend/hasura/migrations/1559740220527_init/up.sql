@@ -65,6 +65,8 @@ CREATE TYPE JOIN_SOURCE AS ENUM ('email', 'facebook', 'google');
 
 CREATE TABLE "user" (
   id SERIAL PRIMARY KEY,
+  secret_id TEXT NOT NULL UNIQUE
+    CONSTRAINT secret_id_length CHECK (LENGTH(secret_id) = 16),
   full_name TEXT NOT NULL
     CONSTRAINT user_full_name_length CHECK (LENGTH(full_name) <= 256),
   program TEXT
@@ -72,7 +74,7 @@ CREATE TABLE "user" (
   picture_url TEXT,
   email TEXT
     CONSTRAINT user_email_unique UNIQUE,
-    CONSTRAINT email_length CHECK (LENGTH(email) <= 256),
+    CONSTRAINT email_length CHECK (6 <= LENGTH(email) AND LENGTH(email) <= 256),
   join_source JOIN_SOURCE NOT NULL
 );
 
@@ -480,49 +482,41 @@ CREATE SCHEMA secret;
 -- START SECRET TABLES
 
 CREATE TABLE secret.user_email (
-  user_id INT
+  user_id INT PRIMARY KEY
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  password_hash TEXT
+  password_hash TEXT NOT NULL
     CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
 );
 
 CREATE TABLE secret.user_fb (
-  user_id INT
+  user_id INT PRIMARY KEY
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  fb_id TEXT
+  fb_id TEXT NOT NULL
 );
 
 CREATE TABLE secret.user_google (
-  user_id INT
+  user_id INT PRIMARY KEY
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  google_id TEXT
+  google_id TEXT NOT NULL
 );
 
 CREATE TABLE secret.password_reset (
-  user_id INT
+  user_id INT PRIMARY KEY
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
-  verify_key TEXT
+  verify_key TEXT NOT NULL
     CONSTRAINT key_length CHECK (LENGTH(verify_key) = 6),
-  expiry TIMESTAMPTZ
+  expiry TIMESTAMPTZ NOT NULL
 );
 
 -- END SECRET TABLES
-
--- START SECRET INDEXES
-
-CREATE INDEX user_email_user_id_fkey ON secret.user_email(user_id);
-CREATE INDEX user_fb_user_id_fkey ON secret.user_fb(user_id);
-CREATE INDEX user_google_user_id_fkey ON secret.user_google(user_id);
-
--- END SECRET INDEXES
 
 -- tables used by importers and workers internally
 CREATE SCHEMA work;
@@ -599,13 +593,6 @@ CREATE TABLE work.term_delta(
   id INT NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL
-);
-
-CREATE TABLE work.email_queue(
-  addressee TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  body TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- END WORK TABLES
