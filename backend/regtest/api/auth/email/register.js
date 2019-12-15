@@ -5,45 +5,42 @@ import { API_URL } from "/src/const.js";
 
 const ENDPOINT = API_URL + "/auth/email/register";
 
-function register(email, name, password) {
-  const payload = {email, name, password};
+function register(first, last, email, password) {
+  const payload = {first_name: first, last_name: last, email, password};
   return http.post(ENDPOINT, JSON.stringify(payload));
-}
-
-function testRegister(data) {
-  check(register(testUser.email, testUser.name, testUser.password), withLog({
-    "existing email forbidden": (r) => r.status == 400,
-  }));
 }
 
 export default function(data) {
   group("email register", function() {
     group("empty fields", function() {
       [
-        ["", "", ""], ["email", "", ""], ["", "name", ""], ["email", "name", ""]
+        ["", "", "", ""], ["first", "", "", ""], ["", "last", "", ""],
+        ["first", "last", "", ""], ["first", "last", "email", ""], 
+        ["", "", "email", ""], ["", "", "", "pass"],
       ].forEach(cred => check(register(...cred), withLog({
         "status": (r) => r.status == 400,
         "error message": (r) => r.json("error") == "bad_request",
       })));
     });
     group("short fields", function() {
-      const email = "test@test.test", password = "password", name = "First Last";
-      check(register(email, name, "pass"), withLog({
+      const email = "test@test.test", password = "password", first = "First", last = "Last";
+      check(register(first, last, email, "pass"), withLog({
         "status": (r) => r.status == 400,
         "error message": (r) => r.json("error") == "password_too_short",
       }));
-      check(register("@a.b", name, password), withLog({
+      check(register(first, last, "@a.b", password), withLog({
         "status": (r) => r.status == 400,
         "error message": (r) => r.json("error") == "email_too_short",
       }));
     });
 
     const testUser = {
-      name: `Test User ${__VU}`,
+      first: `Test`,
+      last:  `User ${__VU}`,
       email: `test+${__VU}@test.test`,
       password: `password${__VU}`,
     };
-    const res = register(testUser.email, testUser.name, testUser.password);
+    const res = register(testUser.first, testUser.last, testUser.email, testUser.password);
 
     group("valid registration", function() {
       check(res, withLog({
@@ -55,7 +52,7 @@ export default function(data) {
     data.email = Object.assign(res.json(), testUser);
 
     group("duplicate registration", function() {
-      const res = register(testUser.email, testUser.name, testUser.password);
+      const res = register(testUser.first, testUser.last, testUser.email, testUser.password);
       check(res, withLog({
         "status": (r) => r.status == 401,
         "error message": (r) => r.json("error") == "email_taken_by_email",

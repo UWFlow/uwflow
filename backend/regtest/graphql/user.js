@@ -13,6 +13,8 @@ const GET_QUERY = `
 query get($user_id: Int!) {
   user(where: {id: {_eq: $user_id}}) {
     id
+    first_name
+    last_name
     full_name
     email
     picture_url
@@ -51,7 +53,7 @@ function testGetUser(data) {
     group("valid", function() {
       check(graphql(GET_QUERY, {user_id: data.email.user_id}, data.email.token), withLog({
         "count": (r) => r.json("data.user").length == 1,
-        "matches": (r) => r.json("data.user.0.email") == data.email.email,
+        "name matches": (r) => r.json("data.user.0.full_name") == data.email.first + " " + data.email.last,
       }));
     });
   });
