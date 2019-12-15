@@ -12,7 +12,6 @@ import (
 const (
 	//// Email registration
 	// Email is already taken by one of the following account categories
-	EmailTaken           = "email_taken"
 	EmailTakenByEmail    = "email_taken_by_email"
 	EmailTakenByFacebook = "email_taken_by_facebook"
 	EmailTakenByGoogle   = "email_taken_by_google"
