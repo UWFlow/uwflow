@@ -1,4 +1,4 @@
-package webcal
+package calendar
 
 import (
 	"fmt"
@@ -186,7 +186,7 @@ func postgresToWebcalEvents(events []*postgresEvent) ([]*webcalEvent, error) {
 	return webcalEvents, nil
 }
 
-func HandleWebcal(conn *db.Conn, w http.ResponseWriter, r *http.Request) error {
+func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error {
 	secretId := chi.URLParam(r, "secretId")
 
 	events, err := extractUserEvents(conn, secretId)

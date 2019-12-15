@@ -8,20 +8,20 @@ import (
 	"flow/common/db"
 )
 
-type DirectHandlerFunc func(*db.Conn, http.ResponseWriter, *http.Request) error
+type directFunc func(*db.Conn, http.ResponseWriter, *http.Request) error
 
-func WithDbDirect(conn *db.Conn, handler DirectHandlerFunc) http.HandlerFunc {
+func WithDbDirect(conn *db.Conn, handler directFunc, name string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := handler(conn, w, r)
 		if err != nil {
-			Error(w, r, err)
+			Error(w, r, fmt.Errorf("%s: %w", name, err))
 		}
 	}
 }
 
-type ResponseHandlerFunc func(*db.Tx, *http.Request) (interface{}, error)
+type responseFunc func(*db.Tx, *http.Request) (interface{}, error)
 
-func WithDbResponse(conn *db.Conn, handler ResponseHandlerFunc) http.HandlerFunc {
+func WithDbResponse(conn *db.Conn, handler responseFunc, name string) http.HandlerFunc {
 	inner := func(r *http.Request) (interface{}, error) {
 		tx, err := conn.BeginWithContext(r.Context())
 		if err != nil {
@@ -45,16 +45,16 @@ func WithDbResponse(conn *db.Conn, handler ResponseHandlerFunc) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		resp, err := inner(r)
 		if err != nil {
-			Error(w, r, err)
+			Error(w, r, fmt.Errorf("%s: %w", name, err))
 		} else if resp != nil {
 			json.NewEncoder(w).Encode(resp)
 		}
 	}
 }
 
-type NoResponseHandlerFunc func(*db.Tx, *http.Request) error
+type noResponseFunc func(*db.Tx, *http.Request) error
 
-func WithDbNoResponse(conn *db.Conn, handler NoResponseHandlerFunc) http.HandlerFunc {
+func WithDbNoResponse(conn *db.Conn, handler noResponseFunc, name string) http.HandlerFunc {
 	inner := func(r *http.Request) error {
 		tx, err := conn.BeginWithContext(r.Context())
 		if err != nil {
@@ -78,7 +78,7 @@ func WithDbNoResponse(conn *db.Conn, handler NoResponseHandlerFunc) http.Handler
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := inner(r)
 		if err != nil {
-			Error(w, r, err)
+			Error(w, r, fmt.Errorf("%s: %w", name, err))
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}

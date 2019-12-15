@@ -1,0 +1,148 @@
+package auth
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+
+	"flow/api/serde"
+	"flow/common/db"
+	"flow/common/util/random"
+)
+
+const verifyKeyLength = 6
+
+const updatePasswordResetQuery = `
+INSERT INTO secret.password_reset(user_id, verify_key, expiry)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE SET verify_key = EXCLUDED.verify_key, expiry = EXCLUDED.expiry
+`
+
+func sendEmail(tx *db.Tx, email string) error {
+	var userId int
+	var joinSource string
+	err := tx.QueryRow(selectJoinSourceQuery, email).Scan(&userId, &joinSource)
+	if err != nil || joinSource != "email" {
+		return serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered")),
+		)
+	}
+
+	expiry := time.Now().Add(time.Hour)
+	key, err := random.String(verifyKeyLength, random.AllLetters)
+	if err != nil {
+		return fmt.Errorf("generating reset key: %w", err)
+	}
+
+	_, err = tx.Exec(updatePasswordResetQuery, userId, key, expiry)
+	if err != nil {
+		return fmt.Errorf("writing password_reset: %w", err)
+	}
+
+	return nil
+}
+
+type sendEmailRequest struct {
+	Email string `json:"email"`
+}
+
+func SendEmail(tx *db.Tx, r *http.Request) error {
+	var body sendEmailRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
+	}
+
+	if body.Email == "" {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email", err))
+	}
+
+	return sendEmail(tx, body.Email)
+}
+
+const selectVerifyKeyQuery = `
+SELECT EXISTS(SELECT 1 FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)
+`
+
+func VerifyResetCode(tx *db.Tx, r *http.Request) error {
+	queryParams := r.URL.Query()
+	key, ok := queryParams["key"]
+	if !ok {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing key param"))
+	}
+
+	var keyExists bool
+	err := tx.QueryRow(selectVerifyKeyQuery, key[0], time.Now()).Scan(&keyExists)
+	if err != nil || !keyExists {
+		return serde.WithStatus(
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key not found or is expired")),
+		)
+	}
+
+	return nil
+}
+
+const selectExpiryQuery = `
+SELECT user_id, expiry FROM secret.password_reset WHERE verify_key = $1
+`
+
+const updateUserPassword = `
+UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2
+`
+
+func resetPassword(tx *db.Tx, key, password string) error {
+	var expiry time.Time
+	var userId int
+	err := tx.QueryRow(selectExpiryQuery, key).Scan(&userId, &expiry)
+	if err != nil {
+		return serde.WithStatus(
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key %s does not exist: %w", key, err)),
+		)
+	}
+
+	if !expiry.After(time.Now()) {
+		return serde.WithStatus(
+			http.StatusForbidden,
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key expired at %v", expiry)),
+		)
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
+	if err != nil {
+		return fmt.Errorf("hasing new password: %w", err)
+	}
+
+	_, err = tx.Exec(updateUserPassword, hash, userId)
+	if err != nil {
+		return fmt.Errorf("updating user_email: %w", err)
+	}
+
+	return nil
+}
+
+type resetPasswordRequest struct {
+	Key      string `json:"key"`
+	Password string `json:"password"`
+}
+
+func ResetPassword(tx *db.Tx, r *http.Request) error {
+	var body resetPasswordRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
+	}
+	defer r.Body.Close()
+
+	if body.Key == "" || body.Password == "" {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no key or password"))
+	}
+
+	return resetPassword(tx, body.Key, body.Password)
+}

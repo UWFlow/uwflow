@@ -65,11 +65,9 @@ func registerGoogle(tx *db.Tx, googleId string, idToken string) (*AuthResponse, 
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("fetching token claims: invalid id token"))
 	}
 
-	response, err := InsertUser(
-		tx, tokenClaims.Name, tokenClaims.Email, "google", &tokenClaims.PictureUrl,
-	)
+	response, err := InsertUser(tx, tokenClaims.Name, tokenClaims.Email, "google", &tokenClaims.PictureUrl)
 	if err != nil {
-		return nil, serde.WithEnum(serde.EmailTaken, fmt.Errorf("writing user: %w", err))
+		return nil, err
 	}
 
 	_, err = tx.Exec(

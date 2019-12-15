@@ -16,25 +16,27 @@ type emailLoginRequest struct {
 	Password string `json:"password"`
 }
 
+const selectUserQuery = `
+SELECT id, secret_id, join_source FROM "user" WHERE email = $1
+`
+
+const selectHashQuery = `
+SELECT password_hash FROM secret.user_email WHERE user_id = $1
+`
+
 func loginEmail(tx *db.Tx, email string, password []byte) (*AuthResponse, error) {
 	var response AuthResponse
 	var joinSource string
 	var hash []byte
 
-	err := tx.QueryRow(
-		"SELECT id, secret_id, join_source FROM public.user WHERE email = $1",
-		email,
-	).Scan(&response.UserId, &response.SecretId, &joinSource)
+	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &response.SecretId, &joinSource)
 	if err != nil || joinSource != "email" {
 		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s", email))
 	}
 
-	err = tx.QueryRow(
-		"SELECT password_hash FROM secret.user_email WHERE user_id = $1",
-		response.UserId,
-	).Scan(&hash)
+	err = tx.QueryRow(selectHashQuery, response.UserId).Scan(&hash)
 	if err != nil {
-		return nil, fmt.Errorf("fetching password hash for user_id: %w", err)
+		return nil, fmt.Errorf("fetching password hash: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword(hash, password)
@@ -58,47 +60,30 @@ func LoginEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email, password"))
 	}
 
-	resp, err := loginEmail(tx, body.Email, []byte(body.Password))
+	response, err := loginEmail(tx, body.Email, []byte(body.Password))
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("authenticating email user: %w", err))
+		return nil, serde.WithStatus(http.StatusUnauthorized, err)
 	}
 
-	return resp, nil
+	return response, nil
 }
 
-// Default value for bcrypt cost/difficulty
-const bcryptCost = 10
+const insertUserEmailQuery = `
+INSERT INTO secret.user_email(user_id, password_hash) VALUES ($1, $2)
+`
 
 func registerEmail(tx *db.Tx, name string, email string, password []byte) (*AuthResponse, error) {
-	var joinSource string
-	err := tx.QueryRow(`SELECT join_source FROM public.user WHERE email = $1`, email).Scan(&joinSource)
-	if err == nil {
-		var cause string
-		switch joinSource {
-		case "email":
-			cause = serde.EmailTakenByEmail
-		case "facebook":
-			cause = serde.EmailTakenByFacebook
-		case "google":
-			cause = serde.EmailTakenByGoogle
-		}
-		return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", email, joinSource))
-	}
-
 	response, err := InsertUser(tx, name, email, "email", nil)
 	if err != nil {
-		return nil, fmt.Errorf("inserting user: %w", err)
+		return nil, err
 	}
 
-	hash, err := bcrypt.GenerateFromPassword(password, bcryptCost)
+	hash, err := bcrypt.GenerateFromPassword(password, BcryptCost)
 	if err != nil {
 		return nil, fmt.Errorf("hashing password: %w", err)
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO secret.user_email(user_id, password_hash) VALUES ($1, $2)`,
-		response.UserId, hash,
-	)
+	_, err = tx.Exec(insertUserEmailQuery, response.UserId, hash)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user_email: %w", err)
 	}
@@ -147,7 +132,7 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	resp, err := registerEmail(tx, body.Name, body.Email, []byte(body.Password))
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("registering: %w", err))
+		return nil, serde.WithStatus(http.StatusUnauthorized, err)
 	}
 
 	return resp, nil
