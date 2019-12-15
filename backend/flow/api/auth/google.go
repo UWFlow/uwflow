@@ -35,7 +35,10 @@ func verifyGoogleIdToken(idToken string) (string, error) {
 
 	response, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("sending https request: %w", err)
+		return "", fmt.Errorf("calling google api: %w", err)
+	}
+	if response.StatusCode >= 400 {
+		return "", fmt.Errorf("calling google api: status: %d", response.StatusCode)
 	}
 	defer response.Body.Close()
 
@@ -87,7 +90,6 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-	defer r.Body.Close()
 
 	if body.IdToken == "" {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing id token"))

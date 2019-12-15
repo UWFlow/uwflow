@@ -55,7 +55,7 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	)
 	router.Post(
 		"/auth/forgot-password/verify",
-		serde.WithDbNoResponse(conn, auth.VerifyResetCode, "password reset verification"),
+		serde.WithDbNoResponse(conn, auth.VerifyKey, "password reset verification"),
 	)
 	router.Post(
 		"/auth/forgot-password/reset",

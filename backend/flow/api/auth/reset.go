@@ -70,18 +70,26 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 }
 
 const selectVerifyKeyQuery = `
-SELECT EXISTS(SELECT 1 FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)
+SELECT EXISTS(SELECT FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)
 `
 
-func VerifyResetCode(tx *db.Tx, r *http.Request) error {
-	queryParams := r.URL.Query()
-	key, ok := queryParams["key"]
-	if !ok {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing key param"))
+type verifyKeyRequest struct {
+	Key string `json:"key"`
+}
+
+func VerifyKey(tx *db.Tx, r *http.Request) error {
+	var body verifyKeyRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
+	}
+
+	if body.Key == "" {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no key"))
 	}
 
 	var keyExists bool
-	err := tx.QueryRow(selectVerifyKeyQuery, key[0], time.Now()).Scan(&keyExists)
+	err = tx.QueryRow(selectVerifyKeyQuery, body.Key, time.Now()).Scan(&keyExists)
 	if err != nil || !keyExists {
 		return serde.WithStatus(
 			http.StatusForbidden,
@@ -151,7 +159,6 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 	if err != nil {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
-	defer r.Body.Close()
 
 	if body.Key == "" || body.Password == "" {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no key or password"))
