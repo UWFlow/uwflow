@@ -67,8 +67,12 @@ CREATE TABLE "user" (
   id SERIAL PRIMARY KEY,
   secret_id TEXT NOT NULL UNIQUE
     CONSTRAINT secret_id_length CHECK (LENGTH(secret_id) = 16),
+  first_name TEXT NOT NULL
+    CONSTRAINT user_first_name_length CHECK (LENGTH(first_name) <= 256),
+  last_name TEXT NOT NULL
+    CONSTRAINT user_last_name_length CHECK (LENGTH(last_name) <= 256),
   full_name TEXT NOT NULL
-    CONSTRAINT user_full_name_length CHECK (LENGTH(full_name) <= 256),
+    GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED,
   program TEXT
     CONSTRAINT user_program_length CHECK (LENGTH(program) <= 256),
   picture_url TEXT,

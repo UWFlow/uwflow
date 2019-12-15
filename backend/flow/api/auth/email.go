@@ -24,8 +24,8 @@ const selectHashQuery = `
 SELECT password_hash FROM secret.user_email WHERE user_id = $1
 `
 
-func loginEmail(tx *db.Tx, email string, password []byte) (*AuthResponse, error) {
-	var response AuthResponse
+func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error) {
+	var response authResponse
 	var joinSource string
 	var hash []byte
 
@@ -75,8 +75,8 @@ const insertUserEmailQuery = `
 INSERT INTO secret.user_email(user_id, password_hash) VALUES ($1, $2)
 `
 
-func registerEmail(tx *db.Tx, name string, email string, password []byte) (*AuthResponse, error) {
-	response, err := InsertUser(tx, name, email, "email", nil)
+func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, error) {
+	response, err := InsertUser(tx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +95,10 @@ func registerEmail(tx *db.Tx, name string, email string, password []byte) (*Auth
 }
 
 type emailRegisterRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 const (
@@ -112,7 +113,7 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
 
-	if body.Email == "" || body.Password == "" || body.Name == "" {
+	if body.Email == "" || body.Password == "" || body.FirstName == "" || body.LastName == "" {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty name, email, or password"))
 	}
 
@@ -130,7 +131,8 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 		)
 	}
 
-	resp, err := registerEmail(tx, body.Name, body.Email, []byte(body.Password))
+	user := userInfo{FirstName: body.FirstName, LastName: body.LastName, Email: body.Email, JoinSource: "email"}
+	resp, err := registerEmail(tx, &user, []byte(body.Password))
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, err)
 	}

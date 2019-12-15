@@ -1035,6 +1035,8 @@
           - id
           - secret_id
           - email
+          - first_name
+          - last_name
           - full_name
           - picture_url
           - program
@@ -1047,7 +1049,8 @@
       - comment: null
         permission:
           columns:
-          - full_name
+          - first_name
+          - last_name
           - picture_url
           - program
           filter:
