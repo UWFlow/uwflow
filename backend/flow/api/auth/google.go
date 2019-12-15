@@ -90,10 +90,7 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	defer r.Body.Close()
 
 	if body.IdToken == "" {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("missing id token")),
-		)
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("missing id token"))
 	}
 
 	// Validate Google id token using Google API

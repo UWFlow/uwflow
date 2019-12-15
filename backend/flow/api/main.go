@@ -50,15 +50,6 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	)
 
 	router.Post(
-		"/parse/transcript",
-		serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
-	)
-	router.Post(
-		"/parse/schedule",
-		serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
-	)
-
-	router.Post(
 		"/auth/forgot-password/send-email",
 		serde.WithDbNoResponse(conn, auth.SendEmail, "password reset initiation"),
 	)
@@ -69,6 +60,15 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Post(
 		"/auth/forgot-password/reset",
 		serde.WithDbNoResponse(conn, auth.ResetPassword, "password reset completion"),
+	)
+
+	router.Post(
+		"/parse/transcript",
+		serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
+	)
+	router.Post(
+		"/parse/schedule",
+		serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
 	)
 
 	router.Get(

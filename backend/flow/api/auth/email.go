@@ -113,23 +113,20 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	if body.Email == "" || body.Password == "" || body.Name == "" {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("empty name, email, or password")),
-		)
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty name, email, or password"))
 	}
 
 	if len(body.Password) < MinPasswordLength {
 		return nil, serde.WithStatus(
 			http.StatusBadRequest,
-			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("password is too short")),
+			serde.WithEnum(serde.PasswordTooShort, fmt.Errorf("password is too short")),
 		)
 	}
 
 	if len(body.Email) < MinEmailLength {
 		return nil, serde.WithStatus(
 			http.StatusBadRequest,
-			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("email is too short")),
+			serde.WithEnum(serde.EmailTooShort, fmt.Errorf("email is too short")),
 		)
 	}
 

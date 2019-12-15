@@ -10,11 +10,19 @@ import (
 )
 
 const (
+	//// Common
+	// JWT token is expired
+	ExpiredJwt = "expired_jwt"
+
 	//// Email registration
 	// Email is already taken by one of the following account categories
 	EmailTakenByEmail    = "email_taken_by_email"
 	EmailTakenByFacebook = "email_taken_by_facebook"
 	EmailTakenByGoogle   = "email_taken_by_google"
+	// Email is too short
+	EmailTooShort = "email_too_short"
+	// Password is too short (this is also emitted by password reset)
+	PasswordTooShort = "password_too_short"
 
 	//// Email login
 	// There is no user with given email
@@ -39,13 +47,6 @@ const (
 	//// Transcript import
 	// Transcript contains no terms
 	EmptyTranscript = "empty_transcript"
-
-	//// Generic
-	// JWT token is expired
-	ExpiredJwt = "expired_jwt"
-	// This is a more specific condition than BadRequest
-	// Things like name/email/password too short
-	ConstraintViolation = "constraint_violation"
 
 	//// Fallbacks
 	// These do not map exactly to 400 and 500 status codes respectively:

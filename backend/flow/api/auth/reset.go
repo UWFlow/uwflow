@@ -22,10 +22,14 @@ VALUES ($1, $2, $3)
 ON CONFLICT (user_id) DO UPDATE SET verify_key = EXCLUDED.verify_key, expiry = EXCLUDED.expiry
 `
 
+const selectIdAndSourceQuery = `
+SELECT id, join_source FROM "user" WHERE email = $1
+`
+
 func sendEmail(tx *db.Tx, email string) error {
 	var userId int
 	var joinSource string
-	err := tx.QueryRow(selectJoinSourceQuery, email).Scan(&userId, &joinSource)
+	err := tx.QueryRow(selectIdAndSourceQuery, email).Scan(&userId, &joinSource)
 	if err != nil || joinSource != "email" {
 		return serde.WithStatus(
 			http.StatusBadRequest,
@@ -92,7 +96,11 @@ const selectExpiryQuery = `
 SELECT user_id, expiry FROM secret.password_reset WHERE verify_key = $1
 `
 
-const updateUserPassword = `
+const deleteKeyQuery = `
+DELETE FROM secret.password_reset WHERE verify_key = $1
+`
+
+const updateUserPasswordQuery = `
 UPDATE secret.user_email SET password_hash = $1 WHERE user_id = $2
 `
 
@@ -119,9 +127,14 @@ func resetPassword(tx *db.Tx, key, password string) error {
 		return fmt.Errorf("hasing new password: %w", err)
 	}
 
-	_, err = tx.Exec(updateUserPassword, hash, userId)
+	_, err = tx.Exec(updateUserPasswordQuery, hash, userId)
 	if err != nil {
 		return fmt.Errorf("updating user_email: %w", err)
+	}
+
+	_, err = tx.Exec(deleteKeyQuery, key)
+	if err != nil {
+		return fmt.Errorf("deleting key: %w", err)
 	}
 
 	return nil
@@ -142,6 +155,13 @@ func ResetPassword(tx *db.Tx, r *http.Request) error {
 
 	if body.Key == "" || body.Password == "" {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no key or password"))
+	}
+
+	if len(body.Password) < MinPasswordLength {
+		return serde.WithStatus(
+			http.StatusBadRequest,
+			serde.WithEnum(serde.PasswordTooShort, fmt.Errorf("password is too short")),
+		)
 	}
 
 	return resetPassword(tx, body.Key, body.Password)

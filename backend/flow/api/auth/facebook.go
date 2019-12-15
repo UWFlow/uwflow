@@ -109,10 +109,7 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	if body.AccessToken == "" {
-		return nil, serde.WithStatus(
-			http.StatusBadRequest,
-			serde.WithEnum(serde.ConstraintViolation, fmt.Errorf("no access token")),
-		)
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no access token"))
 	}
 
 	return loginFacebook(tx, body.AccessToken)
