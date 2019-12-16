@@ -12,6 +12,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install script dependencies
+          command: sudo apt-get update && sudo apt-get install -y realpath
+      - run:
           name: Build all images
           command: ./backend/script/build.sh
       - run:
