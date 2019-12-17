@@ -16,7 +16,12 @@ $PREFIX docker volume rm -f backend_postgres
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"
 
-$PREFIX docker-compose up -d --build
+# Update to latest published images
+$PREFIX docker-compose pull
+# Build local changes, if any
+"$DIR/build.sh"
+# Launch all containers
+$PREFIX docker-compose up -d
 
 # Wait for migrations to be applied by selecting from a random table
 while ! $PREFIX docker exec postgres \
@@ -27,9 +32,13 @@ do
   sleep 10
 done
 
-# Necessary outside of Docker
-export POSTGRES_HOST=localhost
-# Run import jobs
-(cd flow/importer/uw && go run . terms)
-(cd flow/importer/mongo && go run .)
-(cd flow/importer/uw && go run . sections && go run . exams)
+docker exec -it uw /app/uw terms
+
+docker run --rm -it \
+  --network backend_default \
+  --env-file "$BACKEND_DIR/.env" -e MONGO_DUMP_PATH=/dump \
+  -v "$MONGO_DUMP_PATH":/dump:ro \
+  neuwflow/mongo /app/mongo
+
+docker exec -it uw /app/uw sections
+docker exec -it uw /app/uw exams

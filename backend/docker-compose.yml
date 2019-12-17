@@ -1,14 +1,11 @@
 version: '3.6'
 services:
   api:
-    build:
-      context: ./flow
-      target: api
     container_name: api
     depends_on:
       - postgres
     env_file: .env
-    image: api:latest
+    image: neuwflow/api:latest
     ports:
       - $API_PORT:$API_PORT
     restart: always
@@ -52,14 +49,11 @@ services:
     volumes:
       - ./hasura/migrations:/hasura-migrations
   uw:
-    build:
-      context: ./flow
-      target: uw
     container_name: uw
     depends_on:
       - postgres
     env_file: .env
-    image: uw:latest
+    image: neuwflow/uw:latest
     restart: always
 volumes:
   postgres:
