@@ -111,7 +111,8 @@ type scheduleResponse struct {
 }
 
 const deleteCourseTakenQuery = `
-DELETE FROM user_course_taken WHERE user_id = $1 AND term_id = $2
+DELETE FROM user_course_taken
+WHERE user_id = $1 AND term_id = $2
 `
 
 const insertCourseTakenQuery = `
@@ -122,7 +123,11 @@ ON CONFLICT DO NOTHING
 `
 
 const deleteScheduleQuery = `
-DELETE FROM user_schedule WHERE user_id = $1
+DELETE FROM user_schedule
+USING course_section cs
+WHERE user_id = $1
+  AND section_id = cs.id
+  AND cs.term_id = $2
 `
 
 const insertScheduleQuery = `
@@ -153,7 +158,7 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		return nil, fmt.Errorf("deleting old user_course_taken: %w", err)
 	}
 
-	_, err = tx.Exec(deleteScheduleQuery, userId)
+	_, err = tx.Exec(deleteScheduleQuery, userId, summary.TermId)
 	if err != nil {
 		return nil, fmt.Errorf("deleting old user_schedule: %w", err)
 	}
