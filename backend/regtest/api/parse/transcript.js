@@ -25,6 +25,12 @@ export default function(data) {
         "course count": (r) => r.json("courses_imported") == 27,
       }));
     });
+    group("valid again", function() {
+      check(uploadTranscript(VALID_TRANSCRIPT, data.email.token), withLog({
+        "status": (r) => r.status == 200,
+        "course count": (r) => r.json("courses_imported") == 27,
+      }));
+    });
     group("malformed", function() {
       check(uploadTranscript("not a transcript", data.email.token), withLog({
         "status": (r) => r.status == 400,

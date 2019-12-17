@@ -25,6 +25,12 @@ export default function(data) {
         "section count": (r) => r.json("sections_imported") == 13,
       }));
     });
+    group("valid again", function() {
+      check(uploadSchedule(VALID_SCHEDULE, data.email.token), withLog({
+        "status": (r) => r.status == 200,
+        "section count": (r) => r.json("sections_imported") == 13,
+      }));
+    });
     group("malformed", function() {
       check(uploadSchedule("", data.email.token), withLog({
         "status": (r) => r.status == 400,
