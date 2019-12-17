@@ -110,6 +110,11 @@ type scheduleResponse struct {
 	SectionsImported int `json:"sections_imported"`
 }
 
+const deleteCourseTakenQuery = `
+DELETE FROM user_course_taken
+WHERE user_id = $1 AND term_id = $2
+`
+
 const insertCourseTakenQuery = `
 INSERT INTO user_course_taken(user_id, term_id, course_id)
 SELECT $1, $2, course_id FROM course_section
@@ -117,11 +122,15 @@ WHERE term_id = $2 AND class_number = $3
 ON CONFLICT DO NOTHING
 `
 
-const deleteCourseTakenQuery = `
-DELETE FROM user_course_taken WHERE term_id = $1
+const deleteScheduleQuery = `
+DELETE FROM user_schedule
+USING course_section cs
+WHERE user_id = $1
+  AND section_id = cs.id
+  AND cs.term_id = $2
 `
 
-const updateScheduleQuery = `
+const insertScheduleQuery = `
 INSERT INTO user_schedule(user_id, section_id)
 SELECT $1, id FROM course_section
 WHERE class_number = $2 AND term_id = $3
@@ -144,13 +153,18 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		)
 	}
 
-	_, err := tx.Exec(deleteCourseTakenQuery, summary.TermId)
+	_, err := tx.Exec(deleteCourseTakenQuery, userId, summary.TermId)
 	if err != nil {
 		return nil, fmt.Errorf("deleting old user_course_taken: %w", err)
 	}
 
+	_, err = tx.Exec(deleteScheduleQuery, userId, summary.TermId)
+	if err != nil {
+		return nil, fmt.Errorf("deleting old user_schedule: %w", err)
+	}
+
 	for _, classNumber := range summary.ClassNumbers {
-		tag, err := tx.Exec(updateScheduleQuery, userId, classNumber, summary.TermId)
+		tag, err := tx.Exec(insertScheduleQuery, userId, classNumber, summary.TermId)
 		if err != nil {
 			return nil, fmt.Errorf("writing user_schedule: %w", err)
 		}
