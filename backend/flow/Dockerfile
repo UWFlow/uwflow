@@ -17,21 +17,27 @@ RUN apk add --no-cache g++ poppler-dev
 # Because every code change will invalidate everything past this point.
 # Thus we avoid wasting work (especially package installs, which are slow).
 COPY . .
-# TODO: We should run `go test` here and refuse to build if tests fail.
-# Alas, we have no tests!
 RUN go test -v ./.../test
 RUN cd api && go build
 RUN cd importer/uw && go build
+RUN cd importer/mongo && go build
 
-######## RELEASE STAGE ########
+######## RELEASE STAGE: API ########
 FROM alpine:latest AS api
 
-# api/parse and email sending pull in these runtime dependencies
-RUN apk add --no-cache poppler ca-certificates
+# api/parse pulls in these runtime dependencies
+RUN apk add --no-cache poppler
 
 COPY --from=builder /build/api/api /app/api
 
 CMD ["/app/api"]
+
+######## RELEASE STAGE: MONGO IMPORTER ########
+FROM alpine:latest AS mongo
+
+COPY --from=builder /build/importer/mongo/mongo /app/mongo
+
+CMD ["/app/mongo"]
 
 ######## RELEASE STAGE: UW IMPORTER ########
 FROM alpine:latest AS uw
