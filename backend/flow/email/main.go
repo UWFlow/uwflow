@@ -4,7 +4,7 @@ import (
 	"context"
 	"flow/api/env"
 	"flow/common/db"
-	"flow/common/util"
+	"flow/email/common"
 	"flow/email/work"
 	"log"
 )
@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var mch = make(chan util.MailItem)
+	var mch = make(chan common.MailItem)
 	var ech = make(chan error)
 
 	work.Produce(conn, mch, ech)

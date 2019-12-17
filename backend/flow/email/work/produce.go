@@ -3,25 +3,27 @@ package work
 import (
 	"context"
 	"flow/common/db"
-	"flow/common/util"
-	"flow/email/produce"
+	"flow/email/common"
+	"flow/email/produce/password_reset"
+	"flow/email/produce/section_subscribed"
+	"flow/email/produce/section_vacated"
 	"fmt"
 )
 
-func dispatch(tx *db.Tx, source string, mch chan util.MailItem) error {
+func dispatch(tx *db.Tx, source string, mch chan common.MailItem) error {
 	switch source {
 	case "password_reset":
-		return produce.ResetProduce(tx, mch)
+		return password_reset.Produce(tx, mch)
 	case "section_subscribed":
-		return produce.SubscribedProduce(tx, mch)
+		return section_subscribed.Produce(tx, mch)
 	case "section_vacated":
-		return produce.VacatedProduce(tx, mch)
+		return section_vacated.Produce(tx, mch)
 	default:
 		return fmt.Errorf("unknown source: %s", source)
 	}
 }
 
-func produceEmailItems(conn *db.Conn, mch chan util.MailItem, ech chan error) {
+func produceEmailItems(conn *db.Conn, mch chan common.MailItem, ech chan error) {
 	ctx := context.Background()
 
 	pgxconn, err := conn.Acquire()
@@ -45,7 +47,6 @@ func produceEmailItems(conn *db.Conn, mch chan util.MailItem, ech chan error) {
 		if err != nil {
 			ech <- fmt.Errorf("opening transaction: %w", err)
 		}
-		defer tx.Rollback()
 
 		err = dispatch(tx, notif.Payload, mch)
 		if err != nil {
@@ -56,5 +57,6 @@ func produceEmailItems(conn *db.Conn, mch chan util.MailItem, ech chan error) {
 		if err != nil {
 			ech <- fmt.Errorf("committing: %w", err)
 		}
+		tx.Rollback()
 	}
 }

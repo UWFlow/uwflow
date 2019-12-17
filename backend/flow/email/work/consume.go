@@ -1,16 +1,17 @@
 package work
 
 import (
+	"bytes"
 	"flow/api/env"
-	"flow/common/util"
+	"flow/email/common"
 	"fmt"
 	"log"
 	"net/smtp"
 )
 
-func consumeEmailItems(mch chan util.MailItem, ech chan error) {
+func consumeEmailItems(mch chan common.MailItem, ech chan error) {
 	var err error
-	var item util.MailItem
+	var item common.MailItem
 
 	for {
 		item = <-mch
@@ -21,14 +22,25 @@ func consumeEmailItems(mch chan util.MailItem, ech chan error) {
 	}
 }
 
-func send(item util.MailItem) error {
+func writeHeader(buf bytes.Buffer, key, value string) {
+	buf.WriteString(key)
+	buf.WriteString(": ")
+	buf.WriteString(value)
+	buf.WriteString("\r\n")
+}
+
+func send(item common.MailItem) error {
 	// Set up authentication information for Gmail server
 	from := env.Global.GmailUser
 	auth := smtp.PlainAuth("", from, env.Global.GmailAppPassword, "smtp.gmail.com")
-	msg := []byte(fmt.Sprintf("To: %s\r\n", item.To) +
-		fmt.Sprintf("Subject: %s\r\n", item.Subject) +
-		fmt.Sprintf("%s\r\n", item.Body))
-	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{item.To}, msg)
+
+	var buf bytes.Buffer
+	buf.Write([]byte("MIME-version: 1.0\nContent-Type: text/html;charset=\"UTF-8\";\n"))
+	writeHeader(buf, "To", item.To)
+	writeHeader(buf, "Subject", item.Subject)
+	buf.WriteString(item.Body)
+
+	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{item.To}, buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("failed to send email to %w", item.To)
 	}

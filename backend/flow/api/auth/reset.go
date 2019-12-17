@@ -17,19 +17,19 @@ import (
 const verifyKeyLength = 6
 
 const updatePasswordResetQuery = `
-INSERT INTO queue.password_reset(user_id, user_email, user_name, secret_code, expiry)
-VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (user_id) DO UPDATE SET secret_code = EXCLUDED.secret_code, expiry = EXCLUDED.expiry, seen = FALSE, created_at = NOW(), seen_at = NULL
+INSERT INTO queue.password_reset(user_id, secret_key, expiry)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE SET secret_key = EXCLUDED.secret_key, expiry = EXCLUDED.expiry
 `
 
 const selectIdAndSourceQuery = `
-SELECT id, full_name, join_source FROM "user" WHERE email = $1
+SELECT id, join_source FROM "user" WHERE email = $1
 `
 
 func sendEmail(tx *db.Tx, email string) error {
 	var userId int
-	var name, joinSource string
-	err := tx.QueryRow(selectIdAndSourceQuery, email).Scan(&userId, &name, &joinSource)
+	var joinSource string
+	err := tx.QueryRow(selectIdAndSourceQuery, email).Scan(&userId, &joinSource)
 	if err != nil || joinSource != "email" {
 		return serde.WithStatus(
 			http.StatusBadRequest,
@@ -43,7 +43,7 @@ func sendEmail(tx *db.Tx, email string) error {
 		return fmt.Errorf("generating reset key: %w", err)
 	}
 
-	_, err = tx.Exec(updatePasswordResetQuery, userId, email, name, key, expiry)
+	_, err = tx.Exec(updatePasswordResetQuery, userId, key, expiry)
 	if err != nil {
 		return fmt.Errorf("writing password_reset: %w", err)
 	}
@@ -70,7 +70,7 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 }
 
 const selectVerifyKeyQuery = `
-SELECT EXISTS(SELECT FROM queue.password_reset WHERE secret_code = $1 AND expiry > $2)
+SELECT EXISTS(SELECT FROM queue.password_reset WHERE secret_key = $1 AND expiry > $2)
 `
 
 type verifyKeyRequest struct {
@@ -101,11 +101,11 @@ func VerifyKey(tx *db.Tx, r *http.Request) error {
 }
 
 const selectExpiryQuery = `
-SELECT user_id, expiry FROM queue.password_reset WHERE secret_code = $1
+SELECT user_id, expiry FROM queue.password_reset WHERE secret_key = $1
 `
 
 const deleteKeyQuery = `
-DELETE FROM queue.password_reset WHERE secret_code = $1
+DELETE FROM queue.password_reset WHERE secret_key = $1
 `
 
 const updateUserPasswordQuery = `
@@ -132,7 +132,7 @@ func resetPassword(tx *db.Tx, key, password string) error {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
-		return fmt.Errorf("hasing new password: %w", err)
+		return fmt.Errorf("hashing new password: %w", err)
 	}
 
 	_, err = tx.Exec(updateUserPasswordQuery, hash, userId)

@@ -515,14 +515,11 @@ CREATE TABLE queue.password_reset(
       REFERENCES "user"(id)
       ON UPDATE CASCADE
       ON DELETE CASCADE,
-    user_email TEXT NOT NULL,
-    user_name TEXT NOT NULL,
-    secret_code TEXT NOT NULL
-      CONSTRAINT key_length CHECK (LENGTH(secret_code) = 6),
+    secret_key TEXT NOT NULL
+      CONSTRAINT key_length CHECK (LENGTH(secret_key) = 6),
     expiry TIMESTAMPTZ NOT NULL,
-    seen BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    seen_at TIMESTAMPTZ
+    seen_at TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE TABLE queue.section_subscribed(
@@ -535,24 +532,24 @@ CREATE TABLE queue.section_subscribed(
       REFERENCES course_section(id)
       ON DELETE CASCADE
       ON UPDATE CASCADE,
-    user_email TEXT NOT NULL,
-    user_name TEXT NOT NULL,
-    course_code TEXT NOT NULL,
-    seen BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    seen_at TIMESTAMPTZ,
+    seen_at TIMESTAMPTZ DEFAULT NULL,
     CONSTRAINT section_subscribed_unique UNIQUE(section_id, user_id)
 );
 
 CREATE TABLE queue.section_vacated(
     id SERIAL PRIMARY KEY,
-    user_email TEXT NOT NULL,
-    user_name TEXT NOT NULL,
-    course_code TEXT NOT NULL,
+    user_id INT NOT NULL
+      REFERENCES "user"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    section_id INT NOT NULL
+      REFERENCES course_section(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
     section_names TEXT[] NOT NULL,
-    seen BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    seen_at TIMESTAMPTZ
+    seen_at TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE TRIGGER notify_password_reset AFTER INSERT ON queue.password_reset
