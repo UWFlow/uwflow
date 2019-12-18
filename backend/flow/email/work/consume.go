@@ -9,13 +9,13 @@ import (
 	"net/smtp"
 )
 
-func consumeEmailItems(mch chan common.MailItem, ech chan error) {
+func consumeEmailItems(mch chan *common.MailItem, ech chan error) {
 	var err error
-	var item common.MailItem
+	var item *common.MailItem
 
 	for {
 		item = <-mch
-		err = send(item)
+		err = send(*item)
 		if err != nil {
 			ech <- err
 		}
@@ -35,9 +35,9 @@ func send(item common.MailItem) error {
 	auth := smtp.PlainAuth("", from, env.Global.GmailAppPassword, "smtp.gmail.com")
 
 	var buf bytes.Buffer
-	buf.Write([]byte("MIME-version: 1.0\nContent-Type: text/html;charset=\"UTF-8\";\n"))
 	writeHeader(buf, "To", item.To)
 	writeHeader(buf, "Subject", item.Subject)
+	buf.Write([]byte("MIME-version: 1.0\nContent-Type: text/html;charset=\"UTF-8\";\n"))
 	buf.WriteString(item.Body)
 
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{item.To}, buf.Bytes())

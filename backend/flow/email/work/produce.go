@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func dispatch(tx *db.Tx, source string, mch chan common.MailItem) error {
+func dispatch(tx *db.Tx, source string, mch chan *common.MailItem) error {
 	switch source {
 	case "password_reset":
 		return password_reset.Produce(tx, mch)
@@ -23,7 +23,7 @@ func dispatch(tx *db.Tx, source string, mch chan common.MailItem) error {
 	}
 }
 
-func produceEmailItems(conn *db.Conn, mch chan common.MailItem, ech chan error) {
+func produceEmailItems(conn *db.Conn, mch chan *common.MailItem, ech chan error) {
 	ctx := context.Background()
 
 	pgxconn, err := conn.Acquire()

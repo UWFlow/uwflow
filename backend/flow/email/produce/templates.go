@@ -1,5 +1,31 @@
 package produce
 
+import (
+	"bytes"
+	"flow/email/common"
+	"fmt"
+	"html/template"
+)
+
+func FormatWithTemplate(to string, subject string, htmlTemplate string, data interface{}) (*common.MailItem, error) {
+	var emailBody bytes.Buffer
+	t, err := template.New("email").Parse(htmlTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("creating new html template: %w", err)
+	}
+	err = t.Execute(&emailBody, data)
+	if err != nil {
+		return nil, fmt.Errorf("loading data into html template: %w", err)
+	}
+
+	item := &common.MailItem{
+		To:      to,
+		Subject: subject,
+		Body:    emailBody.String(),
+	}
+	return item, nil
+}
+
 const ResetTemplate = `
 <html>
 <head>
@@ -109,7 +135,7 @@ const VacatedMultipleSectionsTemplate = `
 		<tr>
 			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
 				Hi {{.UserName}},<br /><br />
-				{{.SectionsHTML}}<br /><br />
+				{{block "list" .SectionNames}}{{range .}}{{println "-" .}}{{end}}{{end}}<br />
 				Take a look at <a href="url">https://uwflow.com/course/{{.CourseCode}}</a><br /><br />
 				Cheers,<br />
 				UW Flow

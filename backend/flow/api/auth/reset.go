@@ -19,7 +19,7 @@ const verifyKeyLength = 6
 const updatePasswordResetQuery = `
 INSERT INTO queue.password_reset(user_id, secret_key, expiry)
 VALUES ($1, $2, $3)
-ON CONFLICT (user_id) DO UPDATE SET secret_key = EXCLUDED.secret_key, expiry = EXCLUDED.expiry
+ON CONFLICT (user_id) DO UPDATE SET secret_key = EXCLUDED.secret_key, expiry = EXCLUDED.expiry, created_at = NOW(), seen_at = NULL
 `
 
 const selectIdAndSourceQuery = `

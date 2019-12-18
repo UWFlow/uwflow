@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var mch = make(chan common.MailItem)
+	var mch = make(chan *common.MailItem)
 	var ech = make(chan error)
 
 	work.Produce(conn, mch, ech)

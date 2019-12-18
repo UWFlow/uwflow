@@ -4,7 +4,6 @@ import (
 	"flow/common/db"
 	"flow/email/common"
 	"flow/email/produce"
-	"flow/email/produce/password_reset"
 	"fmt"
 	"strings"
 )
@@ -17,7 +16,7 @@ type queueItem struct {
 }
 
 const selectQuery = `
-SELECT u.email, u.full_name, c.code
+SELECT u.email, u.first_name, c.code
 FROM queue.section_subscribed ss
   JOIN "user" u on u.id = ss.user_id
   JOIN course_section cs on cs.id = ss.section_id
@@ -27,7 +26,7 @@ WHERE ss.seen_at is NULL
 
 const updateQuery = `UPDATE queue.section_subscribed SET seen_at = NOW() WHERE seen_at is NULL`
 
-func Produce(tx *db.Tx, mch chan common.MailItem) error {
+func Produce(tx *db.Tx, mch chan *common.MailItem) error {
 	var item queueItem
 
 	rows, err := tx.Query(selectQuery)
@@ -43,14 +42,16 @@ func Produce(tx *db.Tx, mch chan common.MailItem) error {
 		}
 		item.CourseURL = fmt.Sprintf("https://uwflow.com/course/%s", item.CourseCode)
 		item.CourseCode = strings.ToUpper(item.CourseCode)
-		mailItem, err := password_reset.FormatWithTemplate(
+		mailItem, err := produce.FormatWithTemplate(
 			item.UserEmail,
 			fmt.Sprintf("You’re all set to receive notifications for %s", item.CourseCode),
-			produce.SubscribedTemplate, item)
+			produce.SubscribedTemplate,
+			item,
+		)
 		if err != nil {
 			return fmt.Errorf("formatting section_subscribed email: %w", err)
 		}
-		mch <- *mailItem
+		mch <- mailItem
 	}
 
 	_, err = tx.Exec(updateQuery)

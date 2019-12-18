@@ -27,7 +27,7 @@ RUN cd email && go build
 FROM alpine:latest AS api
 
 # api/parse pull in these runtime dependencies
-RUN apk add --no-cache poppler ca-certificates
+RUN apk add --no-cache poppler
 
 COPY --from=builder /build/api/api /app/api
 
