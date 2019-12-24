@@ -106,7 +106,7 @@ const VacatedSingleSectionTemplate = `
 			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
 				Hi {{.UserName}},<br /><br />
 				{{.SectionName}} in {{.CourseCode}} has open seats!<br /><br />
-				Take a look at <a href="url">https://uwflow.com/course/{{.CourseCode}}</a><br /><br />
+				Take a look at {{.CourseURL}}<br /><br />
 				Cheers,<br />
 				UW Flow
 			</span></td>
@@ -133,11 +133,14 @@ const VacatedMultipleSectionsTemplate = `
 <table align="center" border="0" cellpadding="1" cellspacing="1" style="width:600px">
 	<tbody>
 		<tr>
-			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
-				Hi {{.UserName}},<br /><br />
-				{{block "list" .SectionNames}}{{range .}}{{println "-" .}}{{end}}{{end}}<br />
-				Take a look at <a href="url">https://uwflow.com/course/{{.CourseCode}}</a><br /><br />
-				Cheers,<br />
+			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;white-space: pre-line;">
+				Hi {{.UserName}},
+
+				The following sections in {{.CourseCode}} have open seats:
+				{{block "list" .SectionNames}}{{range .}}{{print " - " . "\n"}}{{end}}{{end}}
+				Take a look at {{.CourseURL}}
+
+				Cheers,
 				UW Flow
 			</span></td>
 		</tr>

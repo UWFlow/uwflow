@@ -12,32 +12,9 @@ type queueItem struct {
 	UserEmail    string
 	UserName     string
 	CourseCode   string
+	CourseURL    string
+	SectionName  string
 	SectionNames []string
-}
-
-type dataItem struct {
-	UserEmail   string
-	UserName    string
-	CourseCode  string
-	SectionName string
-}
-
-func formatSingleSection(item queueItem, htmlTemplate string) (*common.MailItem, error) {
-	data := dataItem{
-		UserEmail:   item.UserEmail,
-		UserName:    item.UserName,
-		CourseCode:  item.CourseCode,
-		SectionName: item.SectionNames[0],
-	}
-
-	emailItem, err := produce.FormatWithTemplate(
-		data.UserEmail,
-		fmt.Sprintf("Enrolment updates in %w", data.CourseCode),
-		htmlTemplate, data)
-	if err != nil {
-		return nil, err
-	}
-	return emailItem, nil
 }
 
 const selectQuery = `
@@ -69,20 +46,20 @@ func Produce(tx *db.Tx, mch chan *common.MailItem) error {
 			return fmt.Errorf("reading section_vacated row: %w", err)
 		}
 
-		var emailItem *common.MailItem
+		item.SectionName = item.SectionNames[0]
+		item.CourseURL = fmt.Sprintf("https://uwflow.com/course/%s", item.CourseCode)
 		item.CourseCode = strings.ToUpper(item.CourseCode)
+
+		var htmlTemplate string
 		if len(item.SectionNames) == 1 {
-			emailItem, err = formatSingleSection(item, produce.VacatedSingleSectionTemplate)
-		} else if len(item.SectionNames) > 1 {
-			emailItem, err = produce.FormatWithTemplate(
-				item.UserEmail,
-				fmt.Sprintf("Enrolment updates in %w", item.CourseCode),
-				produce.VacatedMultipleSectionsTemplate,
-				item,
-			)
+			htmlTemplate = produce.VacatedSingleSectionTemplate
 		} else {
-			return fmt.Errorf("no sections vacated ")
+			htmlTemplate = produce.VacatedMultipleSectionsTemplate
 		}
+
+		emailItem, err := produce.FormatWithTemplate(
+			item.UserEmail, fmt.Sprintf("Enrolment updates in %w", item.CourseCode), htmlTemplate, item,
+		)
 		if err != nil {
 			return fmt.Errorf("formatting section_vacated MailItem: %w", err)
 		}

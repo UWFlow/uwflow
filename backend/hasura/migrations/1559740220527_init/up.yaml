@@ -394,7 +394,6 @@
           columns:
           - user_id
           - section_id
-          - section_names
           set: {}
         role: user
       is_enum: false
@@ -414,12 +413,13 @@
             columns:
             - user_id
             - section_id
-            - section_names
             filter:
               user_id:
                 _eq: X-Hasura-User-Id
           role: user
-      table: queue.section_vacated
+      table:
+        schema: queue
+        name: section_subscribed
       update_permissions: []
     - array_relationships: []
       delete_permissions: []

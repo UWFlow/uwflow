@@ -561,6 +561,33 @@ FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_subscribed');
 CREATE TRIGGER notify_section_vacated AFTER INSERT ON queue.section_vacated
 FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_vacated');
 
+CREATE FUNCTION insert_course_vacated()
+RETURNS TRIGGER AS $$
+    BEGIN
+        WITH tmp AS (
+          SELECT n.id, n.course_id, n.section_name
+          FROM updated_table n
+            JOIN old_table o ON n.id = o.id
+          WHERE o.enrollment_total >= n.enrollment_capacity
+          AND n.enrollment_total < n.enrollment_capacity
+        )
+
+        INSERT INTO queue.section_vacated(user_id, section_id, section_names)
+        SELECT ss.user_id, (array_agg(ss.section_id))[1], array_agg(DISTINCT t2.section_name)
+        FROM tmp t1
+          JOIN queue.section_subscribed ss ON ss.section_id = t1.id
+          JOIN tmp t2 ON t1.course_id = t2.course_id
+        GROUP BY ss.user_id, t1.course_id;
+        
+        RETURN NULL;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER notify_enrolment_update
+AFTER UPDATE ON course_section
+REFERENCING NEW TABLE AS updated_table OLD TABLE AS old_table
+FOR EACH STATEMENT EXECUTE PROCEDURE insert_course_vacated();
+
 -- tables used by importers and workers internally
 CREATE SCHEMA work;
 
