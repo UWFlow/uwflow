@@ -77,8 +77,9 @@ CREATE TABLE "user" (
     CONSTRAINT user_program_length CHECK (LENGTH(program) <= 256),
   picture_url TEXT,
   email TEXT
-    CONSTRAINT user_email_unique UNIQUE,
-    CONSTRAINT email_length CHECK (6 <= LENGTH(email) AND LENGTH(email) <= 256),
+    CONSTRAINT user_email_unique UNIQUE
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
+    CONSTRAINT email_format CHECK (REGEXP_MATCH(email, '^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$')),
   join_source JOIN_SOURCE NOT NULL
 );
 
@@ -486,6 +487,10 @@ CREATE TABLE secret.user_email (
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
+  email TEXT NOT NULL
+    CONSTRAINT user_email_unique UNIQUE
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
+    CONSTRAINT email_format CHECK (REGEXP_MATCH(email, '^[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$')),
   password_hash TEXT NOT NULL
     CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
 );

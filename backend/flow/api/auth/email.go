@@ -17,26 +17,16 @@ type emailLoginRequest struct {
 }
 
 const selectUserQuery = `
-SELECT id, secret_id, join_source FROM "user" WHERE email = $1
-`
-
-const selectHashQuery = `
-SELECT password_hash FROM secret.user_email WHERE user_id = $1
+SELECT user_id, password_hash FROM secret.user_email WHERE email = $1
 `
 
 func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error) {
 	var response authResponse
-	var joinSource string
 	var hash []byte
 
-	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &response.SecretId, &joinSource)
-	if err != nil || joinSource != "email" {
-		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s", email))
-	}
-
-	err = tx.QueryRow(selectHashQuery, response.UserId).Scan(&hash)
+	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &hash)
 	if err != nil {
-		return nil, fmt.Errorf("fetching password hash: %w", err)
+		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s", email))
 	}
 
 	err = bcrypt.CompareHashAndPassword(hash, password)
@@ -72,7 +62,7 @@ func LoginEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 }
 
 const insertUserEmailQuery = `
-INSERT INTO secret.user_email(user_id, password_hash) VALUES ($1, $2)
+INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)
 `
 
 func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, error) {
@@ -86,7 +76,7 @@ func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, e
 		return nil, fmt.Errorf("hashing password: %w", err)
 	}
 
-	_, err = tx.Exec(insertUserEmailQuery, response.UserId, hash)
+	_, err = tx.Exec(insertUserEmailQuery, response.UserId, user.Email, hash)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user_email: %w", err)
 	}
@@ -131,7 +121,7 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 		)
 	}
 
-	user := userInfo{FirstName: body.FirstName, LastName: body.LastName, Email: body.Email, JoinSource: "email"}
+	user := userInfo{FirstName: body.FirstName, LastName: body.LastName, Email: &body.Email, JoinSource: "email"}
 	resp, err := registerEmail(tx, &user, []byte(body.Password))
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, err)

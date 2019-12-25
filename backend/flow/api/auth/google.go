@@ -41,7 +41,7 @@ INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)
 
 func registerGoogle(tx *db.Tx, googleUser *googleUserInfo) (*authResponse, error) {
 	user := userInfo{
-		FirstName: googleUser.FirstName, LastName: googleUser.LastName, Email: googleUser.Email,
+		FirstName: googleUser.FirstName, LastName: googleUser.LastName, Email: &googleUser.Email,
 		JoinSource: "google", PictureUrl: googleUser.PictureUrl,
 	}
 	response, err := InsertUser(tx, &user)

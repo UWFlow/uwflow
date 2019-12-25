@@ -15,10 +15,10 @@ const BcryptCost = 10
 const SecretIdLength = 16
 
 type userInfo struct {
-	Email      string  `json:"email"`
 	FirstName  string  `json:"first_name"`
 	LastName   string  `json:"last_name"`
 	JoinSource string  `json:"join_source"`
+	Email      *string `json:"email"`
 	PictureUrl *string `json:"picture_url"`
 }
 
@@ -44,21 +44,6 @@ func InsertUser(tx *db.Tx, user *userInfo) (*authResponse, error) {
 	response.SecretId, err = random.String(SecretIdLength, random.Uppercase)
 	if err != nil {
 		return nil, fmt.Errorf("generating secret id: %w", err)
-	}
-
-	var joinSource string
-	err = tx.QueryRow(selectJoinSourceQuery, user.Email).Scan(&joinSource)
-	if err == nil {
-		var cause string
-		switch joinSource {
-		case "email":
-			cause = serde.EmailTakenByEmail
-		case "facebook":
-			cause = serde.EmailTakenByFacebook
-		case "google":
-			cause = serde.EmailTakenByGoogle
-		}
-		return nil, serde.WithEnum(cause, fmt.Errorf("%s already registered as %s", user.Email, joinSource))
 	}
 
 	err = tx.QueryRow(

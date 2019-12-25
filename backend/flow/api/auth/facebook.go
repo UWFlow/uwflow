@@ -13,7 +13,9 @@ type fbUserInfo struct {
 	FbId      string `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+	// Users who have not verified email with facebook
+	// will not have it available in the graph api response
+	Email *string `json:"email"`
 }
 
 const (
@@ -33,9 +35,9 @@ func getFacebookUserInfo(accessToken string) (*fbUserInfo, error) {
 	}
 	defer response.Body.Close()
 
-	var res fbUserInfo
-	json.NewDecoder(response.Body).Decode(&res)
-	return &res, nil
+	var fbUser fbUserInfo
+	json.NewDecoder(response.Body).Decode(&fbUser)
+	return &fbUser, nil
 }
 
 const insertUserFbQuery = `
@@ -43,14 +45,10 @@ INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)
 `
 
 func registerFacebook(tx *db.Tx, fbUser *fbUserInfo) (*authResponse, error) {
-	if fbUser.Email == "" {
-		return nil, serde.WithEnum(serde.NoFacebookEmail, fmt.Errorf("no email"))
-	}
-
 	pictureUrl := fmt.Sprintf(facebookPictureUrl, fbUser.FbId)
 	user := userInfo{
-		Email: fbUser.Email, FirstName: fbUser.FirstName, LastName: fbUser.LastName,
-		JoinSource: "facebook", PictureUrl: &pictureUrl,
+		FirstName: fbUser.FirstName, LastName: fbUser.LastName,
+		JoinSource: "facebook", Email: fbUser.Email, PictureUrl: &pictureUrl,
 	}
 
 	response, err := InsertUser(tx, &user)
@@ -67,7 +65,7 @@ func registerFacebook(tx *db.Tx, fbUser *fbUserInfo) (*authResponse, error) {
 }
 
 const selectFbUserQuery = `
-SELECT u.id, u.secret_id, u.email
+SELECT u.id, u.email
 FROM secret.user_fb uf
   JOIN "user" u ON u.id = uf.user_id
 WHERE uf.fb_id = $1
@@ -83,13 +81,14 @@ func loginFacebook(tx *db.Tx, accessToken string) (*authResponse, error) {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting user info: %w", err))
 	}
 
-	var email string
+	var email *string
 	var response = new(authResponse)
 	err = tx.QueryRow(selectFbUserQuery, fbUser.FbId).Scan(&response.UserId, &response.SecretId, &email)
 
+	// User was found
 	if err == nil {
-		if email == "" {
-			_, err = tx.Exec(updateFbEmailQuery, response.UserId, email)
+		if email == nil {
+			_, err = tx.Exec(updateFbEmailQuery, response.UserId, fbUser.Email)
 		}
 		response.Token, err = serde.NewSignedJwt(response.UserId)
 		if err != nil {
