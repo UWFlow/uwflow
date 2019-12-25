@@ -52,7 +52,7 @@ CMD ["crond", "-f"]
 
 FROM alpine:latest AS email
 
-# email sending pull in these runtime dependencies
+# email sending pulls in these runtime dependencies
 RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /build/email/email /app/email

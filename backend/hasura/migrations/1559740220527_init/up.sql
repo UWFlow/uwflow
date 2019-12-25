@@ -543,8 +543,8 @@ CREATE TABLE queue.section_vacated(
       REFERENCES "user"(id)
       ON DELETE CASCADE
       ON UPDATE CASCADE,
-    section_id INT NOT NULL
-      REFERENCES course_section(id)
+    course_id INT NOT NULL
+      REFERENCES course(id)
       ON DELETE CASCADE
       ON UPDATE CASCADE,
     section_names TEXT[] NOT NULL,
@@ -564,22 +564,28 @@ FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_vacated');
 CREATE FUNCTION insert_course_vacated()
 RETURNS TRIGGER AS $$
     BEGIN
-        WITH tmp AS (
-          SELECT n.id, n.course_id, n.section_name
-          FROM updated_table n
-            JOIN old_table o ON n.id = o.id
-          WHERE o.enrollment_total >= n.enrollment_capacity
-          AND n.enrollment_total < n.enrollment_capacity
-        )
 
-        INSERT INTO queue.section_vacated(user_id, section_id, section_names)
-        SELECT ss.user_id, (array_agg(ss.section_id))[1], array_agg(DISTINCT t2.section_name)
-        FROM tmp t1
-          JOIN queue.section_subscribed ss ON ss.section_id = t1.id
-          JOIN tmp t2 ON t1.course_id = t2.course_id
-        GROUP BY ss.user_id, t1.course_id;
-        
-        RETURN NULL;
+    -- list of vacated sections
+    WITH vacated AS (
+       SELECT n.id AS section_id, n.course_id, n.section_name
+       FROM updated_table n
+        JOIN old_table o ON n.id = o.id
+       WHERE o.enrollment_total >= n.enrollment_capacity
+         AND n.enrollment_total < n.enrollment_capacity
+    ),
+    -- user -> course mapping for just the vacated sections
+    vacated_user_course AS (
+       SELECT DISTINCT ss.user_id, v.course_id
+       FROM queue.section_subscribed ss
+        JOIN vacated v ON v.section_id = ss.section_id
+    )
+    INSERT INTO queue.section_vacated(user_id, course_id, section_names)
+    SELECT vuc.user_id, v.course_id, array_agg(v.section_name)
+    FROM vacated v
+      JOIN vacated_user_course vuc ON vuc.course_id = v.course_id
+    GROUP BY vuc.user_id, v.course_id;
+
+    RETURN NULL;
     END;
 $$ LANGUAGE plpgsql;
 

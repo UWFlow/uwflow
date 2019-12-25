@@ -21,8 +21,7 @@ const selectQuery = `
 SELECT u.email, u.first_name, c.code, sv.section_names
 FROM queue.section_vacated sv
   JOIN "user" u ON u.id = sv.user_id
-  JOIN course_section cs on cs.id = sv.section_id
-  JOIN course c on c.id = cs.course_id
+  JOIN course c on c.id = sv.course_id
 WHERE sv.seen_at is NULL
 `
 
@@ -58,7 +57,7 @@ func Produce(tx *db.Tx, mch chan *common.MailItem) error {
 		}
 
 		emailItem, err := produce.FormatWithTemplate(
-			item.UserEmail, fmt.Sprintf("Enrolment updates in %w", item.CourseCode), htmlTemplate, item,
+			item.UserEmail, fmt.Sprintf("Enrolment updates in %s", item.CourseCode), htmlTemplate, item,
 		)
 		if err != nil {
 			return fmt.Errorf("formatting section_vacated MailItem: %w", err)
