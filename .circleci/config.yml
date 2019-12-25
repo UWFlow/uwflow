@@ -2,9 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     environment:
-      API_IMAGE: neuwflow/api
-      MONGO_IMAGE: neuwflow/mongo
-      UW_IMAGE: neuwflow/uw
+      ALL_IMAGES: neuwflow/api neuwflow/email neuwflow/mongo neuwflow/uw
     machine: true
 jobs:
   build:
@@ -19,7 +17,7 @@ jobs:
           command: ./backend/script/build.sh
       - run:
           name: Archive all images
-          command: docker save -o image.tar $API_IMAGE $MONGO_IMAGE $UW_IMAGE
+          command: docker save -o image.tar $ALL_IMAGES
       - persist_to_workspace:
           root: .
           paths:
@@ -36,9 +34,10 @@ jobs:
           name: Publish Docker images to Docker Hub
           command: |
             echo "$DOCKERHUB_PASS" | docker login --username "$DOCKERHUB_USER" --password-stdin
-            docker push $API_IMAGE:latest
-            docker push $MONGO_IMAGE:latest
-            docker push $UW_IMAGE:latest
+            for image in $ALL_IMAGES
+            do
+              docker push $image:latest
+            done
 workflows:
   version: 2
   normal:
