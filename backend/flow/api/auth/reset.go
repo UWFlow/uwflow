@@ -17,9 +17,9 @@ import (
 const verifyKeyLength = 6
 
 const updatePasswordResetQuery = `
-INSERT INTO secret.password_reset(user_id, verify_key, expiry)
+INSERT INTO queue.password_reset(user_id, secret_key, expiry)
 VALUES ($1, $2, $3)
-ON CONFLICT (user_id) DO UPDATE SET verify_key = EXCLUDED.verify_key, expiry = EXCLUDED.expiry
+ON CONFLICT (user_id) DO UPDATE SET secret_key = EXCLUDED.secret_key, expiry = EXCLUDED.expiry, created_at = NOW(), seen_at = NULL
 `
 
 const selectIdAndSourceQuery = `
@@ -70,7 +70,7 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 }
 
 const selectVerifyKeyQuery = `
-SELECT EXISTS(SELECT FROM secret.password_reset WHERE verify_key = $1 AND expiry > $2)
+SELECT EXISTS(SELECT FROM queue.password_reset WHERE secret_key = $1 AND expiry > $2)
 `
 
 type verifyKeyRequest struct {
@@ -101,11 +101,11 @@ func VerifyKey(tx *db.Tx, r *http.Request) error {
 }
 
 const selectExpiryQuery = `
-SELECT user_id, expiry FROM secret.password_reset WHERE verify_key = $1
+SELECT user_id, expiry FROM queue.password_reset WHERE secret_key = $1
 `
 
 const deleteKeyQuery = `
-DELETE FROM secret.password_reset WHERE verify_key = $1
+DELETE FROM queue.password_reset WHERE secret_key = $1
 `
 
 const updateUserPasswordQuery = `
@@ -132,7 +132,7 @@ func resetPassword(tx *db.Tx, key, password string) error {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
-		return fmt.Errorf("hasing new password: %w", err)
+		return fmt.Errorf("hashing new password: %w", err)
 	}
 
 	_, err = tx.Exec(updateUserPasswordQuery, hash, userId)

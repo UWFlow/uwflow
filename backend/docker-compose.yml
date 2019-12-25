@@ -55,5 +55,15 @@ services:
     env_file: .env
     image: neuwflow/uw:latest
     restart: always
+  email:
+    build:
+      context: ./flow
+      target: email
+    container_name: email
+    depends_on:
+      - postgres
+    env_file: .env
+    image: email:latest
+    restart: always
 volumes:
   postgres:
