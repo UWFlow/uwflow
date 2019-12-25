@@ -42,7 +42,7 @@ services:
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
-    image: hasura/graphql-engine:v1.0.0-rc.1.cli-migrations
+    image: hasura/graphql-engine:v1.0.0.cli-migrations
     ports:
       - $HASURA_PORT:$HASURA_PORT
     restart: always
@@ -56,14 +56,11 @@ services:
     image: neuwflow/uw:latest
     restart: always
   email:
-    build:
-      context: ./flow
-      target: email
     container_name: email
     depends_on:
       - postgres
     env_file: .env
-    image: email:latest
+    image: neuwflow/email:latest
     restart: always
 volumes:
   postgres:
