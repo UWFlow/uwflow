@@ -417,7 +417,9 @@
               user_id:
                 _eq: X-Hasura-User-Id
           role: user
-      table: section_subscription
+      table:
+        schema: queue
+        name: section_subscribed
       update_permissions: []
     - array_relationships: []
       delete_permissions: []

@@ -59,7 +59,7 @@ WHERE d.enrollment_total < d.enrollment_capacity
 const GetSectionSubscriptionsQuery = `
 SELECT
   u.email, c.name, cs.section_name
-FROM section_subscription ss
+FROM queue.section_subscribed ss
   INNER JOIN work.course_section_opened n ON n.section_id = ss.section_id
   LEFT JOIN public.user u ON ss.user_id = u.id
   LEFT JOIN course_section cs ON ss.section_id = cs.id

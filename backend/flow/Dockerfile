@@ -21,11 +21,12 @@ RUN go test -v ./.../test
 RUN cd api && go build
 RUN cd importer/uw && go build
 RUN cd importer/mongo && go build
+RUN cd email && go build
 
 ######## RELEASE STAGE: API ########
 FROM alpine:latest AS api
 
-# api/parse pulls in these runtime dependencies
+# api/parse pull in these runtime dependencies
 RUN apk add --no-cache poppler
 
 COPY --from=builder /build/api/api /app/api
@@ -47,3 +48,13 @@ COPY --from=builder /build/importer/uw/crontab /etc/cron.d/crontab
 RUN crontab /etc/cron.d/crontab
 
 CMD ["crond", "-f"]
+
+
+FROM alpine:latest AS email
+
+# email sending pulls in these runtime dependencies
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /build/email/email /app/email
+
+CMD ["/app/email"]

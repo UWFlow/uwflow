@@ -165,18 +165,6 @@ CREATE TABLE section_meeting (
   is_tba BOOLEAN NOT NULL
 );
 
-CREATE TABLE section_subscription (
-  user_id INT NOT NULL
-    REFERENCES "user"(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  section_id INT NOT NULL
-    REFERENCES course_section(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT section_subscription_unique UNIQUE(section_id, user_id)
-);
-
 CREATE TABLE user_schedule (
   user_id INT NOT NULL
     REFERENCES "user"(id)
@@ -333,6 +321,14 @@ CREATE TRIGGER review_check_course_taken
 BEFORE INSERT ON review
 FOR EACH ROW
 EXECUTE PROCEDURE check_course_taken();
+
+CREATE FUNCTION sendmail_notify()
+RETURNS TRIGGER AS $$
+    BEGIN
+        PERFORM pg_notify('queue', TG_ARGV[0]);
+        RETURN NULL;
+    END;
+$$ LANGUAGE plpgsql;
 
 -- END PUBLIC FUNCTIONS
 
@@ -510,17 +506,93 @@ CREATE TABLE secret.user_google (
   google_id TEXT NOT NULL
 );
 
-CREATE TABLE secret.password_reset (
-  user_id INT PRIMARY KEY
-    REFERENCES "user"(id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE,
-  verify_key TEXT NOT NULL
-    CONSTRAINT key_length CHECK (LENGTH(verify_key) = 6),
-  expiry TIMESTAMPTZ NOT NULL
+-- END SECRET TABLES
+
+CREATE SCHEMA queue;
+
+CREATE TABLE queue.password_reset(
+    user_id INT PRIMARY KEY
+      REFERENCES "user"(id)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+    secret_key TEXT NOT NULL
+      CONSTRAINT key_length CHECK (LENGTH(secret_key) = 6),
+    expiry TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ DEFAULT NULL
 );
 
--- END SECRET TABLES
+CREATE TABLE queue.section_subscribed(
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL
+      REFERENCES "user"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    section_id INT NOT NULL
+      REFERENCES course_section(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ DEFAULT NULL,
+    CONSTRAINT section_subscribed_unique UNIQUE(section_id, user_id)
+);
+
+CREATE TABLE queue.section_vacated(
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL
+      REFERENCES "user"(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    course_id INT NOT NULL
+      REFERENCES course(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+    section_names TEXT[] NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    seen_at TIMESTAMPTZ DEFAULT NULL
+);
+
+CREATE TRIGGER notify_password_reset AFTER INSERT ON queue.password_reset
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('password_reset');
+
+CREATE TRIGGER notify_section_subscribed AFTER INSERT ON queue.section_subscribed
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_subscribed');
+
+CREATE TRIGGER notify_section_vacated AFTER INSERT ON queue.section_vacated
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('section_vacated');
+
+CREATE FUNCTION insert_course_vacated()
+RETURNS TRIGGER AS $$
+    BEGIN
+
+    -- list of vacated sections
+    WITH vacated AS (
+       SELECT n.id AS section_id, n.course_id, n.section_name
+       FROM updated_table n
+        JOIN old_table o ON n.id = o.id
+       WHERE o.enrollment_total >= n.enrollment_capacity
+         AND n.enrollment_total < n.enrollment_capacity
+    ),
+    -- user -> course mapping for just the vacated sections
+    vacated_user_course AS (
+       SELECT DISTINCT ss.user_id, v.course_id
+       FROM queue.section_subscribed ss
+        JOIN vacated v ON v.section_id = ss.section_id
+    )
+    INSERT INTO queue.section_vacated(user_id, course_id, section_names)
+    SELECT vuc.user_id, v.course_id, array_agg(v.section_name)
+    FROM vacated v
+      JOIN vacated_user_course vuc ON vuc.course_id = v.course_id
+    GROUP BY vuc.user_id, v.course_id;
+
+    RETURN NULL;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER notify_enrolment_update
+AFTER UPDATE ON course_section
+REFERENCING NEW TABLE AS updated_table OLD TABLE AS old_table
+FOR EACH STATEMENT EXECUTE PROCEDURE insert_course_vacated();
 
 -- tables used by importers and workers internally
 CREATE SCHEMA work;
