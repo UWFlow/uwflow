@@ -199,6 +199,7 @@ func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error
 		return fmt.Errorf("converting events: %w", err)
 	}
 
+	w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
 	w.Header().Set("Content-Type", "text/calendar")
 	w.WriteHeader(http.StatusCreated)
 	writeCalendar(w, webcalEvents)

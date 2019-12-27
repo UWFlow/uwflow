@@ -26,7 +26,7 @@ func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error)
 
 	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &hash)
 	if err != nil {
-		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s", email))
+		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s: %w", email))
 	}
 
 	err = bcrypt.CompareHashAndPassword(hash, password)
@@ -78,7 +78,7 @@ func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, e
 
 	_, err = tx.Exec(insertUserEmailQuery, response.UserId, user.Email, hash)
 	if err != nil {
-		return nil, fmt.Errorf("inserting user_email: %w", err)
+		return nil, serde.WithEnum(serde.EmailTaken, fmt.Errorf("inserting user_email: %w", err))
 	}
 
 	return response, nil

@@ -78,7 +78,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - code
@@ -91,7 +91,7 @@
         role: anonymous
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - antireqs
@@ -545,7 +545,7 @@
       select_permissions:
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - code
@@ -555,7 +555,7 @@
         role: anonymous
       - comment: null
         permission:
-          allow_aggregations: true
+          allow_aggregations: false
           columns:
           - id
           - code
@@ -1053,7 +1053,7 @@
           columns:
           - first_name
           - last_name
-          - picture_url
+          - email
           - program
           filter:
             id:

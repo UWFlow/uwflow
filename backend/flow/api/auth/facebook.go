@@ -10,9 +10,10 @@ import (
 )
 
 type fbUserInfo struct {
-	FbId      string `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	FbId       string `json:"id"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	PictureUrl string `json:"picture_url"`
 	// Users who have not verified email with facebook
 	// will not have it available in the graph api response
 	Email *string `json:"email"`
@@ -37,6 +38,7 @@ func getFacebookUserInfo(accessToken string) (*fbUserInfo, error) {
 
 	var fbUser fbUserInfo
 	json.NewDecoder(response.Body).Decode(&fbUser)
+	fbUser.PictureUrl = fmt.Sprintf(facebookPictureUrl, fbUser.FbId)
 	return &fbUser, nil
 }
 
@@ -45,10 +47,9 @@ INSERT INTO secret.user_fb(user_id, fb_id) VALUES ($1, $2)
 `
 
 func registerFacebook(tx *db.Tx, fbUser *fbUserInfo) (*authResponse, error) {
-	pictureUrl := fmt.Sprintf(facebookPictureUrl, fbUser.FbId)
 	user := userInfo{
 		FirstName: fbUser.FirstName, LastName: fbUser.LastName,
-		JoinSource: "facebook", Email: fbUser.Email, PictureUrl: &pictureUrl,
+		JoinSource: "facebook", Email: fbUser.Email, PictureUrl: &fbUser.PictureUrl,
 	}
 
 	response, err := InsertUser(tx, &user)
@@ -65,14 +66,10 @@ func registerFacebook(tx *db.Tx, fbUser *fbUserInfo) (*authResponse, error) {
 }
 
 const selectFbUserQuery = `
-SELECT u.id, u.email
+SELECT u.id, u.email, u.picture_url
 FROM secret.user_fb uf
   JOIN "user" u ON u.id = uf.user_id
 WHERE uf.fb_id = $1
-`
-
-const updateFbEmailQuery = `
-UPDATE "user" SET email = $2 WHERE id = $1
 `
 
 func loginFacebook(tx *db.Tx, accessToken string) (*authResponse, error) {
@@ -82,13 +79,19 @@ func loginFacebook(tx *db.Tx, accessToken string) (*authResponse, error) {
 	}
 
 	var email *string
+	var pictureUrl *string
 	var response = new(authResponse)
-	err = tx.QueryRow(selectFbUserQuery, fbUser.FbId).Scan(&response.UserId, &response.SecretId, &email)
+	err = tx.QueryRow(selectFbUserQuery, fbUser.FbId).Scan(
+		&response.UserId, &email, &pictureUrl,
+	)
 
 	// User was found
 	if err == nil {
 		if email == nil {
-			_, err = tx.Exec(updateFbEmailQuery, response.UserId, fbUser.Email)
+			_, err = tx.Exec(updateEmailQuery, response.UserId, fbUser.Email)
+		}
+		if pictureUrl == nil {
+			_, err = tx.Exec(updatePictureQuery, response.UserId, fbUser.PictureUrl)
 		}
 		response.Token, err = serde.NewSignedJwt(response.UserId)
 		if err != nil {

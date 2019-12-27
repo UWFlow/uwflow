@@ -93,5 +93,6 @@ func main() {
 	router := setupRouter(conn)
 	socket := ":" + env.Global.ApiPort
 
-	http.ListenAndServe(socket, router)
+	err = http.ListenAndServe(socket, router)
+	log.Fatalf("Error: %s", err)
 }

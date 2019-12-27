@@ -45,7 +45,7 @@ export default function(data) {
     group("valid registration", function() {
       check(res, withLog({
         "status": (r) => r.status == 200,
-        "fields": (r) => keysAre(r.json(), ["token", "user_id", "secret_id"]),
+        "fields": (r) => keysAre(r.json(), ["token", "user_id"]),
       }));
     });
 
@@ -55,7 +55,7 @@ export default function(data) {
       const res = register(testUser.first, testUser.last, testUser.email, testUser.password);
       check(res, withLog({
         "status": (r) => r.status == 401,
-        "error message": (r) => r.json("error") == "email_taken_by_email",
+        "error message": (r) => r.json("error") == "email_taken",
       }));
     });
   });

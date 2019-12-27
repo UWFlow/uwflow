@@ -15,10 +15,8 @@ const (
 	ExpiredJwt = "expired_jwt"
 
 	//// Email registration
-	// Email is already taken by one of the following account categories
-	EmailTakenByEmail    = "email_taken_by_email"
-	EmailTakenByFacebook = "email_taken_by_facebook"
-	EmailTakenByGoogle   = "email_taken_by_google"
+	// Email is already taken by another account
+	EmailTaken = "email_taken"
 	// Email is too short
 	EmailTooShort = "email_too_short"
 	// Password is too short (this is also emitted by password reset)
@@ -29,10 +27,6 @@ const (
 	EmailNotRegistered = "email_not_registered"
 	// There is a user with given email, but the given password is incorrect
 	EmailWrongPassword = "email_wrong_password"
-
-	//// Facebook login
-	// Facebook account did not give permission to query email
-	NoFacebookEmail = "no_facebook_email"
 
 	//// Password reset
 	// Password reset key is invalid or expired
