@@ -77,8 +77,8 @@ CREATE TABLE "user" (
     CONSTRAINT user_program_length CHECK (LENGTH(program) <= 256),
   picture_url TEXT,
   email TEXT
-    CONSTRAINT user_email_unique UNIQUE,
-    CONSTRAINT email_length CHECK (6 <= LENGTH(email) AND LENGTH(email) <= 256),
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
+    CONSTRAINT email_format CHECK (email ~* '^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'),
   join_source JOIN_SOURCE NOT NULL
 );
 
@@ -486,6 +486,10 @@ CREATE TABLE secret.user_email (
     REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
+  email TEXT NOT NULL
+    CONSTRAINT user_email_unique UNIQUE
+    CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
+    CONSTRAINT email_format CHECK (email ~* '^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'),
   password_hash TEXT NOT NULL
     CONSTRAINT password_hash_length CHECK (LENGTH(password_hash) = 60)
 );
@@ -496,6 +500,7 @@ CREATE TABLE secret.user_fb (
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   fb_id TEXT NOT NULL
+    CONSTRAINT user_fb_id_unique UNIQUE
 );
 
 CREATE TABLE secret.user_google (
@@ -504,6 +509,7 @@ CREATE TABLE secret.user_google (
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   google_id TEXT NOT NULL
+    CONSTRAINT user_google_id_unique UNIQUE
 );
 
 -- END SECRET TABLES
@@ -639,10 +645,6 @@ CREATE TABLE work.course_section_delta(
   term_id INT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL
-);
-
-CREATE TABLE work.course_section_opened(
-  section_id INT NOT NULL
 );
 
 CREATE TABLE work.section_meeting_delta(

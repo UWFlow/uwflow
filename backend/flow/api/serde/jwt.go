@@ -23,7 +23,7 @@ type CombinedClaims struct {
 	jwt.StandardClaims
 }
 
-const ExpirationPeriod = time.Hour
+const ExpirationPeriod = 24 * time.Hour
 
 func NewSignedJwt(userId int) (string, error) {
 	now := time.Now()

@@ -27,7 +27,7 @@ export default function(data) {
     group("correct credentials", function() {
       check(login(data.email.email, data.email.password), withLog({
         "status": (r) => r.status == 200,
-        "keys": (r) => keysAre(r.json(), ["token", "user_id", "secret_id"]),
+        "keys": (r) => keysAre(r.json(), ["token", "user_id"]),
         "user_id matches registration": (r) => r.json("user_id") == data.email.user_id,
       }));
     });

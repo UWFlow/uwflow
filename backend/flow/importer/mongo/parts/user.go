@@ -75,17 +75,18 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 
 	idMap.User = make(map[primitive.ObjectID]int)
 	users := readMongoUsers(state.Env.MongoDumpPath)
-	preparedUsers := make([][]interface{}, len(users))
 
+	var preparedUsers [][]interface{}
 	var emailCredentials [][]interface{}
 	var fbCredentials [][]interface{}
 
-	for i, user := range users {
+	userId := 1
+	for _, user := range users {
 		secretId, _ := random.String(SecretIdLength, random.Uppercase)
 
 		firstName := strings.TrimSpace(user.FirstName)
 		lastName := strings.TrimSpace(user.LastName)
-		idMap.User[user.Id] = i + 1
+		idMap.User[user.Id] = userId
 
 		if user.ProgramName != nil {
 			programName := strings.TrimSpace(*user.ProgramName)
@@ -110,18 +111,24 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 		// Only add email users with valid email and password
 		// Not sure why there are email users without password?
 		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
-			preparedUsers[i] = []interface{}{
-				secretId, firstName, lastName, user.ProgramName, user.Email, "email",
+			preparedUsers = append(
+				preparedUsers,
+				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "email"},
+			)
+			emailCredentials = append(emailCredentials, []interface{}{userId, user.Email, user.Password})
+		} else if user.FbId != nil {
+			// This single FB ID is duplicated. Instead of heavy deduping, special-case this.
+			if *user.FbId == "1430060710405138" && userId == 25229 {
+				continue
 			}
-			emailCredentials = append(emailCredentials, []interface{}{i + 1, user.Password})
+			preparedUsers = append(
+				preparedUsers,
+				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "facebook"},
+			)
+			fbCredentials = append(fbCredentials, []interface{}{userId, user.FbId})
 		}
 
-		if user.FbId != nil {
-			preparedUsers[i] = []interface{}{
-				secretId, firstName, lastName, user.ProgramName, user.Email, "facebook",
-			}
-			fbCredentials = append(fbCredentials, []interface{}{i + 1, user.FbId})
-		}
+		userId += 1
 	}
 
 	userCount, err := tx.CopyFrom(
@@ -136,7 +143,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 
 	emailUserCount, err := tx.CopyFrom(
 		db.Identifier{"secret", "user_email"},
-		[]string{"user_id", "password_hash"},
+		[]string{"user_id", "email", "password_hash"},
 		emailCredentials,
 	)
 	if err != nil {
