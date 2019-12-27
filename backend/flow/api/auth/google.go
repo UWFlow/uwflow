@@ -41,7 +41,7 @@ INSERT INTO secret.user_google(user_id, google_id) VALUES ($1, $2)
 
 func registerGoogle(tx *db.Tx, googleUser *googleUserInfo) (*authResponse, error) {
 	user := userInfo{
-		FirstName: googleUser.FirstName, LastName: googleUser.LastName, Email: googleUser.Email,
+		FirstName: googleUser.FirstName, LastName: googleUser.LastName, Email: &googleUser.Email,
 		JoinSource: "google", PictureUrl: googleUser.PictureUrl,
 	}
 	response, err := InsertUser(tx, &user)
@@ -58,7 +58,7 @@ func registerGoogle(tx *db.Tx, googleUser *googleUserInfo) (*authResponse, error
 }
 
 const selectGoogleUserQuery = `
-SELECT u.id, u.secret_id
+SELECT u.id, u.picture_url
 FROM secret.user_google ug
 JOIN "user" u
   ON u.id = ug.user_id
@@ -71,12 +71,14 @@ func loginGoogle(tx *db.Tx, accessToken string) (*authResponse, error) {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting user info: %w", err))
 	}
 
-	var email string
+	var pictureUrl string
 	var response = new(authResponse)
-	row := tx.QueryRow(selectGoogleUserQuery, googleUser.GoogleId)
-	err = row.Scan(&response.UserId, &response.SecretId, &email)
+	err = tx.QueryRow(selectGoogleUserQuery, googleUser.GoogleId).Scan(&response.UserId, &pictureUrl)
 
 	if err == nil {
+		if googleUser.PictureUrl != nil && *googleUser.PictureUrl != pictureUrl {
+			_, err = tx.Exec(updatePictureQuery, response.UserId, googleUser.PictureUrl)
+		}
 		response.Token, err = serde.NewSignedJwt(response.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("signing jwt: %w", err)

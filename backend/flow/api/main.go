@@ -50,6 +50,11 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	)
 
 	router.Post(
+		"/auth/refresh",
+		serde.WithDbResponse(conn, auth.RefreshToken, "refresh jwt token"),
+	)
+
+	router.Post(
 		"/auth/forgot-password/send-email",
 		serde.WithDbNoResponse(conn, auth.SendEmail, "password reset initiation"),
 	)
@@ -93,5 +98,6 @@ func main() {
 	router := setupRouter(conn)
 	socket := ":" + env.Global.ApiPort
 
-	http.ListenAndServe(socket, router)
+	err = http.ListenAndServe(socket, router)
+	log.Fatalf("Error: %s", err)
 }

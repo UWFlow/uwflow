@@ -22,15 +22,14 @@ VALUES ($1, $2, $3)
 ON CONFLICT (user_id) DO UPDATE SET secret_key = EXCLUDED.secret_key, expiry = EXCLUDED.expiry, created_at = NOW(), seen_at = NULL
 `
 
-const selectIdAndSourceQuery = `
-SELECT id, join_source FROM "user" WHERE email = $1
+const selectIdQuery = `
+SELECT user_id FROM secret.user_email WHERE email = $1
 `
 
 func sendEmail(tx *db.Tx, email string) error {
 	var userId int
-	var joinSource string
-	err := tx.QueryRow(selectIdAndSourceQuery, email).Scan(&userId, &joinSource)
-	if err != nil || joinSource != "email" {
+	err := tx.QueryRow(selectIdQuery, email).Scan(&userId)
+	if err != nil {
 		return serde.WithStatus(
 			http.StatusBadRequest,
 			serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered")),
