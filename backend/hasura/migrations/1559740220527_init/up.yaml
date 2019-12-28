@@ -1,6 +1,8 @@
 - args:
     allowlist: []
-    functions: []
+    functions:
+      - search_courses
+      - search_profs
     query_collections: []
     remote_schemas: []
     tables:
@@ -1186,5 +1188,83 @@
           filter: {}
         role: user
       table: update_time
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+        - comment: null
+          permission:
+            allow_aggregations: true
+            columns:
+              - prof_ids
+              - terms
+              - course_id
+              - ratings
+              - easy
+              - liked
+              - useful
+              - code
+              - name
+              - document
+            filter: {}
+          role: anonymous
+        - comment: null
+          permission:
+            allow_aggregations: true
+            columns:
+              - prof_ids
+              - terms
+              - course_id
+              - ratings
+              - easy
+              - liked
+              - useful
+              - code
+              - name
+              - document
+            filter: {}
+          role: user
+      table: course_search_index
+      update_permissions: []
+    - array_relationships: []
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions:
+        - comment: null
+          permission:
+            allow_aggregations: true
+            columns:
+              - course_ids
+              - prof_id
+              - ratings
+              - clear
+              - engaging
+              - liked
+              - name
+              - document
+            filter: {}
+          role: anonymous
+        - comment: null
+          permission:
+            allow_aggregations: true
+            columns:
+              - course_ids
+              - prof_id
+              - ratings
+              - clear
+              - engaging
+              - liked
+              - name
+              - document
+            filter: {}
+          role: user
+      table: prof_search_index
       update_permissions: []
   type: replace_metadata
