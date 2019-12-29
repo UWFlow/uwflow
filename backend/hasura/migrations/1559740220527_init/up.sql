@@ -384,6 +384,54 @@ WHERE sm.prof_id IS NOT NULL;
 CREATE VIEW prof_teaches_course AS
 SELECT * FROM materialized.prof_teaches_course;
 
+CREATE MATERIALIZED VIEW materialized.course_search_index AS
+SELECT
+  course.id                                   AS course_id,
+  course.code                                 AS code,
+  course.name                                 AS name,
+  ARRAY_TO_STRING(REGEXP_MATCHES(
+    course.code, '^(.+?)[0-9]'), '')          AS course_letters,
+  materialized.course_rating.filled_count     AS ratings,
+  materialized.course_rating.liked            AS liked,
+  materialized.course_rating.easy             AS easy,
+  materialized.course_rating.useful           AS useful,
+  COALESCE(ARRAY_AGG(DISTINCT course_section.term_id)
+    FILTER (WHERE course_section.term_id IS NOT NULL),
+    ARRAY[]::INT[])                           AS terms,
+  COALESCE(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.prof_id)
+    FILTER (WHERE materialized.prof_teaches_course.prof_id IS NOT NULL),
+    ARRAY[]::INT[])                           AS prof_ids,
+  to_tsvector('simple', course.code) ||
+  to_tsvector('simple', course.name)          AS document
+FROM course
+  LEFT JOIN course_section ON course_section.course_id = course.id
+  LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.course_id = course.id
+  LEFT JOIN materialized.course_rating ON materialized.course_rating.course_id = course.id
+GROUP BY course.id, ratings, liked, easy, useful;
+
+CREATE VIEW course_search_index AS
+SELECT * FROM materialized.course_search_index;
+
+CREATE MATERIALIZED VIEW materialized.prof_search_index AS
+SELECT
+  prof.id                                     AS prof_id,
+  prof.name                                   AS name,
+  materialized.prof_rating.filled_count       AS ratings,
+  materialized.prof_rating.liked              AS liked,
+  materialized.prof_rating.clear              AS clear,
+  materialized.prof_rating.engaging           AS engaging,
+  COALESCE(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.course_id)
+    FILTER (WHERE materialized.prof_teaches_course.course_id IS NOT NULL),
+    ARRAY[]::INT[])                           AS course_ids,
+  to_tsvector('simple', prof.name)            AS document
+FROM prof
+  LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.prof_id = prof.id
+  LEFT JOIN materialized.prof_rating ON materialized.prof_rating.prof_id = prof.id
+GROUP BY prof.id, ratings, liked, clear, engaging;
+
+CREATE VIEW prof_search_index AS
+SELECT * FROM materialized.prof_search_index;
+
 -- END MATERIALIZED VIEWS
 
 -- START MATERIALIZED INDEXES
@@ -395,6 +443,9 @@ CREATE INDEX prof_review_rating_review_id_fkey ON materialized.prof_review_ratin
 
 CREATE INDEX prof_teaches_course_course_id_fkey ON materialized.prof_teaches_course(course_id);
 CREATE INDEX prof_teaches_course_prof_id_fkey ON materialized.prof_teaches_course(prof_id);
+
+CREATE INDEX idx_course_search ON materialized.course_search_index USING GIN(document);
+CREATE INDEX idx_prof_search ON materialized.prof_search_index USING GIN(document);
 
 -- END MATERIALIZED INDEXES
 
@@ -409,6 +460,52 @@ RETURNS TRIGGER AS $$
     RETURN NULL;
   END;
 $$ LANGUAGE plpgsql;
+
+CREATE FUNCTION search_courses(query TEXT, code_only BOOLEAN)
+RETURNS SETOF course_search_index AS $$
+  BEGIN
+    IF code_only THEN
+      RETURN QUERY
+      SELECT * FROM course_search_index
+        WHERE course_letters ILIKE query
+      ORDER BY ratings DESC;
+    ELSE
+      RETURN QUERY
+      SELECT * FROM course_search_index
+        WHERE document @@ to_tsquery(query)
+      UNION
+      SELECT * FROM (SELECT unnest(course_ids) AS course_id
+        FROM prof_search_index
+        WHERE document @@ to_tsquery(query)) prof_courses
+        LEFT JOIN course_search_index USING (course_id)
+      ORDER BY ratings DESC;
+    END IF;
+  END
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE FUNCTION search_profs(query TEXT, code_only BOOLEAN)
+RETURNS SETOF prof_search_index AS $$
+  BEGIN
+    IF code_only THEN
+      RETURN QUERY
+      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+        FROM course_search_index
+        WHERE course_letters ILIKE query) course_profs
+        LEFT JOIN prof_search_index USING (prof_id)
+      ORDER BY ratings DESC;
+    ELSE
+      RETURN QUERY
+      SELECT * FROM prof_search_index
+        WHERE document @@ to_tsquery(query)
+      UNION
+      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+        FROM course_search_index
+        WHERE document @@ to_tsquery(query)) course_profs
+        LEFT JOIN prof_search_index USING (prof_id)
+      ORDER BY ratings DESC;
+    END IF;
+  END;
+$$ LANGUAGE plpgsql STABLE;
 
 -- END MATERIALIZED FUNCTIONS
 
@@ -438,6 +535,16 @@ CREATE TRIGGER refresh_prof_teaches_course
 AFTER INSERT OR UPDATE OR DELETE ON section_meeting
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_teaches_course');
+
+CREATE TRIGGER refresh_course_search_index
+AFTER INSERT OR UPDATE OR DELETE ON section_meeting
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.course_search_index');
+
+CREATE TRIGGER refresh_prof_search_index
+AFTER INSERT OR UPDATE OR DELETE ON section_meeting
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_view('materialized.prof_search_index');
 
 -- END MATERIALIZED TRIGGERS
 
