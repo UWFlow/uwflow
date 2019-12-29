@@ -1209,7 +1209,6 @@
               - useful
               - code
               - name
-              - document
             filter: {}
           role: anonymous
         - comment: null
@@ -1225,7 +1224,6 @@
               - useful
               - code
               - name
-              - document
             filter: {}
           role: user
       table: course_search_index
@@ -1248,7 +1246,6 @@
               - engaging
               - liked
               - name
-              - document
             filter: {}
           role: anonymous
         - comment: null
@@ -1262,7 +1259,6 @@
               - engaging
               - liked
               - name
-              - document
             filter: {}
           role: user
       table: prof_search_index
