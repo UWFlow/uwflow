@@ -1240,12 +1240,14 @@
             allow_aggregations: true
             columns:
               - course_ids
+              - course_codes
               - prof_id
               - ratings
               - clear
               - engaging
               - liked
               - name
+              - code
             filter: {}
           role: anonymous
         - comment: null
@@ -1253,12 +1255,14 @@
             allow_aggregations: true
             columns:
               - course_ids
+              - course_codes
               - prof_id
               - ratings
               - clear
               - engaging
               - liked
               - name
+              - code
             filter: {}
           role: user
       table: prof_search_index
