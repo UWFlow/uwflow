@@ -402,7 +402,12 @@ SELECT
     FILTER (WHERE materialized.prof_teaches_course.prof_id IS NOT NULL),
     ARRAY[]::INT[])                           AS prof_ids,
   to_tsvector('simple', course.code) ||
-  to_tsvector('simple', course.name)          AS document
+  to_tsvector('simple', course.name) ||
+  -- index course numbers to support queries where the course code is split
+  -- ie) the query "ECE 105" should match both "ECE" and "105" because
+  -- the frontend will translate the raw query to "ECE:* & 105:*"
+  to_tsvector('simple', ARRAY_TO_STRING(REGEXP_MATCHES(course.code,
+    '^[a-z|A-Z]+([0-9]+[a-z|A-Z]*)'), ''))    AS document
 FROM course
   LEFT JOIN course_section ON course_section.course_id = course.id
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.course_id = course.id
@@ -416,6 +421,7 @@ CREATE MATERIALIZED VIEW materialized.prof_search_index AS
 SELECT
   prof.id                                     AS prof_id,
   prof.name                                   AS name,
+  prof.code                                   AS code,
   materialized.prof_rating.filled_count       AS ratings,
   materialized.prof_rating.liked              AS liked,
   materialized.prof_rating.clear              AS clear,
@@ -423,6 +429,11 @@ SELECT
   COALESCE(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.course_id)
     FILTER (WHERE materialized.prof_teaches_course.course_id IS NOT NULL),
     ARRAY[]::INT[])                           AS course_ids,
+  COALESCE(ARRAY(SELECT course.code FROM
+    unnest(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.course_id)
+    FILTER (WHERE materialized.prof_teaches_course.course_id IS NOT NULL)) course_id
+    LEFT JOIN course on course.id = course_id),
+    ARRAY[]::TEXT[])                          AS course_codes,
   to_tsvector('simple', prof.name)            AS document
 FROM prof
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.prof_id = prof.id
@@ -472,11 +483,11 @@ RETURNS SETOF course_search_index AS $$
     ELSE
       RETURN QUERY
       SELECT * FROM course_search_index
-        WHERE document @@ to_tsquery(query)
+        WHERE document @@ to_tsquery('simple', query)
       UNION
       SELECT * FROM (SELECT unnest(course_ids) AS course_id
         FROM prof_search_index
-        WHERE document @@ to_tsquery(query)) prof_courses
+        WHERE document @@ to_tsquery('simple', query)) prof_courses
         LEFT JOIN course_search_index USING (course_id)
       ORDER BY ratings DESC;
     END IF;
@@ -496,11 +507,11 @@ RETURNS SETOF prof_search_index AS $$
     ELSE
       RETURN QUERY
       SELECT * FROM prof_search_index
-        WHERE document @@ to_tsquery(query)
+        WHERE document @@ to_tsquery('simple', query)
       UNION
       SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
         FROM course_search_index
-        WHERE document @@ to_tsquery(query)) course_profs
+        WHERE document @@ to_tsquery('simple', query)) course_profs
         LEFT JOIN prof_search_index USING (prof_id)
       ORDER BY ratings DESC;
     END IF;
