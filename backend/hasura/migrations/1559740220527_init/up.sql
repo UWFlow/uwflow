@@ -485,7 +485,7 @@ RETURNS SETOF course_search_index AS $$
       SELECT * FROM course_search_index
         WHERE document @@ to_tsquery('simple', query)
       UNION
-      SELECT * FROM (SELECT unnest(course_ids) AS course_id
+      SELECT DISTINCT * FROM (SELECT unnest(course_ids) AS course_id
         FROM prof_search_index
         WHERE document @@ to_tsquery('simple', query)) prof_courses
         LEFT JOIN course_search_index USING (course_id)
@@ -499,7 +499,7 @@ RETURNS SETOF prof_search_index AS $$
   BEGIN
     IF code_only THEN
       RETURN QUERY
-      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+      SELECT DISTINCT * FROM (SELECT unnest(prof_ids) AS prof_id
         FROM course_search_index
         WHERE course_letters ILIKE query) course_profs
         LEFT JOIN prof_search_index USING (prof_id)
@@ -509,7 +509,7 @@ RETURNS SETOF prof_search_index AS $$
       SELECT * FROM prof_search_index
         WHERE document @@ to_tsquery('simple', query)
       UNION
-      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+      SELECT DISTINCT * FROM (SELECT unnest(prof_ids) AS prof_id
         FROM course_search_index
         WHERE document @@ to_tsquery('simple', query)) course_profs
         LEFT JOIN prof_search_index USING (prof_id)
