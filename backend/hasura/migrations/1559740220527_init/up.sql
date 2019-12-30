@@ -472,6 +472,20 @@ RETURNS TRIGGER AS $$
   END;
 $$ LANGUAGE plpgsql;
 
+-- custom function to refresh search index materialized views 
+-- after refreshing dependency views (course_rating, prof_rating, prof_teaches_course) 
+CREATE FUNCTION refresh_section_meeting_views()
+RETURNS TRIGGER AS $$
+  BEGIN
+    EXECUTE 'REFRESH MATERIALIZED VIEW materialized.course_rating;';
+    EXECUTE 'REFRESH MATERIALIZED VIEW materialized.prof_rating;';
+    EXECUTE 'REFRESH MATERIALIZED VIEW materialized.prof_teaches_course;';
+    EXECUTE 'REFRESH MATERIALIZED VIEW materialized.course_search_index;';
+    EXECUTE 'REFRESH MATERIALIZED VIEW materialized.prof_search_index;';
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+
 CREATE FUNCTION search_courses(query TEXT, code_only BOOLEAN)
 RETURNS SETOF course_search_index AS $$
   BEGIN
@@ -485,7 +499,7 @@ RETURNS SETOF course_search_index AS $$
       SELECT * FROM course_search_index
         WHERE document @@ to_tsquery('simple', query)
       UNION
-      SELECT * FROM (SELECT unnest(course_ids) AS course_id
+      SELECT DISTINCT * FROM (SELECT unnest(course_ids) AS course_id
         FROM prof_search_index
         WHERE document @@ to_tsquery('simple', query)) prof_courses
         LEFT JOIN course_search_index USING (course_id)
@@ -499,7 +513,7 @@ RETURNS SETOF prof_search_index AS $$
   BEGIN
     IF code_only THEN
       RETURN QUERY
-      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+      SELECT DISTINCT * FROM (SELECT unnest(prof_ids) AS prof_id
         FROM course_search_index
         WHERE course_letters ILIKE query) course_profs
         LEFT JOIN prof_search_index USING (prof_id)
@@ -509,7 +523,7 @@ RETURNS SETOF prof_search_index AS $$
       SELECT * FROM prof_search_index
         WHERE document @@ to_tsquery('simple', query)
       UNION
-      SELECT * FROM (SELECT unnest(prof_ids) AS prof_id
+      SELECT DISTINCT * FROM (SELECT unnest(prof_ids) AS prof_id
         FROM course_search_index
         WHERE document @@ to_tsquery('simple', query)) course_profs
         LEFT JOIN prof_search_index USING (prof_id)
@@ -542,20 +556,10 @@ AFTER INSERT OR UPDATE OR DELETE ON prof_review_upvote
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_view('materialized.prof_review_rating');
 
-CREATE TRIGGER refresh_prof_teaches_course
+CREATE TRIGGER refresh_section_meeting
 AFTER INSERT OR UPDATE OR DELETE ON section_meeting
 FOR EACH STATEMENT
-EXECUTE PROCEDURE refresh_view('materialized.prof_teaches_course');
-
-CREATE TRIGGER refresh_course_search_index
-AFTER INSERT OR UPDATE OR DELETE ON section_meeting
-FOR EACH STATEMENT
-EXECUTE PROCEDURE refresh_view('materialized.course_search_index');
-
-CREATE TRIGGER refresh_prof_search_index
-AFTER INSERT OR UPDATE OR DELETE ON section_meeting
-FOR EACH STATEMENT
-EXECUTE PROCEDURE refresh_view('materialized.prof_search_index');
+EXECUTE PROCEDURE refresh_section_meeting_views();
 
 -- END MATERIALIZED TRIGGERS
 
