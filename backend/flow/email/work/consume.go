@@ -22,11 +22,11 @@ func consumeEmailItems(mch chan *common.MailItem, ech chan error) {
 	}
 }
 
-func writeHeader(buf bytes.Buffer, key, value string) {
-	buf.WriteString(key)
-	buf.WriteString(": ")
-	buf.WriteString(value)
-	buf.WriteString("\r\n")
+func writeHeader(buf *bytes.Buffer, key, value string) {
+	(*buf).WriteString(key)
+	(*buf).WriteString(": ")
+	(*buf).WriteString(value)
+	(*buf).WriteString("\r\n")
 }
 
 func send(item common.MailItem) error {
@@ -35,9 +35,9 @@ func send(item common.MailItem) error {
 	auth := smtp.PlainAuth("", from, env.Global.GmailAppPassword, "smtp.gmail.com")
 
 	var buf bytes.Buffer
-	writeHeader(buf, "To", item.To)
-	writeHeader(buf, "Subject", item.Subject)
-	buf.Write([]byte("MIME-version: 1.0\nContent-Type: text/html;charset=\"UTF-8\";\n"))
+	writeHeader(&buf, "To", item.To)
+	writeHeader(&buf, "Subject", item.Subject)
+	buf.Write([]byte("MIME-version: 1.0;\nContent-Type: text/html;charset=\"UTF-8\";\n"))
 	buf.WriteString(item.Body)
 
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{item.To}, buf.Bytes())
