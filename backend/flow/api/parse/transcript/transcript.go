@@ -18,37 +18,10 @@ type TermSummary struct {
 	Courses []string
 }
 
-func (ts TermSummary) Equals(other TermSummary) bool {
-	if ts.TermId != other.TermId || ts.Level != other.Level {
-		return false
-	}
-	for i, course := range ts.Courses {
-		if course != other.Courses[i] {
-			return false
-		}
-	}
-	return true
-}
-
 type Summary struct {
 	StudentNumber int
 	ProgramName   string
 	TermSummaries []TermSummary
-}
-
-func (ts Summary) Equals(other Summary) bool {
-	if ts.StudentNumber != other.StudentNumber || ts.ProgramName != other.ProgramName {
-		return false
-	}
-	if len(ts.TermSummaries) != len(other.TermSummaries) {
-		return false
-	}
-	for i, summary := range ts.TermSummaries {
-		if !summary.Equals(other.TermSummaries[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 var (
