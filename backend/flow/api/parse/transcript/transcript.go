@@ -54,7 +54,11 @@ func (ts Summary) Equals(other Summary) bool {
 var (
 	// We have at least two letters in the department name, then whitespace,
 	// then the course number in [1, 1000) potentially with letters at the end.
-	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\s+(\d{1,3}\w?)\s`)
+	// Why trailing whitespace and the strict requirement of at least two
+	// characters that are exactly 0x20? This whitespace must be column padding.
+	// This distinguishes courses in the taken table from courses in the notes
+	// (e.g. course equivalences established during program transfer)
+	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}`)
 	LevelRegexp     = regexp.MustCompile(`Level:\s+(\d\w)`)
 	StudentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
 	TermRegexp      = regexp.MustCompile(`(Fall|Winter|Spring)\s+(\d{4})`)
