@@ -203,6 +203,9 @@ CREATE TABLE review (
   prof_comment TEXT
     CONSTRAINT prof_comment_length CHECK (LENGTH(prof_comment) <= 8192),
   public BOOLEAN NOT NULL,
+  -- only the mongo importer may create legacy reviews
+  -- such reviews have NULL user_id and skip course-taken and uniqueness checks
+  legacy BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT course_uniquely_reviewed UNIQUE(course_id, user_id)
@@ -305,7 +308,7 @@ EXECUTE PROCEDURE set_updated_at();
 CREATE FUNCTION check_course_taken()
 RETURNS TRIGGER AS $$
   BEGIN
-    IF EXISTS(
+    IF NEW.legacy OR EXISTS(
       SELECT
       FROM user_course_taken
       WHERE user_id = NEW.user_id
