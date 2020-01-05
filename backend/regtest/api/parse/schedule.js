@@ -22,13 +22,13 @@ export default function(data) {
     group("valid", function() {
       check(uploadSchedule(VALID_SCHEDULE, data.email.token), withLog({
         "status": (r) => r.status == 200,
-        "section count": (r) => r.json("sections_imported") == 13,
+        "section count": (r) => r.json("sections_imported") == 9,
       }));
     });
     group("valid again", function() {
       check(uploadSchedule(VALID_SCHEDULE, data.email.token), withLog({
         "status": (r) => r.status == 200,
-        "section count": (r) => r.json("sections_imported") == 13,
+        "section count": (r) => r.json("sections_imported") == 9,
       }));
     });
     group("malformed", function() {

@@ -1,144 +1,130 @@
 
 GO!
-Student 1
+Dmytro Shynkevych
 My Academics
 Course Selection (Undergrad only)
 Search for Classes
 Enroll
  	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information	 
-Add Classes
-Step 1
-Step 2
-Step 3
-1.  Select classes to add
-To select classes for another term, select the term and select Change.  When you are satisfied with your class selections, proceed to step 2 of 3.
-Fall 2019 | Undergraduate | University of Waterloo
-Descr
-Open
-Open
-Closed
-Closed
-Details
-Add to Cart
-Enter Class Nbr
- 
-Find Classes
-Class Search
-Fall 2019 Shopping Cart
- 
-Your enrollment shopping cart is empty.
-Collapse section My Fall 2019 Class Schedule My Fall 2019 Class Schedule 
-Descr
+My Class Schedule
+List View
+Weekly Calendar View
+Select Display Option
+L
+Winter 2020 | Undergraduate | University of Waterloo
+Group Box
+Collapse section Class Schedule Filter Options Class Schedule Filter Options 
+Show Enrolled Classes
+Show Dropped Classes
+Show Waitlisted Classes
+CO 255 - Intro Optimization (Adv Level)
+Status	Units	Grading	Deadlines
 Enrolled
-Dropped
-Enrolled
-Dropped
-Class	Description	Days/Times	Room	Instructor	Units	Status
-ME 235-001
-(4896)
-Materials Science & Eng (LEC)
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6169
+001
+LEC
 TTh 2:30PM - 3:50PM
-MC 2038
-M. Yavuz
+MC 4040
+Ricardo Fukasawa
+01/06/2020 - 04/03/2020
+CO 487 - Applied Cryptography
+Status	Units	Grading	Deadlines
+Enrolled
 0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6125
+001
+LEC
+MWF 11:30AM - 12:20PM
+RCH 101
+Alfred Menezes
+01/06/2020 - 04/03/2020
+CS 341 - Algorithms
+Status	Units	Grading	Deadlines
 Enrolled
-ME 235-101
-(4897)
-Materials Science & Eng (TUT)
-W 9:30AM - 10:20AM
-F 9:30AM - 10:20AM
-MC 4064
-DWE 2527
-Staff
- 
-Enrolled
-ME 235-201
-(4899)
-Materials Science & Eng (LAB)
-F 8:30AM - 11:20AM
-E3 2119
-Staff
- 
-Enrolled
-ME 250-002
-(4741)
-Thermodynamics 1 (LEC)
-TTh 11:30AM - 12:50PM
-CPH 3681
-J. Wen
 0.50
-Enrolled
-ME 250-103
-(4742)
-Thermodynamics 1 (TUT)
-M 2:30PM - 3:20PM
-CPH 3681
-Staff
- 
-Enrolled
-MSCI 200A-001
-(5003)
-Seminar (LEC)
-W 11:30AM - 12:20PM
-CPH 3681
-M. Smucker
- 
-Enrolled
-MSCI 240-001
-(4747)
-Algorithms & Data Structures (LEC)
-MWF 1:30PM - 2:20PM
-CPH 3681
-M. Hancock
-0.50
-Enrolled
-MSCI 240-101
-(4748)
-Algorithms & Data Structures (TUT)
-M 3:30PM - 4:20PM
-CPH 3681
-Staff
- 
-Enrolled
-MSCI 251-001
-(7993)
-Probability and Statistics 1 (LEC)
-TTh 1:00PM - 2:20PM
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6448
+101
+TUT
+F 12:30PM - 1:20PM
 MC 2034
-H. Mahmoudzadeh
-0.50
-Enrolled
-MSCI 251-101
-(7994)
-Probability and Statistics 1 (TUT)
-F 2:30PM - 3:20PM
-CPH 3681
 Staff
- 
+01/06/2020 - 04/03/2020
+5784
+001
+LEC
+MW 4:00PM - 5:20PM
+MC 2017
+Trevor Brown
+01/06/2020 - 04/03/2020
+6265
+201
+TST
+T 7:00PM - 8:50PM
+TBA
+Caroline Kierstead
+02/25/2020 - 02/25/2020
+CS 350 - Operating Systems
+Status	Units	Grading	Deadlines
 Enrolled
-MSCI 251-201
-(7995)
-Probability and Statistics 1 (LAB)
-M 10:00AM - 11:20AM
-CPH 1346
-H. Mahmoudzadeh
- 
-Enrolled
-MSCI 271-001
-(4751)
-Advanced Calc. & Num. Methods (LEC)
-MWF 12:30PM - 1:20PM
-CPH 3681
-F. Beylunioglu,
-Q. He
 0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6355
+003
+LEC
+MW 10:00AM - 11:20AM
+MC 2038
+Lesley Istead
+01/06/2020 - 04/03/2020
+6135
+101
+TST
+Th 7:00PM - 8:50PM
+TBA
+Gustavo Fortes Tondello
+03/05/2020 - 03/05/2020
+CS 476 - Num Comp for Fin Modeling
+Status	Units	Grading	Deadlines
 Enrolled
-MSCI 271-101
-(4752)
-Advanced Calc. & Num. Methods (TUT)
-W 2:30PM - 4:20PM
-CPH 3681
-Staff
- 
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+5949
+001
+LEC
+MW 2:30PM - 3:50PM
+E2 1732
+Yu Li
+01/06/2020 - 04/03/2020
+SYDE 556 - Simulating Neurobiological Sys
+Status	Units	Grading	Deadlines
 Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+4595
+001
+LEC
+T 11:30AM - 12:50PM
+E5 4106
+Andreas Stoeckel
+01/06/2020 - 04/03/2020
+Th 9:00AM - 10:20AM
+E5 6004
+Andreas Stoeckel
+01/06/2020 - 04/03/2020
+Printer Friendly Page
 Go to top iconGo to top
