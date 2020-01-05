@@ -1,3 +1,5 @@
+// This implementation is pursuant to RFC 5545.
+// Whenever a section number is cited, it is in reference to the said RFC.
 package calendar
 
 import (
