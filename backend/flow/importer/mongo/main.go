@@ -24,6 +24,7 @@ func main() {
 		parts.ImportSections,
 		parts.ImportUsers,
 		parts.ImportReviews,
+		parts.ImportLegacyReviews,
 		parts.ImportSchedules,
 	}
 	for _, operation := range operations {
