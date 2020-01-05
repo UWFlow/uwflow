@@ -166,7 +166,7 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 			review = data.Review{
 				CourseId:      courseId,
 				ProfId:        util.NilIfZero(profId),
-				UserId:        userId,
+				UserId:        &userId,
 				Liked:         rescaledRating(courseReview.Interest, 0, 1),
 				CourseEasy:    rescaledRating(courseReview.Easiness, 0, 5),
 				CourseUseful:  rescaledRating(courseReview.Usefulness, 0, 5),
@@ -248,6 +248,92 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 		return err
 	}
 	log.EndImport(state.Log, "course_review_upvote", courseUpvoteCount)
+
+	return tx.Commit()
+}
+
+func readMongoLegacyReviews(rootPath string) []MongoReview {
+	data, err := ioutil.ReadFile(path.Join(rootPath, "menlo_course.bson"))
+	if err != nil {
+		panic(err)
+	}
+
+	var reviews []MongoReview
+	for len(data) > 0 {
+		var r bson.Raw
+		var m MongoReview
+		bson.Unmarshal(data, &r)
+		bson.Unmarshal(r, &m)
+		reviews = append(reviews, m)
+		data = data[len(r):]
+	}
+
+	return reviews
+}
+
+func ImportLegacyReviews(state *state.State, idMap *IdentifierMap) error {
+	log.StartImport(state.Log, "legacy_review")
+
+	tx, err := state.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	idMap.Review = make(map[primitive.ObjectID]int)
+	mongoReviews := readMongoLegacyReviews(state.Env.MongoDumpPath)
+
+	var preparedReviews [][]interface{}
+
+	var review data.Review
+	reviewId := 1
+	for _, mongoReview := range mongoReviews {
+		courseId, courseFound := idMap.Course[mongoReview.CourseId]
+		if !courseFound {
+			continue
+		}
+
+		profId := idMap.Prof[mongoReview.ProfId]
+
+		if !mongoReview.Empty() {
+			courseReview := &mongoReview.CourseReview
+			profReview := &mongoReview.ProfReview
+
+			idMap.Review[mongoReview.Id] = reviewId
+
+			review = data.Review{
+				CourseId:    courseId,
+				ProfId:      util.NilIfZero(profId),
+				Liked:       rescaledRating(courseReview.Interest, 0, 1),
+				CourseEasy:  rescaledRating(courseReview.Easiness, 0, 5),
+				ProfClear:   rescaledRating(profReview.Clarity, 0, 5),
+				ProfComment: util.NilIfEmpty(profReview.Comment),
+				Public:      false,
+				Legacy:      true,
+				// this is the only available date in old reviews
+				CreatedAt: profReview.CommentDate,
+				UpdatedAt: profReview.CommentDate,
+				// all the following are unavailable
+				UserId:        nil,
+				CourseComment: nil,
+				CourseUseful:  nil,
+				ProfEngaging:  nil,
+			}
+			preparedReviews = append(preparedReviews, util.AsSlice(review))
+
+			reviewId += 1
+		}
+	}
+
+	reviewCount, err := tx.CopyFrom(
+		db.Identifier{"review"},
+		util.Fields(review),
+		preparedReviews,
+	)
+	if err != nil {
+		return err
+	}
+	log.EndImport(state.Log, "legacy_review", reviewCount)
 
 	return tx.Commit()
 }

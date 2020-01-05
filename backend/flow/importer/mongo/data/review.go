@@ -4,7 +4,7 @@ import "time"
 
 type Review struct {
 	CourseId      int
-	UserId        int
+	UserId        *int
 	ProfId        *int
 	Liked         *int16
 	CourseEasy    *int16
@@ -14,6 +14,7 @@ type Review struct {
 	ProfEngaging  *int16
 	ProfComment   *string
 	Public        bool
+	Legacy        bool
 	CreatedAt     *time.Time
 	UpdatedAt     *time.Time
 }
