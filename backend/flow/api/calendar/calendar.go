@@ -14,6 +14,7 @@ import (
 )
 
 type postgresEvent struct {
+	SectionId    int
 	CourseCode   string
 	SectionName  string
 	CourseName   string
@@ -29,27 +30,25 @@ type postgresEvent struct {
 }
 
 type webcalEvent struct {
+	// An identifier such that (groupid, timestamp) is globally unique.
+	// For example, section ids have this property.
+	GroupId   int
 	Summary   string
 	StartTime time.Time
 	EndTime   time.Time
 	Location  string
 }
 
-const webcalPreamble = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//UW Flow//uwflow.com//EN
-X-WR-CALDESC:Schedule exported from https://uwflow.com
-X-WR-CALNAME:UW Flow schedule
-`
+const timestampFormat = `20060102T150405Z`
 
-const webcalEventTemplate = `BEGIN:VEVENT
-SUMMARY:%s
-DTSTART;VALUE=DATE-TIME:%s
-DTEND;VALUE=DATE-TIME:%s
-DTSTAMP;VALUE=DATE-TIME:%s
-LOCATION:%s
-END:VEVENT
-`
+const webcalPreamble = ("BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" +
+	"METHOD:REQUEST\r\nPRODID:-//uwflow.com//%s//EN\r\n" +
+	"X-WR-CALDESC:Schedule exported from https://uwflow.com\r\n" +
+	"X-WR-CALNAME:UW Flow schedule\r\n")
+
+const webcalEventTemplate = ("BEGIN:VEVENT\r\nSUMMARY:%s\r\n" +
+	"UID:-//uwflow.com//%s//%04d//%d//EN\r\n" +
+	"DTSTART:%s\r\nDTEND:%s\r\nDTSTAMP:%s\r\nLOCATION:%s\r\nEND:VEVENT\r\n")
 
 var (
 	dayToIndex = map[string]int{
@@ -63,22 +62,22 @@ var (
 	}
 )
 
-func writeCalendar(w io.Writer, events []*webcalEvent) {
+func writeCalendar(w io.Writer, secretId string, events []*webcalEvent) {
 	createTime := time.Now()
 
-	io.WriteString(w, webcalPreamble)
-	// iCalendar spec (RFC 5545) requires timestamps in ISO 8601 format.
-	// RFC 3339 is a stricter version of ISO 8601, thus acceptable.
-	createTimeString := createTime.Format(time.RFC3339)
+	fmt.Fprintf(w, webcalPreamble, secretId)
+
+	createTimeString := createTime.Format(timestampFormat)
 	for _, event := range events {
-		startTimeString := event.StartTime.Format(time.RFC3339)
-		endTimeString := event.EndTime.Format(time.RFC3339)
+		startTimeString := event.StartTime.Format(timestampFormat)
+		endTimeString := event.EndTime.Format(timestampFormat)
 		fmt.Fprintf(
 			w, webcalEventTemplate,
-			event.Summary, startTimeString, endTimeString, createTimeString, event.Location,
+			event.Summary, secretId, event.GroupId, event.StartTime.Unix(),
+			startTimeString, endTimeString, createTimeString, event.Location,
 		)
 	}
-	io.WriteString(w, "END:VCALENDAR\n")
+	io.WriteString(w, "END:VCALENDAR\r\n")
 }
 
 const selectEventQuery = `
@@ -94,7 +93,7 @@ WITH src AS (
   FROM section_exam
 )
 SELECT
-  c.code, cs.section_name, c.name, src.is_exam, src.location,
+  src.section_id, c.code, cs.section_name, c.name, src.is_exam, src.location,
   src.start_date, src.end_date, src.start_seconds, src.end_seconds, src.days
 FROM
   user_schedule us
@@ -129,7 +128,7 @@ func extractUserEvents(conn *db.Conn, secretId string) ([]*postgresEvent, error)
 		var ev postgresEvent
 
 		err = rows.Scan(
-			&ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.IsExam, &ev.Location,
+			&ev.SectionId, &ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.IsExam, &ev.Location,
 			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
@@ -162,6 +161,7 @@ func postgresToWebcalEvent(event *postgresEvent, date time.Time) *webcalEvent {
 	}
 
 	return &webcalEvent{
+		GroupId:   event.SectionId,
 		Summary:   summary,
 		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
 		EndTime:   date.Add(time.Second * time.Duration(event.EndSeconds)),
@@ -200,9 +200,9 @@ func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error
 	}
 
 	w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
-	w.Header().Set("Content-Type", "text/calendar")
+	w.Header().Set("Content-Type", `text/calendar; charset="utf-8"; method=REQUEST`)
 	w.WriteHeader(http.StatusCreated)
-	writeCalendar(w, webcalEvents)
+	writeCalendar(w, secretId, webcalEvents)
 
 	return nil
 }
