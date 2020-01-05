@@ -39,16 +39,65 @@ type webcalEvent struct {
 	Location  string
 }
 
-const timestampFormat = `20060102T150405Z`
-
-const webcalPreamble = ("BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" +
-	"METHOD:REQUEST\r\nPRODID:-//uwflow.com//%s//EN\r\n" +
+// 3.1 CONTENT LINES
+// - delimited by a line break, which is a CRLF sequence
+// - CRLF followed immediately by a single linear white-space character is ignored
+//   (therefore, we must take care to never have a leading space on a line)
+const webcalPreamble = ("BEGIN:VCALENDAR\r\n" +
+	// 3.7.2 METHOD: TEXT
+	// - MUST be the same as the Content-Type "method" parameter value
+	//
+	// This is required by some software like Outlook.
+	"METHOD:REQUEST\r\n" +
+	// 3.7.3 PRODID: TEXT
+	// - MUST be specified once in an iCalendar object
+	// - vendor [...] SHOULD assure that this is a globally unique identifier
+	//
+	// We take it to be -//uwflow.com//$SECRET_ID//EN accoring to convention.
+	"PRODID:-//uwflow.com//%s//EN\r\n" +
+	// 3.7.4 VERSION: TEXT
+	// - MUST be specified once in an iCalendar object
+	// - A value of "2.0" corresponds to [RFC 5545]
+	"VERSION:2.0\r\n" +
+	// The following are non-standard (3.8.8.2) properties recognized by Google Calendar
 	"X-WR-CALDESC:Schedule exported from https://uwflow.com\r\n" +
 	"X-WR-CALNAME:UW Flow schedule\r\n")
 
-const webcalEventTemplate = ("BEGIN:VEVENT\r\nSUMMARY:%s\r\n" +
+const webcalEventTemplate = ("BEGIN:VEVENT\r\n" +
+	// 3.8.1.12 SUMMARY: TEXT
+	// - CAN be specified [...] to capture a short, one-line summary about the activity
+	//
+	// We use strings of the form "ECE105 - LEC 001" or "ECE105 - FINAL"
+	"SUMMARY:%s\r\n" +
+	// 3.8.4.7 UNIQUE IDENTIFIER: TEXT
+	// - MUST be specified in the "VEVENT" [...] [component]
+	// - MUST be a globally unique identifier
+	//
+	// We use -//uwflow.com//$SECRET_ID//$SECTION_ID//$DTSTART//EN
 	"UID:-//uwflow.com//%s//%04d//%d//EN\r\n" +
-	"DTSTART:%s\r\nDTEND:%s\r\nDTSTAMP:%s\r\nLOCATION:%s\r\nEND:VEVENT\r\n")
+	// 3.8.2.4 DTSTART: DATE-TIME
+	// - defines the start date and time for the event
+	"DTSTART:%s\r\n" +
+	// 3.8.2.2 DTEND: DATE-TIME
+	// - defines the end date and time for the event
+	// - MUST be later in time than the value of the "DTSTART" property
+	// - MUST be specified as a date with local time
+	//   if and only if the "DTSTART" property is also specified as a date with local time
+	//
+	// We do, in fact, use local time in both cases, since our StartSeconds are in Waterloo time.
+	"DTEND:%s\r\n" +
+	// 3.8.7.2 DTSTAMP: DATE-TIME
+	// - specifies the date and time that the instance of the iCalendar object was created
+	//
+	// Unlike the previous timestamps, this one is given in UTC time.
+	// This is because we don't want to bother with the server timezone.
+	"DTSTAMP:%s\r\n" +
+	// 3.8.1.7 LOCATION: TEXT
+	// - defines the intended venue for the activity defined by a calendar component
+	//
+	// This is the building-room location of a meeting, e.g. "MC 4085"
+	"LOCATION:%s\r\n" +
+	"END:VEVENT\r\n")
 
 var (
 	dayToIndex = map[string]int{
@@ -62,15 +111,21 @@ var (
 	}
 )
 
+const (
+	// As specified in 3.3.5 DATE-TIME
+	localFormat = "20060102T150405"
+	utcFormat   = localFormat + "Z"
+)
+
 func writeCalendar(w io.Writer, secretId string, events []*webcalEvent) {
 	createTime := time.Now()
 
 	fmt.Fprintf(w, webcalPreamble, secretId)
 
-	createTimeString := createTime.Format(timestampFormat)
+	createTimeString := createTime.UTC().Format(utcFormat)
 	for _, event := range events {
-		startTimeString := event.StartTime.Format(timestampFormat)
-		endTimeString := event.EndTime.Format(timestampFormat)
+		startTimeString := event.StartTime.Format(localFormat)
+		endTimeString := event.EndTime.Format(localFormat)
 		fmt.Fprintf(
 			w, webcalEventTemplate,
 			event.Summary, secretId, event.GroupId, event.StartTime.Unix(),
@@ -199,7 +254,12 @@ func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error
 		return fmt.Errorf("converting events: %w", err)
 	}
 
-	w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
+	if r.URL.Scheme == "https" {
+		// Access by HTTPS URL should result in a download instead of opening contents in browser
+		// The name of the downloaded file should be user-friendly and not $SECRET_ID.ics
+		w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
+	}
+	// Google Calendar requires explicit charset; Outlook requires explicit method
 	w.Header().Set("Content-Type", `text/calendar; charset="utf-8"; method=REQUEST`)
 	w.WriteHeader(http.StatusCreated)
 	writeCalendar(w, secretId, webcalEvents)
