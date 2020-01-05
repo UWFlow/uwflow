@@ -266,7 +266,7 @@ SELECT
     ELSE NULL
   END AS picture_url
 FROM review r
-  JOIN "user" u ON r.user_id = u.id;
+  LEFT JOIN "user" u ON r.user_id = u.id;
 
 CREATE VIEW review_user_id AS
 SELECT id AS review_id, user_id
