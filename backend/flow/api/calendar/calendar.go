@@ -19,7 +19,6 @@ type postgresEvent struct {
 	SectionId    int
 	CourseCode   string
 	SectionName  string
-	CourseName   string
 	IsExam       bool
 	Location     *string
 	StartDate    time.Time
@@ -40,6 +39,13 @@ type webcalEvent struct {
 	EndTime   time.Time
 	Location  string
 }
+
+// 3.3.5 DATE-TIME
+// UTC timestamp format is YYYYMMDD | "T" | HHmmss | "Z"
+const (
+	dbDateFormat       = "2006-01-02"
+	icsTimestampFormat = "20060102T150405Z"
+)
 
 // 3.1 CONTENT LINES
 // - delimited by a line break, which is a CRLF sequence
@@ -86,7 +92,10 @@ const webcalEventTemplate = ("BEGIN:VEVENT\r\n" +
 	// - MUST be specified as a date with local time
 	//   if and only if the "DTSTART" property is also specified as a date with local time
 	//
-	// We do, in fact, use local time in both cases, since our StartSeconds are in Waterloo time.
+	// We can use local time (with explicit TZID=America/Toronto), UTC time or floating time
+	// ("picture of a clock", like TIMEZONE WITHOUT TIMESTAMP in SQL).
+	// We use UTC time in both cases: Google Calendar unfortunately treats floating as UTC,
+	// and local time is complex, seemingly requiring a handcrafted VTIMEZONE entity.
 	"DTEND:%s\r\n" +
 	// 3.8.7.2 DTSTAMP: DATE-TIME
 	// - specifies the date and time that the instance of the iCalendar object was created
@@ -105,7 +114,7 @@ var (
 	dayToIndex = map[string]int{
 		"Su": 0,
 		"M":  1,
-		"Tu": 2,
+		"T":  2,
 		"W":  3,
 		"Th": 4,
 		"F":  5,
@@ -113,21 +122,15 @@ var (
 	}
 )
 
-const (
-	// As specified in 3.3.5 DATE-TIME
-	localFormat = "20060102T150405"
-	utcFormat   = localFormat + "Z"
-)
-
 func writeCalendar(w io.Writer, secretId string, events []*webcalEvent) {
 	createTime := time.Now()
 
 	fmt.Fprintf(w, webcalPreamble, secretId)
 
-	createTimeString := createTime.UTC().Format(utcFormat)
+	createTimeString := createTime.UTC().Format(icsTimestampFormat)
 	for _, event := range events {
-		startTimeString := event.StartTime.Format(localFormat)
-		endTimeString := event.EndTime.Format(localFormat)
+		startTimeString := event.StartTime.Format(icsTimestampFormat)
+		endTimeString := event.EndTime.Format(icsTimestampFormat)
 		fmt.Fprintf(
 			w, webcalEventTemplate,
 			event.Summary, secretId, event.GroupId, event.StartTime.Unix(),
@@ -150,8 +153,9 @@ WITH src AS (
   FROM section_exam
 )
 SELECT
-  src.section_id, c.code, cs.section_name, c.name, src.is_exam, src.location,
-  src.start_date, src.end_date, src.start_seconds, src.end_seconds, src.days
+  src.section_id, c.code, cs.section_name, src.is_exam, src.location,
+  src.start_date :: TEXT, src.end_date :: TEXT,
+  src.start_seconds, src.end_seconds, src.days
 FROM
   user_schedule us
   JOIN course_section cs ON cs.id = us.section_id
@@ -183,14 +187,21 @@ func extractUserEvents(conn *db.Conn, secretId string) ([]*postgresEvent, error)
 
 	for rows.Next() {
 		var ev postgresEvent
+		var startDateStr, endDateStr string
 
 		err = rows.Scan(
-			&ev.SectionId, &ev.CourseCode, &ev.SectionName, &ev.CourseName, &ev.IsExam, &ev.Location,
-			&ev.StartDate, &ev.EndDate, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
+			&ev.SectionId, &ev.CourseCode, &ev.SectionName, &ev.IsExam, &ev.Location,
+			&startDateStr, &endDateStr, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("reading event row: %w", err)
 		}
+
+		// Instead of parsing directly into time.Time, we go through strings
+		// to specify the right timezone. This sounds slow, but it's better
+		// than fixing up after each postgresEvent gets exploded into many webcalEvents.
+		ev.StartDate, _ = time.ParseInLocation(dbDateFormat, startDateStr, UniversityLocation)
+		ev.EndDate, _ = time.ParseInLocation(dbDateFormat, endDateStr, UniversityLocation)
 
 		for _, day := range ev.Days {
 			ev.HasDay[dayToIndex[day]] = true
@@ -220,8 +231,8 @@ func postgresToWebcalEvent(event *postgresEvent, date time.Time) *webcalEvent {
 	return &webcalEvent{
 		GroupId:   event.SectionId,
 		Summary:   summary,
-		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)),
-		EndTime:   date.Add(time.Second * time.Duration(event.EndSeconds)),
+		StartTime: date.Add(time.Second * time.Duration(event.StartSeconds)).UTC(),
+		EndTime:   date.Add(time.Second * time.Duration(event.EndSeconds)).UTC(),
 		Location:  location,
 	}
 }
@@ -256,11 +267,8 @@ func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error
 		return fmt.Errorf("converting events: %w", err)
 	}
 
-	if r.URL.Scheme == "https" {
-		// Access by HTTPS URL should result in a download instead of opening contents in browser
-		// The name of the downloaded file should be user-friendly and not $SECRET_ID.ics
-		w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
-	}
+	// The name of the downloaded file should be user-friendly and not $SECRET_ID.ics
+	w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
 	// Google Calendar requires explicit charset; Outlook requires explicit method
 	w.Header().Set("Content-Type", `text/calendar; charset="utf-8"; method=REQUEST`)
 	w.WriteHeader(http.StatusCreated)
