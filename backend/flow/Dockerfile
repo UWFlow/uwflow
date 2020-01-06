@@ -26,8 +26,8 @@ RUN cd email && go build
 ######## RELEASE STAGE: API ########
 FROM alpine:latest AS api
 
-# api/parse pull in these runtime dependencies
-RUN apk add --no-cache poppler
+# parsing and webcal pull in these runtime dependencies
+RUN apk add --no-cache poppler tzdata
 
 COPY --from=builder /build/api/api /app/api
 
