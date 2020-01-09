@@ -191,15 +191,15 @@ CREATE TABLE review (
   liked SMALLINT
     CONSTRAINT liked_range CHECK (0 <= liked AND liked <= 1),
   course_easy SMALLINT
-    CONSTRAINT easy_range CHECK (0 <= course_easy AND course_easy <= 5),
+    CONSTRAINT easy_range CHECK (0 <= course_easy AND course_easy <= 4),
   course_useful SMALLINT
-    CONSTRAINT useful_range CHECK (0 <= course_useful AND course_useful <= 5),
+    CONSTRAINT useful_range CHECK (0 <= course_useful AND course_useful <= 4),
   course_comment TEXT
     CONSTRAINT course_comment_length CHECK (LENGTH(course_comment) <= 8192),
   prof_clear SMALLINT
-    CONSTRAINT clear_range CHECK (0 <= prof_clear AND prof_clear <= 5),
+    CONSTRAINT clear_range CHECK (0 <= prof_clear AND prof_clear <= 4),
   prof_engaging SMALLINT
-    CONSTRAINT engaging_range CHECK (0 <= prof_engaging AND prof_engaging <= 5),
+    CONSTRAINT engaging_range CHECK (0 <= prof_engaging AND prof_engaging <= 4),
   prof_comment TEXT
     CONSTRAINT prof_comment_length CHECK (LENGTH(prof_comment) <= 8192),
   public BOOLEAN NOT NULL,
@@ -348,8 +348,8 @@ SELECT
   COUNT(r.liked)           AS filled_count,
   COUNT(r.course_comment)  AS comment_count,
   AVG(r.liked)             AS liked,
-  AVG(r.course_easy) / 5   AS easy,
-  AVG(r.course_useful) / 5 AS useful
+  AVG(r.course_easy) / 4   AS easy,
+  AVG(r.course_useful) / 4 AS useful
 FROM course
   LEFT JOIN review r ON course.id = r.course_id
 GROUP BY course.id;
@@ -360,8 +360,8 @@ SELECT
   COUNT(r.liked)           AS filled_count,
   COUNT(r.prof_comment)    AS comment_count,
   AVG(r.liked)             AS liked,
-  AVG(r.prof_clear) / 5    AS clear,
-  AVG(r.prof_engaging) / 5 AS engaging
+  AVG(r.prof_clear) / 4    AS clear,
+  AVG(r.prof_engaging) / 4 AS engaging
 FROM prof
   LEFT JOIN review r ON prof.id = r.prof_id
 GROUP BY prof.id;
