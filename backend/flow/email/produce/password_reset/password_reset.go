@@ -37,7 +37,7 @@ func Produce(tx *db.Tx, mch chan *common.MailItem) error {
 			return fmt.Errorf("reading password_reset row: %w", err)
 		}
 		mailItem, err := produce.FormatWithTemplate(
-			item.UserEmail, "Verify your email with UW Flow", produce.ResetTemplate, item,
+			item.UserEmail, "Reset your password on UW Flow", produce.ResetTemplate, item,
 		)
 		if err != nil {
 			return fmt.Errorf("formatting password_reset email template: %w", err)
