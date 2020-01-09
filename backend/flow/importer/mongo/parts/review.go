@@ -61,9 +61,7 @@ func (r *MongoReview) Empty() bool {
 	return r.CourseReview.Empty() && r.ProfReview.Empty()
 }
 
-// Translate from binary to binned: (0 1) for liked or (0 1 2 3 4 5) for others.
-// We typically want to make the translation "soft" by mapping
-// to medium intensity ratings and not extremes (e.g. false -> 1, true -> 4).
+// Translate from binary to binned: (0 1) for liked or (0 1 2 3 4) for others.
 func rescaledRating(value *float64, falseValue, trueValue int16) *int16 {
 	if value == nil {
 		return nil
@@ -168,11 +166,11 @@ func ImportReviews(state *state.State, idMap *IdentifierMap) error {
 				ProfId:        util.NilIfZero(profId),
 				UserId:        &userId,
 				Liked:         rescaledRating(courseReview.Interest, 0, 1),
-				CourseEasy:    rescaledRating(courseReview.Easiness, 0, 5),
-				CourseUseful:  rescaledRating(courseReview.Usefulness, 0, 5),
+				CourseEasy:    rescaledRating(courseReview.Easiness, 0, 4),
+				CourseUseful:  rescaledRating(courseReview.Usefulness, 0, 4),
 				CourseComment: util.NilIfEmpty(courseReview.Comment),
-				ProfClear:     rescaledRating(profReview.Clarity, 0, 5),
-				ProfEngaging:  rescaledRating(profReview.Passion, 0, 5),
+				ProfClear:     rescaledRating(profReview.Clarity, 0, 4),
+				ProfEngaging:  rescaledRating(profReview.Passion, 0, 4),
 				ProfComment:   util.NilIfEmpty(profReview.Comment),
 				Public:        courseReview.Privacy == Public,
 				CreatedAt:     created,
@@ -305,8 +303,8 @@ func ImportLegacyReviews(state *state.State, idMap *IdentifierMap) error {
 				CourseId:    courseId,
 				ProfId:      util.NilIfZero(profId),
 				Liked:       rescaledRating(courseReview.Interest, 0, 1),
-				CourseEasy:  rescaledRating(courseReview.Easiness, 0, 5),
-				ProfClear:   rescaledRating(profReview.Clarity, 0, 5),
+				CourseEasy:  rescaledRating(courseReview.Easiness, 0, 4),
+				ProfClear:   rescaledRating(profReview.Clarity, 0, 4),
 				ProfComment: util.NilIfEmpty(profReview.Comment),
 				Public:      false,
 				Legacy:      true,
