@@ -26,8 +26,8 @@ WHERE NOT EXISTS (
 
 func Vacuum(state *state.State) error {
 	log.StartVacuum(state.Log, "section")
-	// Retain only sections starting with the previous term
-	tag, err := state.Db.Exec(DeleteSectionQuery, util.PreviousTermId())
+	// Retain only sections starting with the current term
+	tag, err := state.Db.Exec(DeleteSectionQuery, util.CurrentTermId())
 	if err != nil {
 		return fmt.Errorf("deleting old sections: %w", err)
 	}
