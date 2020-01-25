@@ -31,11 +31,25 @@ var (
 	// characters that are exactly 0x20? This whitespace must be column padding.
 	// This distinguishes courses in the taken table from courses in the notes
 	// (e.g. course equivalences established during program transfer)
-	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}`)
+	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
+	CreditRegexp    = regexp.MustCompile(`\d.\d{2}`)
 	LevelRegexp     = regexp.MustCompile(`Level:\s+(\d\w)`)
 	StudentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
 	TermRegexp      = regexp.MustCompile(`(Fall|Winter|Spring)\s+(\d{4})`)
 )
+
+// courseLine is of one of the following forms:
+//
+// ECON   102    Macroeconomics   0.50    0.50   98
+// ECON   102    Macroeconomics
+// ECON   102    Macroeconomics   0.50
+//
+// Those are, in order: past term course, current term course, transfer credit.
+// isTransferCredit should return true only for the last case.
+func isTransferCredit(courseLine string) bool {
+	matches := CreditRegexp.FindAllString(courseLine, -1)
+	return len(matches) == 1
+}
 
 func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
@@ -51,15 +65,18 @@ func extractTermSummaries(text string) ([]TermSummary, error) {
 		year := text[terms[i][4]:terms[i][5]]
 		term, err := util.TermSeasonYearToId(season, year)
 		if err != nil {
-			return nil, fmt.Errorf("\"%s %s\" is not a term: %w", season, year, err)
+			return nil, fmt.Errorf(`"%s %s" is not a term: %w`, season, year, err)
 		}
 		history[i].TermId = term
 		history[i].Level = text[levels[i][2]:levels[i][3]]
-		// Pre-allocate: average student should have about 5 courses per term
-		history[i].Courses = make([]string, 0, 5)
 		// Include courses that come before next term's heading
 		// except for the last term, which includes all remaining courses.
 		for ; j < len(courses) && (i == len(terms)-1 || courses[j][0] < terms[i+1][0]); j++ {
+			// Some courses are transfer (AP/IB) credits.
+			// They were not taken at UW, so should not be imported.
+			if isTransferCredit(text[courses[j][0]:courses[j][1]]) {
+				continue
+			}
 			department := text[courses[j][2]:courses[j][3]]
 			number := text[courses[j][4]:courses[j][5]]
 			history[i].Courses = append(
