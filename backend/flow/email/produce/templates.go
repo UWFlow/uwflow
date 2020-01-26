@@ -74,8 +74,8 @@ const SubscribedTemplate = `
 		<tr>
 			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
 				Hi {{.UserName}},<br /><br />
-				You subscribed to one (or more) sections in {{.CourseCode}}.<br /><br />
-				We’ll notify you when enrolment drops so that at least one seat is open in a section you subscribed to.<br /><br />
+				You subscribed to one or more sections in {{.CourseCode}}.<br /><br />
+				We’ll notify you when a spot opens in a section you subscribed to.<br /><br />
 				If you’d like to unsubscribe, navigate to {{.CourseURL}}, sign in, and click the blue bell icon on sections you don’t want to hear about.<br /><br />
 				Cheers,<br />
 				UW Flow
