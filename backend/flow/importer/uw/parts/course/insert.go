@@ -84,11 +84,13 @@ func InsertAllCourses(conn *db.Conn, courses []Course) error {
 	return nil
 }
 
-// We fetch courses rarely enough that it's easier to truncate
-// requisite tables every time instead of fumbling with updates/deletions.
 const TruncatePrereqQuery = `
-TRUNCATE course_prerequisite;
 TRUNCATE work.course_prerequisite_delta;
+`
+
+const ClearPrereqQuery = `
+DELETE FROM course_prerequisite
+WHERE course_id IN (SELECT course_id FROM work.course_prerequisite_delta)
 `
 
 const InsertPrereqQuery = `
@@ -113,6 +115,11 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 	_, err = tx.Exec(TruncatePrereqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to truncate work table: %w", err)
+	}
+
+	_, err = tx.Exec(ClearPrereqQuery)
+	if err != nil {
+		return fmt.Errorf("failed to clean up target table: %w", err)
 	}
 
 	var preparedPrereqs [][]interface{}
@@ -150,6 +157,11 @@ TRUNCATE course_antirequisite;
 TRUNCATE work.course_antirequisite_delta;
 `
 
+const ClearAntireqQuery = `
+DELETE FROM course_antirequisite
+WHERE course_id IN (SELECT course_id FROM work.course_antirequisite_delta)
+`
+
 const InsertAntireqQuery = `
 INSERT INTO course_antirequisite(course_id, antirequisite_id)
 SELECT
@@ -172,6 +184,11 @@ func InsertAllAntireqs(conn *db.Conn, antireqs []Antireq) error {
 	_, err = tx.Exec(TruncateAntireqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to truncate work table: %w", err)
+	}
+
+	_, err = tx.Exec(ClearAntireqQuery)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup target table: %w", err)
 	}
 
 	var preparedAntireqs [][]interface{}

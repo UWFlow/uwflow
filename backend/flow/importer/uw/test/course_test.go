@@ -73,3 +73,45 @@ func TestConvertCourse(t *testing.T) {
 		want[i].Test(t, inputs[i], got, err)
 	}
 }
+
+func TestParsePrereqs(t *testing.T) {
+	inputs := []string{
+		"PHIL/PSYCH 256",
+		"RS 305A/333(GRK/RS 233)",
+		"RS 285 taken prior to Fall 2008",
+		"MATH 235 or 245, 237 or 247.",
+	}
+	wantstr := []util.Outcome{
+		{
+			Value: "PHIL256/PSYCH256",
+		},
+		{
+			Value: "RS305A/RS333(GRK233/RS233)",
+		},
+		{
+			Value: "RS285 taken prior to Fall 2008",
+		},
+		{
+			Value: "MATH235 or MATH245, MATH237 or MATH247.",
+		},
+	}
+	wantcourses := []util.Outcome{
+		{
+			Value: []string{"phil256", "psych256"},
+		},
+		{
+			Value: []string{"rs305a", "rs333", "grk233", "rs233"},
+		},
+		{
+			Value: []string{"rs285"},
+		},
+		{
+			Value: []string{"math235", "math245", "math237", "math247"},
+		},
+	}
+	for i, input := range inputs {
+		str, courses := course.ExpandCourseCodes(input)
+		wantstr[i].Test(t, input, str, nil)
+		wantcourses[i].Test(t, input, courses, nil)
+	}
+}
