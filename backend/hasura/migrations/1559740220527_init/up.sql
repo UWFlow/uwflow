@@ -1,6 +1,3 @@
--- trigram support for fast text search
-CREATE EXTENSION pg_trgm;
-
 -- START PUBLIC TABLES
 
 CREATE TABLE course (
@@ -275,10 +272,6 @@ FROM review;
 -- END PUBLIC VIEWS
 
 -- START PUBLIC INDEXES
-
-CREATE INDEX course_code_trgm ON course USING GIN(code gin_trgm_ops);
-CREATE INDEX course_name_trgm ON course USING GIN(name gin_trgm_ops);
-CREATE INDEX prof_name_trgm ON prof USING GIN(name gin_trgm_ops);
 
 CREATE INDEX course_section_course_id_fkey ON course_section(course_id);
 CREATE INDEX section_meeting_prof_id_fkey ON section_meeting(prof_id);
