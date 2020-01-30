@@ -5,35 +5,21 @@ import (
 	"strings"
 )
 
-var CourseCodeRegexp = regexp.MustCompile(`([A-Z]{2,}\s+)?[0-9]{3,}[A-Z]*`)
+var (
+	SubjectRegexp = regexp.MustCompile(`\b[A-Z]{2,}\b`)
+	NumberRegexp  = regexp.MustCompile(`\b[0-9]{3}[A-Z]*\b`)
+)
 
-func nextSpace(input string, startIndex int) (int, bool) {
-	var char byte
-	for i := startIndex; i < len(input); i++ {
-		char = input[i]
-		if char == ' ' || char == '\t' || char == '\n' {
-			return i, true
-		}
-	}
-	return startIndex, false
+type match struct {
+	start int
+	end   int
+	kind  int
 }
 
-func FindCourseCodes(input string) ([][]int, []string) {
-	matches := CourseCodeRegexp.FindAllStringIndex(input, -1)
-	codes := make([]string, len(matches))
-	var lastCode string
-	for i, bounds := range matches {
-		s, e := bounds[0], bounds[1]
-		if '0' <= input[s] && input[s] <= '9' {
-			codes[i] = strings.ToLower(lastCode + input[s:e])
-		} else {
-			spaceIndex, _ := nextSpace(input, s)
-			lastCode = input[s:spaceIndex]
-			codes[i] = strings.ToLower(lastCode + input[spaceIndex+1:e])
-		}
-	}
-	return matches, codes
-}
+const (
+	numberMatch int = iota
+	subjectMatch
+)
 
 // ExpandCourseCodes takes a string containing course numbers
 // not necessarily prefixed with a course subject
@@ -47,21 +33,66 @@ func FindCourseCodes(input string) ([][]int, []string) {
 // Additionally, ExpandCourseCodes returns the list of all
 // course codes occuring in the string.
 func ExpandCourseCodes(input string) (string, []string) {
-	var sb strings.Builder
+	var newinput strings.Builder
 	// Output is at least as long as the input
-	sb.Grow(len(input))
+	newinput.Grow(len(input))
 
-	matches, codes := FindCourseCodes(input)
-	lastEnd := 0
+	subjects := SubjectRegexp.FindAllStringIndex(input, -1)
+	numbers := NumberRegexp.FindAllStringIndex(input, -1)
 
-	for i, match := range matches {
-		sb.WriteString(input[lastEnd:match[0]])
-		sb.WriteString(strings.ToUpper(codes[i]))
-		lastEnd = match[1]
+	var matches = make([]match, len(subjects)+len(numbers))
+	var sidx, nidx = 0, 0
+	var slen, nlen = len(subjects), len(numbers)
+	var idx = 0
+
+	for sidx < slen && nidx < nlen {
+		for ; sidx < slen && subjects[sidx][1] < numbers[nidx][0]; sidx++ {
+			matches[idx].kind = subjectMatch
+			matches[idx].start = subjects[sidx][0]
+			matches[idx].end = subjects[sidx][1]
+			idx++
+		}
+		for ; nidx < nlen && (sidx >= slen || numbers[nidx][1] < subjects[sidx][0]); nidx++ {
+			matches[idx].kind = numberMatch
+			matches[idx].start = numbers[nidx][0]
+			matches[idx].end = numbers[nidx][1]
+			idx++
+		}
 	}
-	sb.WriteString(input[lastEnd:])
 
-	return sb.String(), codes
+	var codes []string
+
+	var prevKind = numberMatch
+	var lastSubject []string
+	var lastEnd int
+	for _, match := range matches {
+		if match.kind == subjectMatch {
+			if prevKind == numberMatch {
+				newinput.WriteString(input[lastEnd:match.start])
+				lastSubject = nil
+			}
+			lastSubject = append(lastSubject, input[match.start:match.end])
+		} else { // match.kind == numberMatch
+			if prevKind == numberMatch {
+				newinput.WriteString(input[lastEnd:match.start])
+			}
+			lastEnd = match.end
+
+			var number = input[match.start:match.end]
+			for i, subject := range lastSubject {
+				newinput.WriteString(subject)
+				newinput.WriteString(number)
+				if i < len(lastSubject)-1 {
+					newinput.WriteByte('/')
+				}
+				codes = append(codes, strings.ToLower(subject+number))
+			}
+		}
+		prevKind = match.kind
+	}
+	newinput.WriteString(input[lastEnd:])
+
+	return newinput.String(), codes
 }
 
 func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
