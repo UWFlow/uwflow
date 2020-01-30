@@ -33,9 +33,9 @@ const (
 // Additionally, ExpandCourseCodes returns the list of all
 // course codes occuring in the string.
 func ExpandCourseCodes(input string) (string, []string) {
-	var newinput strings.Builder
+	var output strings.Builder
 	// Output is at least as long as the input
-	newinput.Grow(len(input))
+	output.Grow(len(input))
 
 	subjects := SubjectRegexp.FindAllStringIndex(input, -1)
 	numbers := NumberRegexp.FindAllStringIndex(input, -1)
@@ -68,31 +68,31 @@ func ExpandCourseCodes(input string) (string, []string) {
 	for _, match := range matches {
 		if match.kind == subjectMatch {
 			if prevKind == numberMatch {
-				newinput.WriteString(input[lastEnd:match.start])
+				output.WriteString(input[lastEnd:match.start])
 				lastSubject = nil
 			}
 			lastSubject = append(lastSubject, input[match.start:match.end])
 		} else { // match.kind == numberMatch
 			if prevKind == numberMatch {
-				newinput.WriteString(input[lastEnd:match.start])
+				output.WriteString(input[lastEnd:match.start])
 			}
 			lastEnd = match.end
 
 			var number = input[match.start:match.end]
 			for i, subject := range lastSubject {
-				newinput.WriteString(subject)
-				newinput.WriteString(number)
+				output.WriteString(subject)
+				output.WriteString(number)
 				if i < len(lastSubject)-1 {
-					newinput.WriteByte('/')
+					output.WriteByte('/')
 				}
 				codes = append(codes, strings.ToLower(subject+number))
 			}
 		}
 		prevKind = match.kind
 	}
-	newinput.WriteString(input[lastEnd:])
+	output.WriteString(input[lastEnd:])
 
-	return newinput.String(), codes
+	return output.String(), codes
 }
 
 func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
