@@ -1,6 +1,10 @@
 package parts
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"flow/importer/mongo/data"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type IntPair struct {
 	First  int
@@ -16,9 +20,10 @@ type SectionKey struct {
 }
 
 type IdentifierMap struct {
-	Course  map[string]int
-	Prof    map[string]int
-	User    map[primitive.ObjectID]int
-	Review  map[primitive.ObjectID]int
-	Section map[SectionKey]int
+	Course     map[string]int
+	Prof       map[string]int
+	ProfRename map[string]data.ProfRename
+	User       map[primitive.ObjectID]int
+	Review     map[primitive.ObjectID]int
+	Section    map[SectionKey]int
 }

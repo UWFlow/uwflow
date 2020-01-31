@@ -6,7 +6,7 @@ func Fields(dbEntity interface{}) []string {
 	tp := reflect.TypeOf(dbEntity)
 
 	switch tp.Kind() {
-	case reflect.Array, reflect.Ptr, reflect.Slice:
+	case reflect.Array, reflect.Map, reflect.Ptr, reflect.Slice:
 		tp = tp.Elem()
 	}
 

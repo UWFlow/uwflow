@@ -52,6 +52,14 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
+CREATE TABLE prof_rename (
+  old_code TEXT NOT NULL,
+  old_name TEXT NOT NULL,
+  new_code TEXT NOT NULL,
+  new_name TEXT NOT NULL,
+  delete BOOLEAN NOT NULL
+);
+
 CREATE TABLE term (
   id INT PRIMARY KEY,
   start_date DATE NOT NULL,
