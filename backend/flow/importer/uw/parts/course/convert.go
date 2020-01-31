@@ -40,23 +40,30 @@ func ExpandCourseCodes(input string) (string, []string) {
 	subjects := SubjectRegexp.FindAllStringIndex(input, -1)
 	numbers := NumberRegexp.FindAllStringIndex(input, -1)
 
-	var matches = make([]match, len(subjects)+len(numbers))
+	var matches []match
 	var sidx, nidx = 0, 0
 	var slen, nlen = len(subjects), len(numbers)
-	var idx = 0
 
 	for sidx < slen && nidx < nlen {
 		for ; sidx < slen && subjects[sidx][1] < numbers[nidx][0]; sidx++ {
-			matches[idx].kind = subjectMatch
-			matches[idx].start = subjects[sidx][0]
-			matches[idx].end = subjects[sidx][1]
-			idx++
+			matches = append(
+				matches,
+				match{
+					kind:  subjectMatch,
+					start: subjects[sidx][0],
+					end:   subjects[sidx][1],
+				},
+			)
 		}
 		for ; nidx < nlen && (sidx >= slen || numbers[nidx][1] < subjects[sidx][0]); nidx++ {
-			matches[idx].kind = numberMatch
-			matches[idx].start = numbers[nidx][0]
-			matches[idx].end = numbers[nidx][1]
-			idx++
+			matches = append(
+				matches,
+				match{
+					kind:  numberMatch,
+					start: numbers[nidx][0],
+					end:   numbers[nidx][1],
+				},
+			)
 		}
 	}
 

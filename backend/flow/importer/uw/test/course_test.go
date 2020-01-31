@@ -80,6 +80,7 @@ func TestParsePrereqs(t *testing.T) {
 		"RS 305A/333(GRK/RS 233)",
 		"RS 285 taken prior to Fall 2008",
 		"MATH 235 or 245, 237 or 247.",
+		"One of ECON 221, STAT 211, 231, 241; AFM 241 or CS 330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
 	}
 	wantstr := []util.Outcome{
 		{
@@ -94,6 +95,9 @@ func TestParsePrereqs(t *testing.T) {
 		{
 			Value: "MATH235 or MATH245, MATH237 or MATH247.",
 		},
+		{
+			Value: "One of ECON221, STAT211, STAT231, STAT241; AFM241 or CS330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
+		},
 	}
 	wantcourses := []util.Outcome{
 		{
@@ -107,6 +111,9 @@ func TestParsePrereqs(t *testing.T) {
 		},
 		{
 			Value: []string{"math235", "math245", "math237", "math247"},
+		},
+		{
+			Value: []string{"econ221", "stat211", "stat231", "stat241", "afm241", "cs330"},
 		},
 	}
 	for i, input := range inputs {
