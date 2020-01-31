@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"flow/common/state"
+	"flow/importer/mongo/log"
 	"flow/importer/mongo/parts"
 )
 
@@ -13,7 +13,7 @@ type ImportFunction func(*state.State, *parts.IdentifierMap) error
 func main() {
 	state, err := state.New(context.Background(), "mongo")
 	if err != nil {
-		log.Fatalf("Initialization failed: %v", err)
+		log.Error(err)
 	}
 
 	idMap := &parts.IdentifierMap{}
@@ -31,7 +31,7 @@ func main() {
 	for _, operation := range operations {
 		err = operation(state, idMap)
 		if err != nil {
-			log.Fatalf("Import failed: %v", err)
+			log.Error(err)
 		}
 	}
 }

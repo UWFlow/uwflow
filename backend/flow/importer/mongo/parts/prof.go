@@ -53,7 +53,7 @@ func ImportProfs(state *state.State, idMap *IdentifierMap) error {
 	profs := readMongoProfs(state.Env.MongoDumpPath)
 
 	var preparedProfs [][]interface{}
-	var profId = 0
+	var profId = 1
 	for _, prof := range profs {
 		var profCode, profName string
 		if rename, ok := idMap.ProfRename[prof.Id]; ok {
@@ -104,6 +104,12 @@ func readProfRenames(rootPath string) map[string]data.ProfRename {
 	var profMap = make(map[string]data.ProfRename)
 	for _, row := range rows {
 		if row[2] != "" || row[3] != "" || row[4] != "" {
+			if row[2] == "" {
+				row[2] = row[0]
+			}
+			if row[3] == "" {
+				row[3] = row[1]
+			}
 			profMap[row[0]] = data.ProfRename{
 				OldCode: row[0],
 				OldName: row[1],
