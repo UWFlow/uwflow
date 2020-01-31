@@ -20,6 +20,7 @@ func main() {
 	operations := []ImportFunction{
 		parts.ImportCourses,
 		parts.ImportCourseRequisites,
+		parts.ImportProfRenames,
 		parts.ImportProfs,
 		parts.ImportSections,
 		parts.ImportUsers,
