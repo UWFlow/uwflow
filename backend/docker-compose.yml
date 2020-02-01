@@ -23,6 +23,7 @@ services:
       - ./.ssl:/ssl:ro
   postgres:
     container_name: postgres
+    command: postgres -c 'max_connections=256'
     env_file: .env
     image: postgres:12-alpine
     ports:
@@ -37,7 +38,7 @@ services:
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_GRAPHQL_ADMIN_SECRET
       HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: "http-log, query-log, startup"
+      HASURA_GRAPHQL_PG_CONNECTIONS: 250
       HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
