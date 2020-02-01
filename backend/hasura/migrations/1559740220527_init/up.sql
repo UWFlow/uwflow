@@ -85,7 +85,7 @@ CREATE TABLE "user" (
     CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
     CONSTRAINT email_format CHECK (email ~* '^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'),
   join_source JOIN_SOURCE NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  join_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE user_course_taken (

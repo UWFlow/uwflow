@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
+	"time"
 
 	"flow/common/db"
 	"flow/common/state"
@@ -25,6 +26,7 @@ type MongoUser struct {
 	Email       *string            `bson:"email"`
 	Password    *string            `bson:"password"`
 	FbId        *string            `bson:"fbid"`
+	JoinDate    time.Time          `bson:"join_date"`
 }
 
 func readMongoUsers(rootPath string) []MongoUser {
@@ -113,7 +115,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 		if user.Email != nil && user.Password != nil && len(*user.Password) == 60 {
 			preparedUsers = append(
 				preparedUsers,
-				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "email"},
+				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "email", user.JoinDate},
 			)
 			emailCredentials = append(emailCredentials, []interface{}{userId, user.Email, user.Password})
 		} else if user.FbId != nil {
@@ -123,7 +125,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 			}
 			preparedUsers = append(
 				preparedUsers,
-				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "facebook"},
+				[]interface{}{secretId, firstName, lastName, user.ProgramName, user.Email, "facebook", user.JoinDate},
 			)
 			fbCredentials = append(fbCredentials, []interface{}{userId, user.FbId})
 		}
@@ -133,7 +135,7 @@ func ImportUsers(state *state.State, idMap *IdentifierMap) error {
 
 	userCount, err := tx.CopyFrom(
 		db.Identifier{"user"},
-		[]string{"secret_id", "first_name", "last_name", "program", "email", "join_source"},
+		[]string{"secret_id", "first_name", "last_name", "program", "email", "join_source", "join_date"},
 		preparedUsers,
 	)
 	if err != nil {
