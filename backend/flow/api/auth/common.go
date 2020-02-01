@@ -25,6 +25,7 @@ type userInfo struct {
 type authResponse struct {
 	UserId int    `json:"user_id"`
 	Token  string `json:"token"`
+	IsNew  bool   `json:"is_new"`
 }
 
 const insertUserQuery = `
@@ -60,6 +61,8 @@ func InsertUser(tx *db.Tx, user *userInfo) (*authResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("signing jwt: %w", err)
 	}
+
+	response.IsNew = true
 
 	return &response, nil
 }
