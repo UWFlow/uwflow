@@ -361,7 +361,8 @@ SELECT
   prof.id                  AS prof_id,
   COUNT(r.liked)           AS filled_count,
   COUNT(r.prof_comment)    AS comment_count,
-  AVG(r.liked)             AS liked,
+  -- prof.liked = 0.2 * course_reviews_with_prof.liked + 0.4 * prof.clear + 0.4 * prof.engaging
+  0.2 * AVG(r.liked) + 0.4 * AVG(r.prof_clear) / 4 + 0.4 * AVG(r.prof_engaging) / 4 AS liked,
   AVG(r.prof_clear) / 4    AS clear,
   AVG(r.prof_engaging) / 4 AS engaging
 FROM prof
