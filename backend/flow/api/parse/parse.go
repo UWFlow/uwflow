@@ -177,6 +177,7 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		// or we misparsed the class.
 		if tag.RowsAffected() == 0 {
 			failedClasses = append(failedClasses, classNumber)
+			log.Printf("Schedule import failed for class number %d", classNumber)
 		}
 
 		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, classNumber)
