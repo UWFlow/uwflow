@@ -107,8 +107,8 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 }
 
 type scheduleResponse struct {
-	SectionsImported int `json:"sections_imported"`
-	FailedClasses []int `json:"failed_classes"`
+	SectionsImported int   `json:"sections_imported"`
+	FailedClasses    []int `json:"failed_classes"`
 }
 
 const deleteCourseTakenQuery = `
