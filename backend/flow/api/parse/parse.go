@@ -108,6 +108,7 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 type scheduleResponse struct {
 	SectionsImported int `json:"sections_imported"`
+	FailedClasses []int `json:"failed_classes"`
 }
 
 const deleteCourseTakenQuery = `
@@ -163,6 +164,7 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		return nil, fmt.Errorf("deleting old user_schedule: %w", err)
 	}
 
+	var failedClasses []int
 	for _, classNumber := range summary.ClassNumbers {
 		tag, err := tx.Exec(insertScheduleQuery, userId, classNumber, summary.TermId)
 		if err != nil {
@@ -171,12 +173,10 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 
 		// If we didn't end up writing anything, the join must have been empty,
 		// so there was no section with the given number.
-		// We probably misparsed or the user messed with the schedule.
+		// Most likely UW API did not provide us with all of the available classes,
+		// or we misparsed the class.
 		if tag.RowsAffected() == 0 {
-			return nil, serde.WithStatus(
-				http.StatusBadRequest,
-				fmt.Errorf("class number %d not found in term %d", classNumber, summary.TermId),
-			)
+			failedClasses = append(failedClasses, classNumber)
 		}
 
 		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, classNumber)
@@ -185,7 +185,7 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		}
 	}
 
-	return &scheduleResponse{SectionsImported: len(summary.ClassNumbers)}, nil
+	return &scheduleResponse{SectionsImported: len(summary.ClassNumbers), FailedClasses: failedClasses}, nil
 }
 
 type scheduleRequest struct {
