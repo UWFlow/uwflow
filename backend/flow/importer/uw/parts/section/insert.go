@@ -92,11 +92,17 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 	return &result, nil
 }
 
-// No use trying to keep track of what's being updated:
-// nothing references meetings (no primary key),
-// so we might as well overwrite them fully.
+// Only delete sections meetings with class numbers imported
+// from the UW API so that manually added sections are preserved.
 const TruncateMeetingQuery = `
-  TRUNCATE section_meeting;
+  WITH imported_course_sections AS
+  	(SELECT cs.id AS id FROM work.course_section_delta delta
+	INNER JOIN course_section cs
+	ON delta.class_number = cs.class_number
+	AND delta.term_id = cs.term_id)
+  DELETE FROM section_meeting sm
+	USING imported_course_sections ics
+	WHERE ics.id = sm.section_id;
   TRUNCATE work.section_meeting_delta;
 `
 

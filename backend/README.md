@@ -65,7 +65,7 @@ at their published ports, as declared in `docker-compose.yml`.
 
 To illustrate, the `postgres` service publishes port `5432`, so
 ```sh
-psql -h localhost -p 5432 -u flow
+psql -h localhost -p 5432 -U flow
 ```
 will spawn a Postgres shell connected to the database container.
 If you do not happen to have `postgres-client` installed, this also works:
