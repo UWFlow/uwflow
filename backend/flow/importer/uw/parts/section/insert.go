@@ -92,11 +92,9 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 	return &result, nil
 }
 
-// No use trying to keep track of what's being updated:
-// nothing references meetings (no primary key),
-// so we might as well overwrite them fully.
+// Only truncate sections meetings that were not manually added.
 const TruncateMeetingQuery = `
-  TRUNCATE section_meeting;
+  DELETE FROM section_meeting WHERE is_manual IS FALSE;
   TRUNCATE work.section_meeting_delta;
 `
 
