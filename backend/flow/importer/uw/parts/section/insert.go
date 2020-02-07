@@ -92,9 +92,17 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 	return &result, nil
 }
 
-// Only truncate sections meetings that were not manually added.
+// Only delete sections meetings with class numbers imported
+// from the UW API so that manually added sections are preserved.
 const TruncateMeetingQuery = `
-  DELETE FROM section_meeting WHERE is_manual IS FALSE;
+  WITH imported_course_sections AS
+  	(SELECT cs.id AS id FROM work.course_section_delta delta
+	INNER JOIN course_section cs
+	ON delta.class_number = cs.class_number
+	AND delta.term_id = cs.term_id)
+  DELETE FROM section_meeting sm
+	USING imported_course_sections ics
+	WHERE ics.id = sm.section_id;
   TRUNCATE work.section_meeting_delta;
 `
 

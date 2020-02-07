@@ -168,8 +168,7 @@ CREATE TABLE section_meeting (
   days TEXT[] NOT NULL,
   is_cancelled BOOLEAN NOT NULL,
   is_closed BOOLEAN NOT NULL,
-  is_tba BOOLEAN NOT NULL,
-  is_manual BOOLEAN NOT NULL DEFAULT FALSE
+  is_tba BOOLEAN NOT NULL
 );
 
 CREATE TABLE user_schedule (
