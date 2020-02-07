@@ -33,7 +33,7 @@ var (
 	// (e.g. course equivalences established during program transfer)
 	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
 	CreditRegexp    = regexp.MustCompile(`\d.\d{2}`)
-	LevelRegexp     = regexp.MustCompile(`Level:\s+(\d\w)`)
+	LevelRegexp     = regexp.MustCompile(`Level:\s+(\w\w)`)
 	StudentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
 	TermRegexp      = regexp.MustCompile(`(Fall|Winter|Spring)\s+(\d{4})`)
 )
