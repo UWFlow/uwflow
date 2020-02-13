@@ -92,7 +92,7 @@ var transferSummary = &transcript.Summary{
 		},
 		{
 			TermId:  1201,
-			Level:   "3B",
+			Level:   "4A",
 			Courses: []string{"cs341", "cs350", "cs370", "phil256", "syde552"},
 		},
 	},
