@@ -12,9 +12,6 @@ import (
 type Environment struct {
 	ApiPort string `from:"API_PORT"`
 
-	FbAppId     string `from:"FB_APP_ID"`
-	FbAppSecret string `from:"FB_APP_SECRET"`
-
 	GmailUser        string `from:"GMAIL_USER"`
 	GmailAppPassword string `from:"GMAIL_APP_PASSWORD"`
 
