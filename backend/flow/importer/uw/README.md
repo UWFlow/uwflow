@@ -9,7 +9,7 @@ Ensure that Docker-compose is up and run
 ```sh
 go build
 export $(cat ../.env | xargs)
-./mongo-exporter
+./uw
 ```
 
 You will need at least `go v1.13`.
