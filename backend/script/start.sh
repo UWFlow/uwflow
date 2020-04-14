@@ -34,7 +34,3 @@ $PREFIX docker-compose down
 
 # Launch all containers
 $PREFIX docker-compose up -d
-
-docker exec -it uw /app/uw terms
-docker exec -it uw /app/uw sections
-docker exec -it uw /app/uw exams
