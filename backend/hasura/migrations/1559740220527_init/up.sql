@@ -209,7 +209,7 @@ CREATE TABLE review (
   prof_comment TEXT
     CONSTRAINT prof_comment_length CHECK (LENGTH(prof_comment) <= 8192),
   public BOOLEAN NOT NULL,
-  -- only the mongo importer may create legacy reviews
+  -- legacy reviews did not have an associated user in Flow 1.0 database
   -- such reviews have NULL user_id and skip course-taken and uniqueness checks
   legacy BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

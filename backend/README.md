@@ -12,7 +12,6 @@ The following packages are required for core functionality:
 
 - `docker`
 - `docker-compose`
-- `golang`: Mongo and UW API importers
 
 The following packages are required by optional components:
 
