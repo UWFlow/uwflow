@@ -20,7 +20,6 @@ COPY . .
 RUN go test -v ./.../test
 RUN cd api && go build
 RUN cd importer/uw && go build
-RUN cd importer/mongo && go build
 RUN cd email && go build
 
 ######## RELEASE STAGE: API ########
@@ -33,13 +32,6 @@ COPY --from=builder /build/api/api /app/api
 
 CMD ["/app/api"]
 
-######## RELEASE STAGE: MONGO IMPORTER ########
-FROM alpine:latest AS mongo
-
-COPY --from=builder /build/importer/mongo/mongo /app/mongo
-
-CMD ["/app/mongo"]
-
 ######## RELEASE STAGE: UW IMPORTER ########
 FROM alpine:latest AS uw
 
@@ -50,6 +42,7 @@ RUN crontab /etc/cron.d/crontab
 CMD ["crond", "-f"]
 
 
+######## RELEASE STAGE: EMAIL SERVER ########
 FROM alpine:latest AS email
 
 # email sending pulls in these runtime dependencies

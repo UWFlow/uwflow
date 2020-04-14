@@ -2,7 +2,7 @@ version: 2.1
 executors:
   docker-publisher:
     environment:
-      ALL_IMAGES: neuwflow/api neuwflow/email neuwflow/mongo neuwflow/uw
+      ALL_IMAGES: neuwflow/api neuwflow/email neuwflow/uw
     machine: true
 jobs:
   build:
