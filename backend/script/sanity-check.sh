@@ -39,25 +39,20 @@ fi
 
 # Check for this simple, if unlikely, case so that impending `stat`
 # does not fail with a possibly cryptic error
-if ! test -d "$MONGO_DUMP_PATH"
+if ! test -f "$POSTGRES_DUMP_PATH"
 then
-  fail "Mongo dump is not unpacked at $MONGO_DUMP_PATH"
+  fail "Postgres dump does not exist at $POSTGRES_DUMP_PATH"
 fi
 
-if ! test -f "$MONGO_DUMP_PATH/course.bson"
-then
-  fail "Malformed Mongo dump: missing $MONGO_DUMP_PATH/course.bson"
-fi
-
-# Significant changes to ADM-sourced info happen in the span of two months.
-# For the lack of a better way, prevent staleness based on that criterion.
-last_modified="$(stat --format %Y $MONGO_DUMP_PATH)"
+# Postgres dump should be reasonably recent
+# so that developers see approximately the same data
+last_modified="$(stat --format %Y $POSTGRES_DUMP_PATH)"
 now=$(date +%s)
 days_old=$(( (now-last_modified)/(3600*24) ))
 max_days_old=60
 if test $days_old -gt $max_days_old
 then
-  fail "Mongo dump is stale ($days_old days old). Download a new one"
+  fail "Postgres dump is stale ($days_old days old). Download a new one"
 fi
 
 pass "Environment is set up correctly"

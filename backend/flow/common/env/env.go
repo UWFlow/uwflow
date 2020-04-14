@@ -20,8 +20,6 @@ type Environment struct {
 
 	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
 
-	MongoDumpPath string `from:"MONGO_DUMP_PATH"`
-
 	PostgresDatabase string `from:"POSTGRES_DB"`
 	PostgresHost     string `from:"POSTGRES_HOST"`
 	PostgresPassword string `from:"POSTGRES_PASSWORD"`

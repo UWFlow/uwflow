@@ -12,7 +12,6 @@ The following packages are required for core functionality:
 
 - `docker`
 - `docker-compose`
-- `golang`: Mongo and UW API importers
 
 The following packages are required by optional components:
 
@@ -29,13 +28,12 @@ To find out what is really expected, peruse `scripts/sanity-check.sh`
 and apply common sense, as the following docs may be outdated.
 
 1. Ensure the required packages are installed (see above).
-2. Download and extract the Mongo database dump:
-  - Download the file located in Google Drive at `Flow/Data/rmc.zip.gpg`.
-  - Run `gpg2 --decrypt rmc.zip.gpg > rmc.zip`.
-    Use the password from the [shared vault](uwflow.1password.com).
-  - Extract the zip file. This will create a new directory with the Mongo data.
+2. Download and decrypt the database dump:
+  - Download the file located in Google Drive at `Flow/Data/pg_backup.gpg`.
+  - Run `gpg2 --decrypt pg_backup.gpg > pg_backup`.
+    Use the password from the shared Bitwarden vault.
 3. Copy `.env.sample` to `.env` and edit the latter as needed. In particular:
-  - `MONGO_DUMP_PATH` should point at the directory obtained at the end of (2)
+  - `POSTGRES_DUMP_PATH` should point to `pg_backup` obtained at the end of (2)
   - `UW_API_KEY_V{2,3}` should be set as instructed in the
     [uwapi-importer README](uwapi-importer/README.md)
   - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems

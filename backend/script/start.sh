@@ -16,25 +16,21 @@ $PREFIX docker volume rm -f backend_postgres
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"
 
-# Launch all containers
-$PREFIX docker-compose up -d
+# Restore backup before starting everything else
+$PREFIX docker-compose run --name postgres_bootstrap -d postgres
 
-# Wait for migrations to be applied by selecting from a random table
-while ! $PREFIX docker exec postgres \
-  psql -U $POSTGRES_USER $POSTGRES_DB -c 'SELECT TRUE FROM term' \
+# Wait for postgres server to settle
+while ! $PREFIX docker exec postgres_bootstrap \
+  psql -U $POSTGRES_USER $POSTGRES_DB -c 'SELECT TRUE' \
   >/dev/null 2>/dev/null
 do
-  echo "Waiting for containers to settle..."
+  echo "Waiting for bootstrap server..."
   sleep 10
 done
 
-docker exec -it uw /app/uw terms
+$PREFIX docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $POSTGRES_DUMP_PATH
+$PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB /pg_backup
+$PREFIX docker-compose down
 
-docker run --rm -it \
-  --network backend_default \
-  --env-file "$BACKEND_DIR/.env" -e MONGO_DUMP_PATH=/dump \
-  -v "$MONGO_DUMP_PATH":/dump:ro \
-  neuwflow/mongo /app/mongo
-
-docker exec -it uw /app/uw sections
-docker exec -it uw /app/uw exams
+# Launch all containers
+$PREFIX docker-compose up -d
