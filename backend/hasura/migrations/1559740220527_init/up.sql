@@ -52,12 +52,12 @@ CREATE TABLE prof (
   picture_url TEXT
 );
 
-CREATE TABLE prof_rename (
-  old_code TEXT NOT NULL,
-  old_name TEXT NOT NULL,
-  new_code TEXT NOT NULL,
-  new_name TEXT NOT NULL,
-  delete BOOLEAN NOT NULL
+CREATE TABLE prof_remap (
+  code TEXT PRIMARY KEY,
+  prof_id INT NOT NULL
+    REFERENCES prof(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE term (
