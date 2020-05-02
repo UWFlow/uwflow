@@ -29,5 +29,5 @@ func New(ctx context.Context, serviceName string) (*State, error) {
 		return nil, fmt.Errorf("connecting to database failed: %w", err)
 	}
 
-	return &State{Db: db, Env: env, Log: log}, nil
+	return &State{Db: db, Env: env}, nil
 }
