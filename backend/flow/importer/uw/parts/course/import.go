@@ -10,7 +10,6 @@ import (
 
 func ImportAll(state *state.State, client *api.Client) error {
 	var converted ConvertResult
-	log.StartImport(state.Log, "course")
 
 	courses, err := FetchAll(client)
 	if err != nil {
@@ -22,10 +21,12 @@ func ImportAll(state *state.State, client *api.Client) error {
 		return fmt.Errorf("failed to convert courses: %w", err)
 	}
 
-	err = InsertAllCourses(state.Db, converted.Courses)
+	log.StartImport("course")
+	result, err := InsertAllCourses(state.Db, converted.Courses)
 	if err != nil {
 		return fmt.Errorf("failed to insert courses: %w", err)
 	}
+	log.EndImport("course", result)
 
 	err = InsertAllPrereqs(state.Db, converted.Prereqs)
 	if err != nil {

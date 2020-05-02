@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"flow/common/env"
-
-	"go.uber.org/zap"
 )
 
 const ApiTimeout = time.Second * 10
@@ -22,20 +21,18 @@ const (
 type Client struct {
 	ctx    context.Context
 	client *http.Client
-	logger *zap.Logger
 	keyv2  string
 	keyv3  string
 }
 
-func NewClient(ctx context.Context, env *env.Environment, logger *zap.Logger) *Client {
+func NewClient(ctx context.Context, env *env.Environment) *Client {
 	return &Client{
 		ctx: ctx,
 		client: &http.Client{
 			Timeout: ApiTimeout,
 		},
-		logger: logger,
-		keyv2:  env.UWApiKeyv2,
-		keyv3:  env.UWApiKeyv3,
+		keyv2: env.UWApiKeyv2,
+		keyv3: env.UWApiKeyv3,
 	}
 }
 
@@ -58,7 +55,7 @@ type Apiv2Response struct {
 func (api *Client) Getv2(endpoint string, dst interface{}) error {
 	// Avoid logging API key by templating twice
 	clearUrl := fmt.Sprintf("%s/%s.json", BaseUrlv2, endpoint)
-	api.logger.Info("v2 GET", zap.String("url", clearUrl))
+	log.Printf("GET [v2] %s", clearUrl)
 
 	// ?dump=true is necessary for very large (>6MB) results
 	url := fmt.Sprintf("%s?dump=true&key=%s", clearUrl, api.keyv2)
@@ -85,7 +82,7 @@ func (api *Client) Getv2(endpoint string, dst interface{}) error {
 // Issue a GET to a given UWAPIv3 endpoint and decode the response into dst
 func (api *Client) Getv3(endpoint string, dst interface{}) error {
 	url := fmt.Sprintf("%s/%s", BaseUrlv3, endpoint)
-	api.logger.Info("v3 GET", zap.String("url", url))
+	log.Printf("GET [v3] %s", url)
 
 	// We do not need to add .WithTimeout here: client.Timeout is respected
 	req, err := http.NewRequestWithContext(api.ctx, "GET", url, nil)

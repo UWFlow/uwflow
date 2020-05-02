@@ -10,7 +10,7 @@ import (
 )
 
 func ImportByTerm(state *state.State, client *api.Client, termId int) error {
-	log.StartTermImport(state.Log, "section_exam", termId)
+	log.StartTermImport("section_exam", termId)
 
 	apiExams, err := FetchByTerm(client, termId)
 	if err != nil {
@@ -27,7 +27,7 @@ func ImportByTerm(state *state.State, client *api.Client, termId int) error {
 		return fmt.Errorf("failed to insert exams: %w", err)
 	}
 
-	log.EndTermImport(state.Log, "section_exam", termId, result)
+	log.EndTermImport("section_exam", termId, result)
 	return nil
 }
 

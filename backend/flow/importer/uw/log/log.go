@@ -1,6 +1,6 @@
 package log
 
-import "go.uber.org/zap"
+import "log"
 
 // Result of a database operation.
 type DbResult struct {
@@ -15,55 +15,32 @@ type DbResult struct {
 	Rejected int
 }
 
-func StartImport(log *zap.Logger, table string) {
-	log.Info(
-		"start import",
-		zap.String("table", table),
+func StartImport(table string) {
+	log.Printf("start import to %s", table)
+}
+
+func EndImport(table string, result *DbResult) {
+	log.Printf(
+		"end import to %s: %d inserted, %d updated, %d untouched, %d rejected",
+		table, result.Inserted, result.Updated, result.Untouched, result.Rejected,
 	)
 }
 
-func EndImport(log *zap.Logger, table string, result *DbResult) {
-	log.Info(
-		"end import",
-		zap.String("table", table),
-		zap.Int("inserted", result.Inserted),
-		zap.Int("updated", result.Updated),
-		zap.Int("untouched", result.Untouched),
-		zap.Int("rejected", result.Rejected),
+func StartTermImport(table string, termId int) {
+	log.Printf("start import to %s for %04d", table, termId)
+}
+
+func EndTermImport(table string, termId int, result *DbResult) {
+	log.Printf(
+		"end import to %s for %04d: %d inserted, %d updated, %d untouched, %d rejected",
+		table, termId, result.Inserted, result.Updated, result.Untouched, result.Rejected,
 	)
 }
 
-func StartTermImport(log *zap.Logger, table string, termId int) {
-	log.Info(
-		"start term import",
-		zap.String("table", table),
-		zap.Int("term", termId),
-	)
+func StartVacuum(table string) {
+	log.Printf("start vacuum of %s", table)
 }
 
-func EndTermImport(log *zap.Logger, table string, termId int, result *DbResult) {
-	log.Info(
-		"end term import",
-		zap.String("table", table),
-		zap.Int("term", termId),
-		zap.Int("inserted", result.Inserted),
-		zap.Int("updated", result.Updated),
-		zap.Int("untouched", result.Untouched),
-		zap.Int("rejected", result.Rejected),
-	)
-}
-
-func StartVacuum(log *zap.Logger, table string) {
-	log.Info(
-		"start vacuum",
-		zap.String("table", table),
-	)
-}
-
-func EndVacuum(log *zap.Logger, table string, deleted int) {
-	log.Info(
-		"end vacuum",
-		zap.String("table", table),
-		zap.Int("deleted", deleted),
-	)
+func EndVacuum(table string, deleted int) {
+	log.Printf("end vacuum of %s: %d deleted", table, deleted)
 }

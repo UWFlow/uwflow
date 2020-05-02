@@ -30,18 +30,18 @@ FROM work.course_delta d
 WHERE c.id IS NULL
 `
 
-func InsertAllCourses(conn *db.Conn, courses []Course) error {
+func InsertAllCourses(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
 	if err != nil {
-		return fmt.Errorf("failed to open transaction: %w", err)
+		return nil, fmt.Errorf("failed to open transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	_, err = tx.Exec(TruncateCourseQuery)
 	if err != nil {
-		return fmt.Errorf("failed to truncate work table: %w", err)
+		return nil, fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
 	var preparedCourses [][]interface{}
@@ -59,29 +59,29 @@ func InsertAllCourses(conn *db.Conn, courses []Course) error {
 		preparedCourses,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return nil, fmt.Errorf("failed to copy data: %w", err)
 	}
 
 	tag, err := tx.Exec(UpdateCourseQuery)
 	if err != nil {
-		return fmt.Errorf("failed to apply update: %w", err)
+		return nil, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
 	tag, err = tx.Exec(InsertCourseQuery)
 	if err != nil {
-		return fmt.Errorf("failed to insert: %w", err)
+		return nil, fmt.Errorf("failed to insert: %w", err)
 	}
 	result.Inserted = int(tag.RowsAffected())
 
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	touched := result.Inserted + result.Updated + result.Rejected
 	result.Untouched = len(courses) - touched
-	return nil
+	return &result, nil
 }
 
 const TruncatePrereqQuery = `

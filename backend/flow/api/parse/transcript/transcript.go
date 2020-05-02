@@ -31,14 +31,14 @@ var (
 	// characters that are exactly 0x20? This whitespace must be column padding.
 	// This distinguishes courses in the taken table from courses in the notes
 	// (e.g. course equivalences established during program transfer)
-	CourseRegexp    = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
-	CreditRegexp    = regexp.MustCompile(`\d.\d{2}`)
+	CourseRegexp = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
+	CreditRegexp = regexp.MustCompile(`\d.\d{2}`)
 	// Level may contain more than two letters or numbers.
 	LevelRegexp     = regexp.MustCompile(`Level:\s+(\w{2,})`)
 	StudentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
 	// Term names may show up in transcript comments which should be ignored.
 	// We only want terms that show up on their own line.
-	TermRegexp      = regexp.MustCompile(`(?m)^\s*(Fall|Winter|Spring)\s+(\d{4})\s*$`)
+	TermRegexp = regexp.MustCompile(`(?m)^\s*(Fall|Winter|Spring)\s+(\d{4})\s*$`)
 )
 
 // courseLine is of one of the following forms:
