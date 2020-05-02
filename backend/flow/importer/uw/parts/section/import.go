@@ -31,33 +31,33 @@ func ImportAll(state *state.State, client *api.Client) error {
 		}
 	}
 
-	log.StartImport(state.Log, "prof")
+	log.StartImport("prof")
 	result, err := InsertAllProfs(state.Db, converted.Profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
-	log.EndImport(state.Log, "prof", result)
+	log.EndImport("prof", result)
 
-	log.StartImport(state.Log, "course_section")
+	log.StartImport("course_section")
 	result, err = InsertAllSections(state.Db, converted.Sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
-	log.EndImport(state.Log, "course_section", result)
+	log.EndImport("course_section", result)
 
-	log.StartImport(state.Log, "section_meeting")
+	log.StartImport("section_meeting")
 	result, err = InsertAllMeetings(state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}
-	log.EndImport(state.Log, "section_meeting", result)
+	log.EndImport("section_meeting", result)
 
-	log.StartImport(state.Log, "update_time")
+	log.StartImport("update_time")
 	result, err = InsertAllUpdateTimes(state.Db, converted.UpdateTimes)
 	if err != nil {
 		return fmt.Errorf("failed to update times: %w", err)
 	}
-	log.EndImport(state.Log, "update_time", result)
+	log.EndImport("update_time", result)
 
 	return nil
 }

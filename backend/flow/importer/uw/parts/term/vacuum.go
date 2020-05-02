@@ -11,12 +11,12 @@ import (
 const DeleteQuery = `DELETE FROM term WHERE id < $1`
 
 func Vacuum(state *state.State) error {
-	log.StartVacuum(state.Log, "term")
+	log.StartVacuum("term")
 	// Retain only terms starting with the previous one
 	tag, err := state.Db.Exec(DeleteQuery, util.PreviousTermId())
 	if err != nil {
 		return fmt.Errorf("database write failed: %w", err)
 	}
-	log.EndVacuum(state.Log, "term", int(tag.RowsAffected()))
+	log.EndVacuum("term", int(tag.RowsAffected()))
 	return nil
 }

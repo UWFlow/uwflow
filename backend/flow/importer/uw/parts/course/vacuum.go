@@ -6,8 +6,8 @@ import (
 )
 
 func Vacuum(state *state.State) error {
-	log.StartVacuum(state.Log, "course")
+	log.StartVacuum("course")
 	// Never delete past courses
-	log.EndVacuum(state.Log, "course", 0)
+	log.EndVacuum("course", 0)
 	return nil
 }

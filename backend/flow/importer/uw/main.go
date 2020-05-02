@@ -51,7 +51,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Initialization failed: %v\n", err)
 	}
-	client := api.NewClient(ctx, state.Env, state.Log)
+	client := api.NewClient(ctx, state.Env)
 
 	switch os.Args[1] {
 	case "courses":
