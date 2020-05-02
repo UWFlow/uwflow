@@ -20,7 +20,7 @@ func RunImport(state *state.State, client *api.Client, importers ...ImportFunc) 
 	for _, importer := range importers {
 		err := importer(state, client)
 		if err != nil {
-			log.Fatalf("API import failed: %v\n", err)
+			log.Printf("API import failed: %v\n", err)
 		}
 	}
 }
@@ -29,7 +29,7 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) {
 	for _, vacuum := range vacuums {
 		err := vacuum(state)
 		if err != nil {
-			log.Fatalf("Vacuum failed: %v\n", err)
+			log.Printf("Vacuum failed: %v\n", err)
 		}
 	}
 }
