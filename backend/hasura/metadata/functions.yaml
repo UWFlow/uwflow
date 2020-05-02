@@ -1,0 +1,4 @@
+- function: search_courses
+  configuration: {}
+- function: search_profs
+  configuration: {}

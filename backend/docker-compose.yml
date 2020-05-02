@@ -43,12 +43,13 @@ services:
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
-    image: hasura/graphql-engine:v1.0.0.cli-migrations
+    image: hasura/graphql-engine:v1.2.0.cli-migrations-v2
     ports:
       - $HASURA_PORT:$HASURA_PORT
     restart: always
     volumes:
       - ./hasura/migrations:/hasura-migrations
+      - ./hasura/metadata:/hasura-metadata
   uw:
     container_name: uw
     depends_on:
