@@ -44,3 +44,7 @@ func StartVacuum(table string) {
 func EndVacuum(table string, deleted int) {
 	log.Printf("end vacuum of %s: %d deleted", table, deleted)
 }
+
+func Warnf(format string, args ...interface{}) {
+  log.Printf(format, args...)
+}
