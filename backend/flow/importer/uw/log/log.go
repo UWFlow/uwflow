@@ -46,5 +46,5 @@ func EndVacuum(table string, deleted int) {
 }
 
 func Warnf(format string, args ...interface{}) {
-  log.Printf(format, args...)
+	log.Printf(format, args...)
 }
