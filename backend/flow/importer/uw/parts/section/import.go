@@ -17,17 +17,20 @@ func ImportAll(state *state.State, client *api.Client) error {
 	for _, termId := range termIds {
 		apiSections, err := FetchByTerm(client, termId)
 		if err != nil {
-			return fmt.Errorf("failed to fetch sections: %w", err)
+			log.Warnf("failed to fetch sections for %04d, proceeding anyway", termId)
+			continue
 		}
 
 		term, err := term.Select(state.Db, termId)
 		if err != nil {
-			return fmt.Errorf("failed to load term: %w", err)
+			log.Warnf("no record for term %04d, proceeding anyway", termId)
+			continue
 		}
 
 		err = ConvertAll(&converted, apiSections, term)
 		if err != nil {
-			return fmt.Errorf("failed to convert sections: %w", err)
+			log.Warnf("failed to convert sections for %04d, proceeding anyway", termId)
+			continue
 		}
 	}
 
