@@ -13,75 +13,63 @@ type Semaphore chan empty
 const RateLimit = 20
 
 func FetchAll(client *api.Client) ([]ApiCourse, error) {
-	handles, err := FetchHandles(client)
+	courses, err := FetchStubs(client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch handles: %w", err)
+		return nil, fmt.Errorf("failed to fetch stubs: %w", err)
 	}
 
 	sema := make(Semaphore, RateLimit)
-	datachan := make(chan *ApiCourse, len(handles))
-	errorchan := make(chan error, len(handles))
-	for _, handle := range handles {
-		go asyncFetchByHandle(client, handle, sema, datachan, errorchan)
+	errorchan := make(chan error)
+	for i := range courses {
+		go asyncFillStub(client, &courses[i], sema, errorchan)
 	}
-
-	courses := make([]ApiCourse, len(handles))
-	for i := 0; i < len(handles); i++ {
-		select {
-		case course := <-datachan:
-			courses[i] = *course
-		case err := <-errorchan:
+	for _ = range courses {
+		err = <-errorchan
+		if err != nil {
 			return nil, err
 		}
 	}
+
 	return courses, nil
 }
 
-func asyncFetchByHandle(
-	client *api.Client, handle ApiCourseHandle,
-	sema Semaphore, datachan chan *ApiCourse, errorchan chan error,
-) {
+func asyncFillStub(client *api.Client, stub *ApiCourse, sema Semaphore, errorchan chan error) {
 	sema <- empty{}
-	course, err := FetchByHandle(client, handle)
-	if err != nil {
-		errorchan <- err
-	} else {
-		datachan <- course
-	}
+	errorchan <- FillStub(client, stub)
 	<-sema
 }
 
-func FetchByHandle(client *api.Client, handle ApiCourseHandle) (*ApiCourse, error) {
-	var course ApiCourse
-	endpoint := fmt.Sprintf("courses/%s/%s", handle.Subject, handle.Number)
-	err := client.Getv2(endpoint, &course)
-	return &course, err
+func FillStub(client *api.Client, stub *ApiCourse) error {
+	endpoint := fmt.Sprintf("courses/%s/%s", stub.Subject, stub.Number)
+	return client.Getv2(endpoint, &stub)
 }
 
-func FetchHandles(client *api.Client) ([]ApiCourseHandle, error) {
-	handles := make([]ApiCourseHandle, 0)
-	seenHandle := make(map[string]bool)
+// Fetches only {subject, number, name}
+func FetchStubs(client *api.Client) ([]ApiCourse, error) {
+	var stubs []ApiCourse
+	seenStub := make(map[string]bool)
 	// We are only intersted in the two upcoming terms
 	termIds := []int{util.CurrentTermId(), util.NextTermId()}
 	// Fetch hanles termwise with deduplication
 	for _, termId := range termIds {
-		termHandles, err := FetchHandlesByTerm(client, termId)
+		termStubs, err := FetchStubsByTerm(client, termId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
 		}
-		for _, handle := range termHandles {
-			if !seenHandle[handle.Subject+handle.Number] {
-				handles = append(handles, handle)
-				seenHandle[handle.Subject+handle.Number] = true
+		for _, stub := range termStubs {
+			if !seenStub[stub.Subject+stub.Number] {
+				stubs = append(stubs, stub)
+				seenStub[stub.Subject+stub.Number] = true
 			}
 		}
 	}
-	return handles, nil
+	return stubs, nil
 }
 
-func FetchHandlesByTerm(client *api.Client, termId int) ([]ApiCourseHandle, error) {
-	var handles []ApiCourseHandle
+// Fetches only {subject, number, name}
+func FetchStubsByTerm(client *api.Client, termId int) ([]ApiCourse, error) {
+	var stubs []ApiCourse
 	endpoint := fmt.Sprintf("terms/%d/courses", termId)
-	err := client.Getv2(endpoint, &handles)
-	return handles, err
+	err := client.Getv2(endpoint, &stubs)
+	return stubs, err
 }
