@@ -12,7 +12,7 @@ import (
 
 func ImportAll(state *state.State, client *api.Client) error {
 	var converted ConvertResult
-	termIds := []int{util.CurrentTermId(), util.NextTermId()}
+	termIds := []int{util.PreviousTermId(), util.CurrentTermId(), util.NextTermId()}
 
 	for _, termId := range termIds {
 		apiSections, err := FetchByTerm(client, termId)
