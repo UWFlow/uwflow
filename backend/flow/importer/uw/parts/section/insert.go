@@ -18,7 +18,8 @@ UPDATE course_section SET
   section_name = delta.section_name,
   campus = delta.campus,
   enrollment_capacity = delta.enrollment_capacity,
-  enrollment_total = delta.enrollment_total
+  enrollment_total = delta.enrollment_total,
+	updated_at = delta.updated_at
 FROM work.course_section_delta delta
   JOIN course c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
@@ -28,11 +29,11 @@ WHERE course_section.class_number = delta.class_number
 const InsertSectionQuery = `
 INSERT INTO course_section(
   class_number, course_id, section_name, campus,
-  term_id, enrollment_capacity, enrollment_total
+  term_id, enrollment_capacity, enrollment_total, updated_at
 )
 SELECT
   d.class_number, c.id, d.section_name, d.campus,
-  d.term_id, d.enrollment_capacity, d.enrollment_total
+  d.term_id, d.enrollment_capacity, d.enrollment_total, d.updated_at
 FROM work.course_section_delta d
   JOIN course c ON c.code = d.course_code
   LEFT JOIN course_section cs
@@ -232,35 +233,5 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	// In this case, we do deliberately refuse to update existing profs
 	// so the remainder after deduplication is untouched.
 	result.Untouched = len(preparedProfs) - result.Inserted
-	return &result, nil
-}
-
-const UpdateTimesQuery = `
-INSERT INTO update_time VALUES ($1, $2)
-ON CONFLICT (term_id) DO UPDATE SET time = EXCLUDED.time
-`
-
-func InsertAllUpdateTimes(conn *db.Conn, times []UpdateTime) (*log.DbResult, error) {
-	var result log.DbResult
-
-	tx, err := conn.Begin()
-	if err != nil {
-		return &result, fmt.Errorf("failed to open transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	for _, time := range times {
-		_, err := tx.Exec(UpdateTimesQuery, time.TermId, time.Time)
-		if err != nil {
-			return &result, fmt.Errorf("failed to update: %w", err)
-		}
-	}
-	result.Updated = len(times)
-
-	err = tx.Commit()
-	if err != nil {
-		return &result, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return &result, nil
 }

@@ -3,10 +3,9 @@ package section
 import "time"
 
 type ConvertResult struct {
-	Sections    []Section
-	Meetings    []Meeting
-	Profs       []Prof
-	UpdateTimes []UpdateTime
+	Sections []Section
+	Meetings []Meeting
+	Profs    []Prof
 }
 
 type Section struct {
@@ -17,6 +16,7 @@ type Section struct {
 	EnrollmentCapacity int
 	EnrollmentTotal    int
 	TermId             int
+	UpdatedAt          time.Time
 }
 
 type Meeting struct {
@@ -39,11 +39,6 @@ type Meeting struct {
 type Prof struct {
 	Code string
 	Name string
-}
-
-type UpdateTime struct {
-	TermId int
-	Time   time.Time
 }
 
 type ApiSection struct {

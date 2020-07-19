@@ -55,12 +55,5 @@ func ImportAll(state *state.State, client *api.Client) error {
 	}
 	log.EndImport("section_meeting", result)
 
-	log.StartImport("update_time")
-	result, err = InsertAllUpdateTimes(state.Db, converted.UpdateTimes)
-	if err != nil {
-		return fmt.Errorf("failed to update times: %w", err)
-	}
-	log.EndImport("update_time", result)
-
 	return nil
 }

@@ -733,6 +733,7 @@
       - id
       - section_name
       - term_id
+      - updated_at
       filter: {}
   - role: user
     comment: null
@@ -748,6 +749,7 @@
       - id
       - section_name
       - term_id
+      - updated_at
       filter: {}
   update_permissions: []
   delete_permissions: []
@@ -1307,43 +1309,6 @@
       - is_cancelled
       - is_closed
       - is_tba
-      filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: update_time
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
-  select_permissions:
-  - role: anonymous
-    comment: null
-    permission:
-      allow_aggregations: true
-      computed_fields: []
-      columns:
-      - term_id
-      - time
-      filter: {}
-  - role: user
-    comment: null
-    permission:
-      allow_aggregations: true
-      computed_fields: []
-      columns:
-      - term_id
-      - time
       filter: {}
   update_permissions: []
   delete_permissions: []
