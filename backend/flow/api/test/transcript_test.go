@@ -9,10 +9,11 @@ import (
 	"flow/api/parse/transcript"
 )
 
-var expectedPreamble = `  University of Waterloo                                                                                                Page 1 of 2
-  200 University Ave. West                                                                                              05/07/2019
+var expectedPreamble = `  University of Waterloo                                                                                               Page 1 of 2
+  200 University Ave. West                                                                                             05/07/2019
   Waterloo Ontario Canada N2L3G1
-                                                   Undergraduate Unofficial Transcript`
+
+                                              Undergraduate Unofficial Transcript`
 
 var simpleSummary = &transcript.Summary{
 	StudentNumber: 20705374,
