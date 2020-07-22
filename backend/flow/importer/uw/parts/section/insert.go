@@ -19,7 +19,7 @@ UPDATE course_section SET
   campus = delta.campus,
   enrollment_capacity = delta.enrollment_capacity,
   enrollment_total = delta.enrollment_total,
-	updated_at = delta.updated_at
+  updated_at = delta.updated_at
 FROM work.course_section_delta delta
   JOIN course c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
@@ -97,13 +97,13 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 // from the UW API so that manually added sections are preserved.
 const TruncateMeetingQuery = `
   WITH imported_course_sections AS
-  	(SELECT cs.id AS id FROM work.course_section_delta delta
-	INNER JOIN course_section cs
-	ON delta.class_number = cs.class_number
-	AND delta.term_id = cs.term_id)
+    (SELECT cs.id AS id FROM work.course_section_delta delta
+  INNER JOIN course_section cs
+  ON delta.class_number = cs.class_number
+  AND delta.term_id = cs.term_id)
   DELETE FROM section_meeting sm
-	USING imported_course_sections ics
-	WHERE ics.id = sm.section_id;
+  USING imported_course_sections ics
+  WHERE ics.id = sm.section_id;
   TRUNCATE work.section_meeting_delta;
 `
 
