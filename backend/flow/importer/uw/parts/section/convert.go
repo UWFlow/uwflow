@@ -9,17 +9,6 @@ import (
 )
 
 func ConvertAll(dst *ConvertResult, apiSections []ApiSection, term *term.Term) error {
-	// All sections in a term are updated at the same time on ADM,
-	// therefore this should be done only once and not for each section.
-	if len(apiSections) > 0 {
-		dst.UpdateTimes = append(
-			dst.UpdateTimes,
-			UpdateTime{
-				TermId: term.Id,
-				Time:   apiSections[0].LastUpdated,
-			},
-		)
-	}
 	for _, apiSection := range apiSections {
 		err := ConvertSection(dst, &apiSection, term)
 		if err != nil {
@@ -41,6 +30,7 @@ func ConvertSection(dst *ConvertResult, apiSection *ApiSection, term *term.Term)
 			EnrollmentCapacity: apiSection.EnrollmentCapacity,
 			EnrollmentTotal:    apiSection.EnrollmentTotal,
 			TermId:             apiSection.TermId,
+			UpdatedAt:          apiSection.LastUpdated,
 		},
 	)
 

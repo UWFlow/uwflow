@@ -128,6 +128,7 @@ CREATE TABLE course_section (
   campus TEXT NOT NULL,
   enrollment_capacity INT NOT NULL,
   enrollment_total INT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
   CONSTRAINT class_number_unique_to_term UNIQUE(class_number, term_id)
 );
 
@@ -239,11 +240,6 @@ CREATE TABLE prof_review_upvote (
     ON UPDATE CASCADE
     ON DELETE CASCADE,
   CONSTRAINT prof_review_upvote_unique UNIQUE(review_id, user_id)
-);
-
-CREATE TABLE update_time (
-  term_id INT PRIMARY KEY,
-  time TIMESTAMPTZ NOT NULL
 );
 
 -- END PUBLIC TABLES
@@ -772,7 +768,8 @@ CREATE TABLE work.course_section_delta(
   campus TEXT NOT NULL,
   term_id INT NOT NULL,
   enrollment_capacity INT NOT NULL,
-  enrollment_total INT NOT NULL
+  enrollment_total INT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE work.section_meeting_delta(
