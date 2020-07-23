@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -8,12 +9,6 @@ import (
 	"flow/api/parse/pdf"
 	"flow/api/parse/transcript"
 )
-
-var expectedPreamble = `  University of Waterloo                                                                                               Page 1 of 2
-  200 University Ave. West                                                                                             05/07/2019
-  Waterloo Ontario Canada N2L3G1
-
-                                              Undergraduate Unofficial Transcript`
 
 var simpleSummary = &transcript.Summary{
 	StudentNumber: 20705374,
@@ -100,51 +95,49 @@ var transferSummary = &transcript.Summary{
 }
 
 func TestPdfToText(t *testing.T) {
-	bytes, err := ioutil.ReadFile("fixtures/transcript-simple.pdf")
+	in, err := ioutil.ReadFile("testdata/transcript-simple.pdf")
 	if err != nil {
-		t.Fatalf("could not open fixture: %v", err)
+		t.Fatalf("reading pdf: %v", err)
 	}
-	text, err := pdf.ToText(bytes)
+	want, err := ioutil.ReadFile("testdata/transcript-simple.txt")
 	if err != nil {
-		t.Fatalf("could not convert file: %v", err)
+		t.Errorf("reading text: %v", err)
 	}
-	if text[:len(expectedPreamble)] != expectedPreamble {
-		t.Fatalf("expected %v, got %v", expectedPreamble, text[:len(expectedPreamble)])
+	text, err := pdf.ToText(in)
+	if err != nil {
+		t.Fatalf("converting: %v", err)
+	}
+	if text != string(want) {
+		t.Errorf("want:\n%x\ngot:\n%x\n", want, text)
 	}
 }
 
-func TestSimpleTranscript(t *testing.T) {
-	bytes, err := ioutil.ReadFile("fixtures/transcript-simple.pdf")
-	if err != nil {
-		t.Fatalf("could not open transcript fixture: %v", err)
+func TestParseTranscript(t *testing.T) {
+	tests := []struct {
+		name string
+		want *transcript.Summary
+	}{
+		{"simple", simpleSummary},
+		{"transfer", transferSummary},
 	}
-	text, err := pdf.ToText(bytes)
-	if err != nil {
-		t.Fatalf("could not convert transcript: %v", err)
-	}
-	summary, err := transcript.Parse(text)
-	if err != nil {
-		t.Fatalf("could not parse transcript: %v", err)
-	}
-	if !reflect.DeepEqual(summary, simpleSummary) {
-		t.Fatalf("expected %+v, got %+v", simpleSummary, summary)
-	}
-}
-
-func TestTransferTranscript(t *testing.T) {
-	bytes, err := ioutil.ReadFile("fixtures/transcript-transfer.pdf")
-	if err != nil {
-		t.Fatalf("could not open transcript fixture: %v", err)
-	}
-	text, err := pdf.ToText(bytes)
-	if err != nil {
-		t.Fatalf("could not convert transcript: %v", err)
-	}
-	summary, err := transcript.Parse(text)
-	if err != nil {
-		t.Fatalf("could not parse transcript: %v", err)
-	}
-	if !reflect.DeepEqual(summary, transferSummary) {
-		t.Fatalf("expected %+v, got %+v", transferSummary, summary)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := fmt.Sprintf("testdata/transcript-%s.pdf", tt.name)
+			bytes, err := ioutil.ReadFile(path)
+			if err != nil {
+				t.Fatalf("reading pdf: %v", err)
+			}
+			text, err := pdf.ToText(bytes)
+			if err != nil {
+				t.Fatalf("converting: %v", err)
+			}
+			summary, err := transcript.Parse(text)
+			if err != nil {
+				t.Fatalf("parsing: %v", err)
+			}
+			if !reflect.DeepEqual(summary, tt.want) {
+				t.Fatalf("want\n%+v\ngot\n%+v\n", tt.want, summary)
+			}
+		})
 	}
 }
