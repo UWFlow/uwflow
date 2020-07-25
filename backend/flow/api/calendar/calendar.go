@@ -19,7 +19,6 @@ type postgresEvent struct {
 	SectionId    int
 	CourseCode   string
 	SectionName  string
-	IsExam       bool
 	Location     *string
 	StartDate    time.Time
 	EndDate      time.Time
@@ -141,31 +140,20 @@ func writeCalendar(w io.Writer, secretId string, events []*webcalEvent) {
 }
 
 const selectEventQuery = `
-WITH src AS (
-  SELECT
-    FALSE as is_exam, section_id, location, start_date, end_date,
-    start_seconds, end_seconds, days
-  FROM section_meeting
-  UNION ALL
-  SELECT
-    TRUE AS is_exam, section_id, location, date, date,
-    start_seconds, end_seconds, ARRAY[day]
-  FROM section_exam
-)
 SELECT
-  src.section_id, c.code, cs.section_name, src.is_exam, src.location,
-  src.start_date :: TEXT, src.end_date :: TEXT,
-  src.start_seconds, src.end_seconds, src.days
+  sm.section_id, c.code, cs.section_name, sm.location,
+  sm.start_date :: TEXT, sm.end_date :: TEXT,
+  sm.start_seconds, sm.end_seconds, sm.days
 FROM
   user_schedule us
   JOIN course_section cs ON cs.id = us.section_id
-  JOIN src ON src.section_id = us.section_id
+  JOIN section_meeting ON sm.section_id = us.section_id
   JOIN course c ON c.id = cs.course_id
 WHERE us.user_id = $1
 	-- Fetch meetings where start_seconds and end_seconds are present.
 	-- Otherwise, we cannot say anything useful about when they take place.
-  AND src.start_seconds IS NOT NULL
-  AND src.end_seconds IS NOT NULL
+  AND sm.start_seconds IS NOT NULL
+  AND sm.end_seconds IS NOT NULL
 `
 
 const userIdQuery = `SELECT id FROM "user" WHERE secret_id = $1`
@@ -190,7 +178,7 @@ func extractUserEvents(conn *db.Conn, secretId string) ([]*postgresEvent, error)
 		var startDateStr, endDateStr string
 
 		err = rows.Scan(
-			&ev.SectionId, &ev.CourseCode, &ev.SectionName, &ev.IsExam, &ev.Location,
+			&ev.SectionId, &ev.CourseCode, &ev.SectionName, &ev.Location,
 			&startDateStr, &endDateStr, &ev.StartSeconds, &ev.EndSeconds, &ev.Days,
 		)
 		if err != nil {
@@ -222,11 +210,7 @@ func postgresToWebcalEvent(event *postgresEvent, date time.Time) *webcalEvent {
 	}
 
 	var summary = strings.ToUpper(event.CourseCode)
-	if event.IsExam {
-		summary = fmt.Sprintf("%s - FINAL", summary)
-	} else {
-		summary = fmt.Sprintf("%s - %s", summary, event.SectionName)
-	}
+	summary = fmt.Sprintf("%s - %s", summary, event.SectionName)
 
 	return &webcalEvent{
 		GroupId:   event.SectionId,
