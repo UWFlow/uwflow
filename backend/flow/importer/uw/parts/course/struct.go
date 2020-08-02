@@ -26,12 +26,6 @@ type Antireq struct {
 	AntireqCode string
 }
 
-// Data necessary to uniquely identify a course, equivalent to a course code
-type ApiCourseHandle struct {
-	Subject string `json:"subject"`
-	Number  string `json:"catalog_number"`
-}
-
 type ApiCourse struct {
 	Subject     string `json:"subject"`
 	Number      string `json:"catalog_number"`

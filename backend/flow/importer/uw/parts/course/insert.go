@@ -19,6 +19,7 @@ UPDATE course SET
   antireqs = delta.antireqs
 FROM work.course_delta delta
 WHERE course.code = delta.code
+AND NOT course.authoritative
 `
 
 const InsertCourseQuery = `
