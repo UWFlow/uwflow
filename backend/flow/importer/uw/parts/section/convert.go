@@ -105,7 +105,7 @@ func ConvertMeeting(
 		meeting.StartDate = term.StartDate
 	}
 	if apiMeeting.Date.EndDate != nil {
-		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.StartDate, term.Id)
+		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.EndDate, term.Id)
 		if err != nil {
 			return fmt.Errorf("failed to convert date: %w", err)
 		}
