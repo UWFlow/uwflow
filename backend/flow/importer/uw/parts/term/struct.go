@@ -24,13 +24,13 @@ type Term struct {
 // In UW API v3 spec, these are called ImportantDates,
 // but that collides with the Date that is nested inside,
 // so we prefer to call them Events, which is also shorter.
-type ApiEvent struct {
+type apiEvent struct {
 	Name    string
-	Details []ApiEventDetail
+	Details []apiEventDetail
 }
 
 // Likewise, these are ImportantDateDetails in API spec
-type ApiEventDetail struct {
+type apiEventDetail struct {
 	// Of the form "Fall 2019"
 	TermName string
 	// In our case, start and end dates conincide,

@@ -8,12 +8,12 @@ import (
 	"flow/importer/uw/log"
 )
 
-const DeleteSectionQuery = `
+const deleteSectionQuery = `
 DELETE FROM course_section
 WHERE term_id < $1
 `
 
-const DeleteProfQuery = `
+const deleteProfQuery = `
 DELETE FROM prof p
 WHERE NOT EXISTS (
     SELECT FROM review
@@ -27,14 +27,14 @@ WHERE NOT EXISTS (
 func Vacuum(state *state.State) error {
 	log.StartVacuum("section")
 	// Retain only sections starting with the previous term
-	tag, err := state.Db.Exec(DeleteSectionQuery, util.PreviousTermId())
+	tag, err := state.Db.Exec(deleteSectionQuery, util.PreviousTermId())
 	if err != nil {
 		return fmt.Errorf("deleting old sections: %w", err)
 	}
 	log.EndVacuum("section", int(tag.RowsAffected()))
 
 	log.StartVacuum("prof")
-	tag, err = state.Db.Exec(DeleteProfQuery)
+	tag, err = state.Db.Exec(deleteProfQuery)
 	if err != nil {
 		return fmt.Errorf("deleting old profs: %w", err)
 	}

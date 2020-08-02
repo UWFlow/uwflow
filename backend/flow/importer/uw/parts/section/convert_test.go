@@ -1,11 +1,10 @@
-package convert_test
+package section
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	"flow/importer/uw/parts/section"
 	"flow/importer/uw/parts/term"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,6 +12,27 @@ import (
 )
 
 const sectionWithDates = `
+}`
+
+func mustLoadLocation(location string) *time.Location {
+	loc, err := time.LoadLocation(location)
+	if err != nil {
+		panic("no tzdata")
+	}
+	return loc
+}
+
+var est = mustLoadLocation("Canada/Eastern")
+
+func TestConvert(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  convertResult
+	}{
+		{
+			"with_dates",
+			`
 {
   "subject": "BUS",
   "catalog_number": "111W",
@@ -60,57 +80,40 @@ const sectionWithDates = `
   "term": 1209,
   "academic_level": "undergraduate",
   "last_updated": "2020-08-02T17:04:36-04:00"
-}`
-
-func mustLoadLocation(location string) *time.Location {
-	loc, err := time.LoadLocation(location)
-	if err != nil {
-		panic("no tzdata")
-	}
-	return loc
 }
-
-var est = mustLoadLocation("Canada/Eastern")
-
-var convertedWithDates = section.ConvertResult{
-	Sections: []section.Section{
-		{
-			CourseCode:         "bus111w",
-			ClassNumber:        6271,
-			SectionName:        "LEC 001",
-			Campus:             "WLU L",
-			EnrollmentCapacity: 1000,
-			EnrollmentTotal:    18,
-			TermId:             1209,
-			UpdatedAt:          time.Date(2020, 8, 2, 17, 4, 36, 0, est),
+			`,
+			convertResult{
+				Sections: []section{
+					{
+						CourseCode:         "bus111w",
+						ClassNumber:        6271,
+						SectionName:        "LEC 001",
+						Campus:             "WLU L",
+						EnrollmentCapacity: 1000,
+						EnrollmentTotal:    18,
+						TermId:             1209,
+						UpdatedAt:          time.Date(2020, 8, 2, 17, 4, 36, 0, est),
+					},
+				},
+				Meetings: []meeting{
+					{
+						ClassNumber:  6271,
+						TermId:       1209,
+						ProfCode:     pgtype.Varchar{Status: pgtype.Null},
+						Location:     pgtype.Varchar{Status: pgtype.Null},
+						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 35400, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 9, 10, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 12, 9, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"M", "W"},
+						IsCancelled:  false,
+						IsClosed:     false,
+						IsTba:        false,
+					},
+				},
+				Profs: nil,
+			},
 		},
-	},
-	Meetings: []section.Meeting{
-		{
-			ClassNumber:  6271,
-			TermId:       1209,
-			ProfCode:     pgtype.Varchar{Status: pgtype.Null},
-			Location:     pgtype.Varchar{Status: pgtype.Null},
-			StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-			EndSeconds:   pgtype.Int4{Int: 35400, Status: pgtype.Present},
-			StartDate:    time.Date(2020, 9, 10, 0, 0, 0, 0, time.UTC),
-			EndDate:      time.Date(2020, 12, 9, 0, 0, 0, 0, time.UTC),
-			Days:         []string{"M", "W"},
-			IsCancelled:  false,
-			IsClosed:     false,
-			IsTba:        false,
-		},
-	},
-	Profs: nil,
-}
-
-func TestConvertSection(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  section.ConvertResult
-	}{
-		{"with_dates", sectionWithDates, convertedWithDates},
 	}
 
 	term := &term.Term{
@@ -121,11 +124,11 @@ func TestConvertSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var apiSection section.ApiSection
-			var got section.ConvertResult
+			var section apiSection
+			var got convertResult
 
-			json.Unmarshal([]byte(tt.input), &apiSection)
-			err := section.ConvertAll(&got, []section.ApiSection{apiSection}, term)
+			json.Unmarshal([]byte(tt.input), &section)
+			err := convertAll(&got, []apiSection{section}, term)
 			if err != nil {
 				t.Errorf("error: %v", err)
 			}

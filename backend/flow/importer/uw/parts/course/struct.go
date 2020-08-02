@@ -4,13 +4,13 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-type ConvertResult struct {
-	Courses  []Course
-	Prereqs  []Prereq
-	Antireqs []Antireq
+type convertResult struct {
+	Courses  []course
+	Prereqs  []prereq
+	Antireqs []antireq
 }
 
-type Course struct {
+type course struct {
 	Code        string
 	Name        string
 	Description pgtype.Varchar
@@ -19,18 +19,18 @@ type Course struct {
 	Antireqs    pgtype.Varchar
 }
 
-type Prereq struct {
+type prereq struct {
 	CourseCode string
 	PrereqCode string
 	IsCoreq    bool
 }
 
-type Antireq struct {
+type antireq struct {
 	CourseCode  string
 	AntireqCode string
 }
 
-type ApiCourse struct {
+type apiCourse struct {
 	Subject     string `json:"subject"`
 	Number      string `json:"catalog_number"`
 	Name        string `json:"title"`

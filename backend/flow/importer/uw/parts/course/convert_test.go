@@ -1,20 +1,18 @@
-package convert_test
+package course
 
 import (
 	"encoding/json"
 	"testing"
 
-	"flow/importer/uw/parts/course"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/jackc/pgtype"
 )
 
-func TestConvertCourse(t *testing.T) {
+func TestConvert(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  course.ConvertResult
+		want  convertResult
 	}{
 		{
 			"simple",
@@ -30,8 +28,8 @@ func TestConvertCourse(t *testing.T) {
   "corequisites": null
 }
 			`,
-			course.ConvertResult{
-				Courses: []course.Course{
+			convertResult{
+				Courses: []course{
 					{
 						Code: "cs145",
 						Name: "Designing Functional Programs (Advanced Level)",
@@ -47,7 +45,7 @@ func TestConvertCourse(t *testing.T) {
 						},
 					},
 				},
-				Antireqs: []course.Antireq{
+				Antireqs: []antireq{
 					{
 						CourseCode:  "cs145",
 						AntireqCode: "cs115",
@@ -81,8 +79,8 @@ func TestConvertCourse(t *testing.T) {
   "corequisites": "MATH 119 or 138 or 148."
 }
 			`,
-			course.ConvertResult{
-				Courses: []course.Course{
+			convertResult{
+				Courses: []course{
 					{
 						Code:        "stat230",
 						Name:        "Probability",
@@ -101,7 +99,7 @@ func TestConvertCourse(t *testing.T) {
 						},
 					},
 				},
-				Prereqs: []course.Prereq{
+				Prereqs: []prereq{
 					{
 						CourseCode: "stat230",
 						PrereqCode: "math135",
@@ -142,7 +140,7 @@ func TestConvertCourse(t *testing.T) {
 						IsCoreq:    true,
 					},
 				},
-				Antireqs: []course.Antireq{
+				Antireqs: []antireq{
 					{
 						CourseCode:  "stat230",
 						AntireqCode: "stat220",
@@ -158,11 +156,11 @@ func TestConvertCourse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var apiCourse course.ApiCourse
-			var got course.ConvertResult
+			var course apiCourse
+			var got convertResult
 
-			json.Unmarshal([]byte(tt.input), &apiCourse)
-			err := course.ConvertAll(&got, []course.ApiCourse{apiCourse})
+			json.Unmarshal([]byte(tt.input), &course)
+			err := convertAll(&got, []apiCourse{course})
 			if err != nil {
 				t.Errorf("error: %v", err)
 			}
@@ -215,7 +213,7 @@ func TestParsePrereqs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			str, list := course.ExpandCourseCodes(tt.input)
+			str, list := expandCourseCodes(tt.input)
 			if tt.wantStr != str {
 				t.Errorf("string %q; want %q", str, tt.wantStr)
 			}

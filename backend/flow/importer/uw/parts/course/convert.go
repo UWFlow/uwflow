@@ -23,7 +23,7 @@ const (
 	subjectMatch
 )
 
-// ExpandCourseCodes takes a string containing course numbers
+// expandCourseCodes takes a string containing course numbers
 // not necessarily prefixed with a course subject
 // and outputs a best attempt at a string where all such numbers
 // are replaced with full uppercase course codes. For example,
@@ -34,7 +34,7 @@ const (
 //
 // Additionally, ExpandCourseCodes returns the list of all
 // course codes occuring in the string.
-func ExpandCourseCodes(input string) (string, []string) {
+func expandCourseCodes(input string) (string, []string) {
 	var output strings.Builder
 	// Output is at least as long as the input
 	output.Grow(len(input))
@@ -104,13 +104,13 @@ func ExpandCourseCodes(input string) (string, []string) {
 	return output.String(), codes
 }
 
-func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
-	dst.Courses = make([]Course, len(apiCourses))
+func convertAll(dst *convertResult, apiCourses []apiCourse) error {
+	dst.Courses = make([]course, len(apiCourses))
 
 	for i, apiCourse := range apiCourses {
 		courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
 
-		dst.Courses[i] = Course{
+		dst.Courses[i] = course{
 			Code: courseCode,
 			Name: apiCourse.Name,
 		}
@@ -126,7 +126,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 		}
 
 		if apiCourse.Prereqs != "" {
-			prereqString, prereqCodes := ExpandCourseCodes(apiCourse.Prereqs)
+			prereqString, prereqCodes := expandCourseCodes(apiCourse.Prereqs)
 
 			course.Prereqs = pgtype.Varchar{
 				String: prereqString,
@@ -136,7 +136,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 			for _, prereqCode := range prereqCodes {
 				dst.Prereqs = append(
 					dst.Prereqs,
-					Prereq{
+					prereq{
 						CourseCode: courseCode,
 						PrereqCode: prereqCode,
 						IsCoreq:    false,
@@ -148,7 +148,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 		}
 
 		if apiCourse.Coreqs != "" {
-			coreqString, coreqCodes := ExpandCourseCodes(apiCourse.Coreqs)
+			coreqString, coreqCodes := expandCourseCodes(apiCourse.Coreqs)
 
 			course.Coreqs = pgtype.Varchar{
 				String: coreqString,
@@ -158,7 +158,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 			for _, coreqCode := range coreqCodes {
 				dst.Prereqs = append(
 					dst.Prereqs,
-					Prereq{
+					prereq{
 						CourseCode: courseCode,
 						PrereqCode: coreqCode,
 						IsCoreq:    true,
@@ -170,7 +170,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 		}
 
 		if apiCourse.Antireqs != "" {
-			antireqString, antireqCodes := ExpandCourseCodes(apiCourse.Antireqs)
+			antireqString, antireqCodes := expandCourseCodes(apiCourse.Antireqs)
 
 			course.Antireqs = pgtype.Varchar{
 				String: antireqString,
@@ -180,7 +180,7 @@ func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
 			for _, antireqCode := range antireqCodes {
 				dst.Antireqs = append(
 					dst.Antireqs,
-					Antireq{
+					antireq{
 						CourseCode:  courseCode,
 						AntireqCode: antireqCode,
 					},

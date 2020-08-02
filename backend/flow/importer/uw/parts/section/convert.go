@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-func ConvertAll(dst *ConvertResult, apiSections []ApiSection, term *term.Term) error {
+func convertAll(dst *convertResult, apiSections []apiSection, term *term.Term) error {
 	for _, apiSection := range apiSections {
-		err := ConvertSection(dst, &apiSection, term)
+		err := convertSection(dst, &apiSection, term)
 		if err != nil {
 			return fmt.Errorf("failed to convert section: %w", err)
 		}
@@ -20,11 +20,11 @@ func ConvertAll(dst *ConvertResult, apiSections []ApiSection, term *term.Term) e
 	return nil
 }
 
-func ConvertSection(dst *ConvertResult, apiSection *ApiSection, term *term.Term) error {
+func convertSection(dst *convertResult, apiSection *apiSection, term *term.Term) error {
 	code := strings.ToLower(apiSection.Subject + apiSection.CatalogNumber)
 	dst.Sections = append(
 		dst.Sections,
-		Section{
+		section{
 			CourseCode:         code,
 			ClassNumber:        apiSection.ClassNumber,
 			SectionName:        apiSection.SectionName,
@@ -47,11 +47,11 @@ func ConvertSection(dst *ConvertResult, apiSection *ApiSection, term *term.Term)
 }
 
 func ConvertMeeting(
-	dst *ConvertResult, apiSection *ApiSection, apiMeeting *ApiMeeting, term *term.Term,
+	dst *convertResult, apiSection *apiSection, apiMeeting *apiMeeting, term *term.Term,
 ) error {
 	dst.Meetings = append(
 		dst.Meetings,
-		Meeting{
+		meeting{
 			ClassNumber: apiSection.ClassNumber,
 			TermId:      apiSection.TermId,
 			IsCancelled: apiMeeting.Date.IsCancelled,
@@ -73,7 +73,7 @@ func ConvertMeeting(
 		}
 		code := util.ProfNameToCode(name)
 		meeting.ProfCode = pgtype.Varchar{String: code, Status: pgtype.Present}
-		dst.Profs = append(dst.Profs, Prof{Name: name, Code: code})
+		dst.Profs = append(dst.Profs, prof{Name: name, Code: code})
 	} else {
 		meeting.ProfCode.Status = pgtype.Null
 	}

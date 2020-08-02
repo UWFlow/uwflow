@@ -6,13 +6,13 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-type ConvertResult struct {
-	Sections []Section
-	Meetings []Meeting
-	Profs    []Prof
+type convertResult struct {
+	Sections []section
+	Meetings []meeting
+	Profs    []prof
 }
 
-type Section struct {
+type section struct {
 	CourseCode         string
 	ClassNumber        int
 	SectionName        string
@@ -23,7 +23,7 @@ type Section struct {
 	UpdatedAt          time.Time
 }
 
-type Meeting struct {
+type meeting struct {
 	ClassNumber  int
 	TermId       int
 	ProfCode     pgtype.Varchar
@@ -40,12 +40,12 @@ type Meeting struct {
 
 // Why is this here? Because there is no standalone endpoint for profs in v2.
 // We therefore have to extract profs from sections during conversion.
-type Prof struct {
+type prof struct {
 	Code string
 	Name string
 }
 
-type ApiSection struct {
+type apiSection struct {
 	Subject            string       `json:"subject"`
 	CatalogNumber      string       `json:"catalog_number"`
 	ClassNumber        int          `json:"class_number"`
@@ -55,10 +55,10 @@ type ApiSection struct {
 	EnrollmentTotal    int          `json:"enrollment_total"`
 	TermId             int          `json:"term"`
 	LastUpdated        time.Time    `json:"last_updated"`
-	Meetings           []ApiMeeting `json:"classes"`
+	Meetings           []apiMeeting `json:"classes"`
 }
 
-type ApiMeeting struct {
+type apiMeeting struct {
 	Date struct {
 		Weekdays    string  `json:"weekdays"`
 		IsCancelled bool    `json:"is_cancelled"`

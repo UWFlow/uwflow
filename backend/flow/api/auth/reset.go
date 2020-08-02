@@ -62,7 +62,7 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 	}
 
 	if body.Email == "" {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email", err))
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email"))
 	}
 
 	return sendEmail(tx, body.Email)

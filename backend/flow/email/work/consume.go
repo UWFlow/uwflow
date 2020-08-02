@@ -42,7 +42,7 @@ func send(item common.MailItem) error {
 
 	err := smtp.SendMail("smtp.gmail.com:587", auth, from, []string{item.To}, buf.Bytes())
 	if err != nil {
-		return fmt.Errorf("failed to send email to %w", item.To)
+		return fmt.Errorf("failed to send email to %v", item.To)
 	}
 
 	log.Printf("%+v", item)
