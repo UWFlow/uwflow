@@ -14,7 +14,9 @@ CREATE TABLE course (
   coreqs TEXT
     CONSTRAINT course_coreqs_length CHECK (LENGTH(coreqs) <= 1024),
   antireqs TEXT
-    CONSTRAINT course_antireqs_length CHECK (LENGTH(antireqs) <= 1024)
+    CONSTRAINT course_antireqs_length CHECK (LENGTH(antireqs) <= 1024),
+  -- Whether the entry has been amended. If so, do not overwrite with ADM data.
+  authoritative BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE course_antirequisite (
