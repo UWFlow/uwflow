@@ -1,6 +1,10 @@
 package section
 
-import "time"
+import (
+	"time"
+
+	"github.com/jackc/pgtype"
+)
 
 type ConvertResult struct {
 	Sections []Section
@@ -22,10 +26,10 @@ type Section struct {
 type Meeting struct {
 	ClassNumber  int
 	TermId       int
-	ProfCode     *string
-	Location     *string
-	StartSeconds *int
-	EndSeconds   *int
+	ProfCode     pgtype.Varchar
+	Location     pgtype.Varchar
+	StartSeconds pgtype.Int4
+	EndSeconds   pgtype.Int4
 	StartDate    time.Time
 	EndDate      time.Time
 	Days         []string

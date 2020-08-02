@@ -1,5 +1,9 @@
 package course
 
+import (
+	"github.com/jackc/pgtype"
+)
+
 type ConvertResult struct {
 	Courses  []Course
 	Prereqs  []Prereq
@@ -9,10 +13,10 @@ type ConvertResult struct {
 type Course struct {
 	Code        string
 	Name        string
-	Description string
-	Prereqs     string
-	Coreqs      string
-	Antireqs    string
+	Description pgtype.Varchar
+	Prereqs     pgtype.Varchar
+	Coreqs      pgtype.Varchar
+	Antireqs    pgtype.Varchar
 }
 
 type Prereq struct {

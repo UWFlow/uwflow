@@ -6,6 +6,8 @@ import (
 
 	"flow/common/util"
 	"flow/importer/uw/parts/term"
+
+	"github.com/jackc/pgtype"
 )
 
 func ConvertAll(dst *ConvertResult, apiSections []ApiSection, term *term.Term) error {
@@ -59,7 +61,6 @@ func ConvertMeeting(
 	)
 	meeting := &dst.Meetings[len(dst.Meetings)-1]
 
-	// If instructor array is empty, keep ProfCode at nil
 	if len(apiMeeting.Instructors) > 0 {
 		// FIXME: it is not actually correct to discard instructors after 0th!
 		// There exists at least one grad seminar with more than one instructor.
@@ -71,13 +72,17 @@ func ConvertMeeting(
 			return fmt.Errorf("failed to convert name: %w", err)
 		}
 		code := util.ProfNameToCode(name)
-		meeting.ProfCode = &code
+		meeting.ProfCode = pgtype.Varchar{String: code, Status: pgtype.Present}
 		dst.Profs = append(dst.Profs, Prof{Name: name, Code: code})
+	} else {
+		meeting.ProfCode.Status = pgtype.Null
 	}
 
 	if apiMeeting.Location.Building != nil && apiMeeting.Location.Room != nil {
 		location := *apiMeeting.Location.Building + " " + *apiMeeting.Location.Room
-		meeting.Location = &location
+		meeting.Location = pgtype.Varchar{String: location, Status: pgtype.Present}
+	} else {
+		meeting.Location.Status = pgtype.Null
 	}
 
 	if apiMeeting.Date.StartTime != nil {
@@ -85,14 +90,19 @@ func ConvertMeeting(
 		if err != nil {
 			return fmt.Errorf("failed to convert time: %w", err)
 		}
-		meeting.StartSeconds = &startSeconds
+		meeting.StartSeconds = pgtype.Int4{Int: int32(startSeconds), Status: pgtype.Present}
+	} else {
+		meeting.StartSeconds.Status = pgtype.Null
 	}
+
 	if apiMeeting.Date.EndTime != nil {
 		endSeconds, err := util.TimeString24HToSeconds(*apiMeeting.Date.EndTime)
 		if err != nil {
 			return fmt.Errorf("failed to convert time: %w", err)
 		}
-		meeting.EndSeconds = &endSeconds
+		meeting.EndSeconds = pgtype.Int4{Int: int32(endSeconds), Status: pgtype.Present}
+	} else {
+		meeting.EndSeconds.Status = pgtype.Null
 	}
 
 	var err error
@@ -104,6 +114,7 @@ func ConvertMeeting(
 	} else {
 		meeting.StartDate = term.StartDate
 	}
+
 	if apiMeeting.Date.EndDate != nil {
 		meeting.EndDate, err = util.MonthDayToDate(*apiMeeting.Date.EndDate, term.Id)
 		if err != nil {

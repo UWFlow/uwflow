@@ -4,11 +4,21 @@ import (
 	"encoding/json"
 	"testing"
 
-	"flow/common/util"
 	"flow/importer/uw/parts/course"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/jackc/pgtype"
 )
 
-const easyCourse = `
+func TestConvertCourse(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  course.ConvertResult
+	}{
+		{
+			"simple",
+			`
 {
   "course_id": "012767",
   "subject": "CS",
@@ -19,9 +29,47 @@ const easyCourse = `
   "antirequisites": "CS 115, 135, 137, 138",
   "corequisites": null
 }
-`
-
-const complicatedCourse = `
+			`,
+			course.ConvertResult{
+				Courses: []course.Course{
+					{
+						Code: "cs145",
+						Name: "Designing Functional Programs (Advanced Level)",
+						Description: pgtype.Varchar{
+							String: "CS 145 is an advanced-level version of CS 135.",
+							Status: pgtype.Present,
+						},
+						Prereqs: pgtype.Varchar{Status: pgtype.Null},
+						Coreqs:  pgtype.Varchar{Status: pgtype.Null},
+						Antireqs: pgtype.Varchar{
+							String: "CS115, CS135, CS137, CS138",
+							Status: pgtype.Present,
+						},
+					},
+				},
+				Antireqs: []course.Antireq{
+					{
+						CourseCode:  "cs145",
+						AntireqCode: "cs115",
+					},
+					{
+						CourseCode:  "cs145",
+						AntireqCode: "cs135",
+					},
+					{
+						CourseCode:  "cs145",
+						AntireqCode: "cs137",
+					},
+					{
+						CourseCode:  "cs145",
+						AntireqCode: "cs138",
+					},
+				},
+			},
+		},
+		{
+			"complex",
+			`
 {
   "course_id": "008864",
   "subject": "STAT",
@@ -32,93 +80,149 @@ const complicatedCourse = `
   "antirequisites": "STAT 220, 240",
   "corequisites": "MATH 119 or 138 or 148."
 }
-`
-
-func TestConvertCourse(t *testing.T) {
-	inputStrings := []string{easyCourse, complicatedCourse}
-	inputs := make([]course.ApiCourse, len(inputStrings))
-	for i, inputString := range inputStrings {
-		json.Unmarshal([]byte(inputString), &inputs[i])
-	}
-
-	want := []util.Outcome{
-		{
-			Value: course.Course{
-				Code:        "cs145",
-				Name:        "Designing Functional Programs (Advanced Level)",
-				Description: "CS 145 is an advanced-level version of CS 135.",
-				Prereqs:     "",
-				Coreqs:      "",
-				Antireqs:    "CS115, CS135, CS137, CS138",
+			`,
+			course.ConvertResult{
+				Courses: []course.Course{
+					{
+						Code:        "stat230",
+						Name:        "Probability",
+						Description: pgtype.Varchar{Status: pgtype.Null},
+						Prereqs: pgtype.Varchar{
+							String: "(MATH135 with min. grade of 60% or MATH145)&(MATH128 with min. grade of 70% or (MATH117 or MATH137) with min. grade of 60% or MATH147)); Level at least 1B Hon Math or Math/Phys students only.",
+							Status: pgtype.Present,
+						},
+						Coreqs: pgtype.Varchar{
+							String: "MATH119 or MATH138 or MATH148.",
+							Status: pgtype.Present,
+						},
+						Antireqs: pgtype.Varchar{
+							String: "STAT220, STAT240",
+							Status: pgtype.Present,
+						},
+					},
+				},
+				Prereqs: []course.Prereq{
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math135",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math145",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math128",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math117",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math137",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math147",
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math119",
+						IsCoreq:    true,
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math138",
+						IsCoreq:    true,
+					},
+					{
+						CourseCode: "stat230",
+						PrereqCode: "math148",
+						IsCoreq:    true,
+					},
+				},
+				Antireqs: []course.Antireq{
+					{
+						CourseCode:  "stat230",
+						AntireqCode: "stat220",
+					},
+					{
+						CourseCode:  "stat230",
+						AntireqCode: "stat240",
+					},
+				},
 			},
 		},
-		{
-			Value: course.Course{
-				Code:        "stat230",
-				Name:        "Probability",
-				Description: "",
-				Prereqs:     "(MATH135 with min. grade of 60% or MATH145)&(MATH128 with min. grade of 70% or (MATH117 or MATH137) with min. grade of 60% or MATH147)); Level at least 1B Hon Math or Math/Phys students only.",
-				Coreqs:      "MATH119 or MATH138 or MATH148.",
-				Antireqs:    "STAT220, STAT240",
-			},
-		},
 	}
 
-	var converted course.ConvertResult
-	err := course.ConvertAll(&converted, inputs)
-	if err != nil {
-		t.Fatalf("err %s", err)
-	}
-	for i, got := range converted.Courses {
-		want[i].Test(t, inputs[i], got, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var apiCourse course.ApiCourse
+			var got course.ConvertResult
+
+			json.Unmarshal([]byte(tt.input), &apiCourse)
+			err := course.ConvertAll(&got, []course.ApiCourse{apiCourse})
+			if err != nil {
+				t.Errorf("error: %v", err)
+			}
+			if !cmp.Equal(tt.want, got) {
+				diff := cmp.Diff(tt.want, got)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestParsePrereqs(t *testing.T) {
-	inputs := []string{
-		"PHIL/PSYCH 256",
-		"RS 305A/333(GRK/RS 233)",
-		"RS 285 taken prior to Fall 2008",
-		"MATH 235 or 245, 237 or 247.",
-		"One of ECON 221, STAT 211, 231, 241; AFM 241 or CS 330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
-	}
-	wantstr := []util.Outcome{
+	tests := []struct {
+		name     string
+		input    string
+		wantStr  string
+		wantList []string
+	}{
 		{
-			Value: "PHIL256/PSYCH256",
+			"two_subjects",
+			"PHIL/PSYCH 256",
+			"PHIL256/PSYCH256",
+			[]string{"phil256", "psych256"},
 		},
 		{
-			Value: "RS305A/RS333(GRK233/RS233)",
+			"two_groups",
+			"RS 305A/333(GRK/RS 233)",
+			"RS305A/RS333(GRK233/RS233)",
+			[]string{"rs305a", "rs333", "grk233", "rs233"},
 		},
 		{
-			Value: "RS285 taken prior to Fall 2008",
+			"year_in_text",
+			"RS 285 taken prior to Fall 2008",
+			"RS285 taken prior to Fall 2008",
+			[]string{"rs285"},
 		},
 		{
-			Value: "MATH235 or MATH245, MATH237 or MATH247.",
+			"conjunctions",
+			"MATH 235 or 245, 237 or 247.",
+			"MATH235 or MATH245, MATH237 or MATH247.",
+			[]string{"math235", "math245", "math237", "math247"},
 		},
 		{
-			Value: "One of ECON221, STAT211, STAT231, STAT241; AFM241 or CS330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
-		},
-	}
-	wantcourses := []util.Outcome{
-		{
-			Value: []string{"phil256", "psych256"},
-		},
-		{
-			Value: []string{"rs305a", "rs333", "grk233", "rs233"},
-		},
-		{
-			Value: []string{"rs285"},
-		},
-		{
-			Value: []string{"math235", "math245", "math237", "math247"},
-		},
-		{
-			Value: []string{"econ221", "stat211", "stat231", "stat241", "afm241", "cs330"},
+			"complex",
+			"One of ECON 221, STAT 211, 231, 241; AFM 241 or CS 330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
+			"One of ECON221, STAT211, STAT231, STAT241; AFM241 or CS330; Accounting and Financial Management, Mathematics/CPA, or Biotechnology/CPA students.",
+			[]string{"econ221", "stat211", "stat231", "stat241", "afm241", "cs330"},
 		},
 	}
-	for i, input := range inputs {
-		str, courses := course.ExpandCourseCodes(input)
-		wantstr[i].Test(t, input, str, nil)
-		wantcourses[i].Test(t, input, courses, nil)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			str, list := course.ExpandCourseCodes(tt.input)
+			if tt.wantStr != str {
+				t.Errorf("string %q; want %q", str, tt.wantStr)
+			}
+			if !cmp.Equal(tt.wantList, list) {
+				diff := cmp.Diff(tt.wantList, list)
+				t.Errorf("list mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
