@@ -1,25 +1,22 @@
-package test
+package schedule
 
 import (
 	"fmt"
 	"io/ioutil"
 	"testing"
 
-	"flow/api/parse/schedule"
+	"github.com/google/go-cmp/cmp"
 )
-
-func testOne(t *testing.T, filename string, expected schedule.Summary) {
-}
 
 func TestParseSchedule(t *testing.T) {
 	tests := []struct {
 		name string
-		want schedule.Summary
+		want *Summary
 	}{
 		// This schedule is perfectly normal.
 		{
 			"normal",
-			schedule.Summary{
+			&Summary{
 				TermId: 1199,
 				ClassNumbers: []int{
 					4896, 4897, 4899, 4741, 4742, 5003, 4747, 4748, 7993, 7994, 7995, 4751, 4752,
@@ -29,7 +26,7 @@ func TestParseSchedule(t *testing.T) {
 		// This schedule does not have parentheses around class numbers.
 		{
 			"noparen",
-			schedule.Summary{
+			&Summary{
 				TermId: 1199,
 				ClassNumbers: []int{
 					5211, 8052, 9289, 6394, 5867, 6321, 6205, 7253, 7254,
@@ -39,7 +36,7 @@ func TestParseSchedule(t *testing.T) {
 		// This schedule is old (carried over from Flow 1.0)
 		{
 			"old",
-			schedule.Summary{
+			&Summary{
 				TermId: 1135,
 				ClassNumbers: []int{
 					3370, 3077, 3078, 3166, 2446, 4106, 4107, 4108, 4111, 4117, 4118, 4110,
@@ -49,7 +46,7 @@ func TestParseSchedule(t *testing.T) {
 		// This schedule has an abrnomal amount of whitespace
 		{
 			"whitespace",
-			schedule.Summary{
+			&Summary{
 				TermId: 1199,
 				ClassNumbers: []int{
 					4669, 4658, 4660, 4699, 4655, 4656, 4661, 4662, 4850, 4664, 4666, 4936, 4639, 4668, 7634,
@@ -62,14 +59,15 @@ func TestParseSchedule(t *testing.T) {
 			path := fmt.Sprintf("testdata/schedule-%s.txt", tt.name)
 			bytes, err := ioutil.ReadFile(path)
 			if err != nil {
-				t.Fatalf("could not open fixture: %v", err)
+				t.Fatalf("opening testdata: %v", err)
 			}
-			summary, err := schedule.Parse(string(bytes))
+			got, err := Parse(string(bytes))
 			if err != nil {
-				t.Fatalf("could not parse schedule: %v", err)
+				t.Fatalf("parsing: %v", err)
 			}
-			if !summary.Equals(tt.want) {
-				t.Fatalf("want\n%+v\ngot\n%v\n", tt.want, summary)
+			if !cmp.Equal(tt.want, got) {
+				diff := cmp.Diff(tt.want, got)
+				t.Fatalf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -16,27 +16,15 @@ type Summary struct {
 	ClassNumbers []int
 }
 
-func (ts Summary) Equals(other Summary) bool {
-	if ts.TermId != other.TermId || len(ts.ClassNumbers) != len(other.ClassNumbers) {
-		return false
-	}
-	for i, classNumber := range ts.ClassNumbers {
-		if classNumber != other.ClassNumbers[i] {
-			return false
-		}
-	}
-	return true
-}
-
 var (
-	TermRegexp = regexp.MustCompile(`(Spring|Fall|Winter)\s+(\d{4})`)
+	termRegexp = regexp.MustCompile(`(Spring|Fall|Winter)\s+(\d{4})`)
 	// Class numbers are *the* four-digit sequences
 	// which occur on a separate line, perhaps parenthesized.
-	ClassNumberRegexp = regexp.MustCompile(`\n\(?(\d{4})\)?\n`)
+	classNumberRegexp = regexp.MustCompile(`\n\(?(\d{4})\)?\n`)
 )
 
 func extractTerm(text string) (int, error) {
-	submatches := TermRegexp.FindStringSubmatchIndex(text)
+	submatches := termRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
 		return 0, fmt.Errorf("term id not found")
 	}
@@ -53,7 +41,7 @@ func extractTerm(text string) (int, error) {
 func extractClassNumbers(text string) ([]int, error) {
 	var err error
 	// -1 corresponds to no limit on the number of matches
-	submatches := ClassNumberRegexp.FindAllStringSubmatchIndex(text, -1)
+	submatches := classNumberRegexp.FindAllStringSubmatchIndex(text, -1)
 	classNumbers := make([]int, len(submatches))
 	for i, submatch := range submatches {
 		matchText := text[submatch[2]:submatch[3]]
