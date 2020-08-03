@@ -186,7 +186,7 @@ FROM work.prof_delta d
 WHERE p.id IS NULL
 `
 
-func insertAllProfs(conn *db.Conn, profs []prof) (*log.DbResult, error) {
+func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -201,18 +201,13 @@ func insertAllProfs(conn *db.Conn, profs []prof) (*log.DbResult, error) {
 	}
 
 	var preparedProfs [][]interface{}
-	// Filter duplicates before going to database: this is faster
-	seenProfCode := make(map[string]bool)
-	for _, prof := range profs {
-		if !seenProfCode[prof.Code] {
-			preparedProfs = append(preparedProfs, util.AsSlice(prof))
-			seenProfCode[prof.Code] = true
-		}
+	for code, name := range profs {
+		preparedProfs = append(preparedProfs, []interface{}{code, name})
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "prof_delta"},
-		util.Fields(profs),
+		[]string{"code", "name"},
 		preparedProfs,
 	)
 	if err != nil {

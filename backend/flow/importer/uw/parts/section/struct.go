@@ -9,7 +9,7 @@ import (
 type convertResult struct {
 	Sections []section
 	Meetings []meeting
-	Profs    []prof
+	Profs    profMap
 }
 
 type section struct {
@@ -38,12 +38,7 @@ type meeting struct {
 	IsTba        bool
 }
 
-// Why is this here? Because there is no standalone endpoint for profs in v2.
-// We therefore have to extract profs from sections during conversion.
-type prof struct {
-	Code string
-	Name string
-}
+type profMap map[string]string // code -> name
 
 type apiSection struct {
 	Subject            string       `json:"subject"`

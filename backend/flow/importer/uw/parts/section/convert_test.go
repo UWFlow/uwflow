@@ -11,9 +11,6 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-const sectionWithDates = `
-}`
-
 func mustLoadLocation(location string) *time.Location {
 	loc, err := time.LoadLocation(location)
 	if err != nil {
@@ -28,11 +25,12 @@ func TestConvert(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
+		term  *term.Term
 		want  convertResult
 	}{
 		{
-			"with_dates",
-			`
+			name: "with_dates",
+			input: `
 {
   "subject": "BUS",
   "catalog_number": "111W",
@@ -82,7 +80,12 @@ func TestConvert(t *testing.T) {
   "last_updated": "2020-08-02T17:04:36-04:00"
 }
 			`,
-			convertResult{
+			term: &term.Term{
+				Id:        1209,
+				StartDate: time.Date(2020, 9, 1, 0, 0, 0, 0, time.UTC),
+				EndDate:   time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC),
+			},
+			want: convertResult{
 				Sections: []section{
 					{
 						CourseCode:         "bus111w",
@@ -106,20 +109,251 @@ func TestConvert(t *testing.T) {
 						StartDate:    time.Date(2020, 9, 10, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2020, 12, 9, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"M", "W"},
-						IsCancelled:  false,
-						IsClosed:     false,
-						IsTba:        false,
 					},
 				},
-				Profs: nil,
+				Profs: profMap{},
 			},
 		},
-	}
-
-	term := &term.Term{
-		Id:        1209,
-		StartDate: time.Date(2020, 9, 1, 0, 0, 0, 0, time.UTC),
-		EndDate:   time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC),
+		{
+			name: "complex",
+			input: `
+{
+  "subject": "ECE",
+  "catalog_number": "106",
+  "units": 0.5,
+  "title": "Electricity and Magnetism",
+  "note": "Choose TUT and LAB sections with same Associated Class number as primary meet.",
+  "class_number": 4739,
+  "section": "LEC 002",
+  "campus": "UW U",
+  "associated_class": 2,
+  "related_component_1": null,
+  "related_component_2": null,
+  "enrollment_capacity": 141,
+  "enrollment_total": 127,
+  "waiting_capacity": 0,
+  "waiting_total": 0,
+  "topic": null,
+  "reserves": [
+    {
+      "reserve_group": "Software Eng Yr 1 students ",
+      "enrollment_capacity": 141,
+      "enrollment_total": 0
+    }
+  ],
+  "classes": [
+    {
+      "date": {
+        "start_time": "11:30",
+        "end_time": "12:20",
+        "weekdays": "MWF",
+        "start_date": null,
+        "end_date": null,
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "MC",
+        "room": "1085"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    },
+    {
+      "date": {
+        "start_time": "13:30",
+        "end_time": "14:20",
+        "weekdays": "F",
+        "start_date": "01/17",
+        "end_date": "01/17",
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "STC",
+        "room": "0060"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    },
+    {
+      "date": {
+        "start_time": "13:30",
+        "end_time": "14:20",
+        "weekdays": "F",
+        "start_date": "02/14",
+        "end_date": "02/14",
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "STC",
+        "room": "0060"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    },
+    {
+      "date": {
+        "start_time": "13:30",
+        "end_time": "14:20",
+        "weekdays": "F",
+        "start_date": "03/27",
+        "end_date": "03/27",
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "STC",
+        "room": "0060"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    },
+    {
+      "date": {
+        "start_time": "13:30",
+        "end_time": "14:20",
+        "weekdays": "F",
+        "start_date": "03/13",
+        "end_date": "03/13",
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "STC",
+        "room": "0060"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    },
+    {
+      "date": {
+        "start_time": "14:30",
+        "end_time": "15:20",
+        "weekdays": "F",
+        "start_date": "03/20",
+        "end_date": "03/20",
+        "is_tba": false,
+        "is_cancelled": false,
+        "is_closed": false
+      },
+      "location": {
+        "building": "STC",
+        "room": "0060"
+      },
+      "instructors": [
+        "Mansour,Firas"
+      ]
+    }
+  ],
+  "held_with": [],
+  "term": 1201,
+  "academic_level": "undergraduate",
+  "last_updated": "2020-04-30T23:04:01-04:00"
+}
+			`,
+			term: &term.Term{
+				Id:        1201,
+				StartDate: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+				EndDate:   time.Date(2020, 5, 31, 0, 0, 0, 0, time.UTC),
+			},
+			want: convertResult{
+				Sections: []section{
+					{
+						CourseCode:         "ece106",
+						ClassNumber:        4739,
+						SectionName:        "LEC 002",
+						Campus:             "UW U",
+						EnrollmentCapacity: 141,
+						EnrollmentTotal:    127,
+						TermId:             1201,
+						UpdatedAt:          time.Date(2020, 4, 30, 23, 4, 1, 0, est),
+					},
+				},
+				Meetings: []meeting{
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "MC 1085", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 41400, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 44400, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 5, 31, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"M", "W", "F"},
+					},
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "STC 0060", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 48600, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 51600, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 1, 17, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 1, 17, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"F"},
+					},
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "STC 0060", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 48600, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 51600, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 2, 14, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 2, 14, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"F"},
+					},
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "STC 0060", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 48600, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 51600, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 3, 27, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 3, 27, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"F"},
+					},
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "STC 0060", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 48600, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 51600, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 3, 13, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 3, 13, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"F"},
+					},
+					{
+						ClassNumber:  4739,
+						TermId:       1201,
+						ProfCode:     pgtype.Varchar{String: "firas_mansour", Status: pgtype.Present},
+						Location:     pgtype.Varchar{String: "STC 0060", Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int: 52200, Status: pgtype.Present},
+						EndSeconds:   pgtype.Int4{Int: 55200, Status: pgtype.Present},
+						StartDate:    time.Date(2020, 3, 20, 0, 0, 0, 0, time.UTC),
+						EndDate:      time.Date(2020, 3, 20, 0, 0, 0, 0, time.UTC),
+						Days:         []string{"F"},
+					},
+				},
+				Profs: profMap{
+					"firas_mansour": "Firas Mansour",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -128,7 +362,7 @@ func TestConvert(t *testing.T) {
 			var got convertResult
 
 			json.Unmarshal([]byte(tt.input), &section)
-			err := convertAll(&got, []apiSection{section}, term)
+			err := convertAll(&got, []apiSection{section}, tt.term)
 			if err != nil {
 				t.Errorf("error: %v", err)
 			}

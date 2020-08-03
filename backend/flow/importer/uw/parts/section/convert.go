@@ -11,6 +11,10 @@ import (
 )
 
 func convertAll(dst *convertResult, apiSections []apiSection, term *term.Term) error {
+	if dst.Profs == nil {
+		dst.Profs = make(profMap)
+	}
+
 	for _, apiSection := range apiSections {
 		err := convertSection(dst, &apiSection, term)
 		if err != nil {
@@ -72,8 +76,8 @@ func ConvertMeeting(
 			return fmt.Errorf("failed to convert name: %w", err)
 		}
 		code := util.ProfNameToCode(name)
+		dst.Profs[code] = name
 		meeting.ProfCode = pgtype.Varchar{String: code, Status: pgtype.Present}
-		dst.Profs = append(dst.Profs, prof{Name: name, Code: code})
 	} else {
 		meeting.ProfCode.Status = pgtype.Null
 	}
