@@ -8,9 +8,9 @@ import (
 	"flow/importer/uw/log"
 )
 
-const TruncateCourseQuery = `TRUNCATE work.course_delta`
+const truncateCourseQuery = `TRUNCATE work.course_delta`
 
-const UpdateCourseQuery = `
+const updateCourseQuery = `
 UPDATE course SET
   name = delta.name,
   description = delta.description,
@@ -22,7 +22,7 @@ WHERE course.code = delta.code
 AND NOT course.authoritative
 `
 
-const InsertCourseQuery = `
+const insertCourseQuery = `
 INSERT INTO course(code, name, description, prereqs, coreqs, antireqs)
 SELECT
   d.code, d.name, d.description, d.prereqs, d.coreqs, d.antireqs
@@ -31,7 +31,7 @@ FROM work.course_delta d
 WHERE c.id IS NULL
 `
 
-func InsertAllCourses(conn *db.Conn, courses []Course) (*log.DbResult, error) {
+func insertAllCourses(conn *db.Conn, courses []course) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -40,7 +40,7 @@ func InsertAllCourses(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateCourseQuery)
+	_, err = tx.Exec(truncateCourseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to truncate work table: %w", err)
 	}
@@ -63,13 +63,13 @@ func InsertAllCourses(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 		return nil, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdateCourseQuery)
+	tag, err := tx.Exec(updateCourseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(InsertCourseQuery)
+	tag, err = tx.Exec(insertCourseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert: %w", err)
 	}
@@ -85,16 +85,16 @@ func InsertAllCourses(conn *db.Conn, courses []Course) (*log.DbResult, error) {
 	return &result, nil
 }
 
-const TruncatePrereqQuery = `
+const truncatePrereqQuery = `
 TRUNCATE work.course_prerequisite_delta;
 `
 
-const ClearPrereqQuery = `
+const clearPrereqQuery = `
 DELETE FROM course_prerequisite
 WHERE course_id IN (SELECT course_id FROM work.course_prerequisite_delta)
 `
 
-const InsertPrereqQuery = `
+const insertPrereqQuery = `
 INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
 SELECT
   c.id, p.id, d.is_coreq
@@ -104,7 +104,7 @@ FROM work.course_prerequisite_delta d
 ON CONFLICT (course_id, prerequisite_id) DO NOTHING
 `
 
-func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
+func insertAllPrereqs(conn *db.Conn, prereqs []prereq) error {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -113,12 +113,12 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncatePrereqQuery)
+	_, err = tx.Exec(truncatePrereqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
-	_, err = tx.Exec(ClearPrereqQuery)
+	_, err = tx.Exec(clearPrereqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to clean up target table: %w", err)
 	}
@@ -137,7 +137,7 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 		return fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(InsertPrereqQuery)
+	tag, err := tx.Exec(insertPrereqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
@@ -153,17 +153,17 @@ func InsertAllPrereqs(conn *db.Conn, prereqs []Prereq) error {
 
 // We fetch courses rarely enough that it's easier to truncate
 // requisite tables every time instead of fumbling with updates/deletions.
-const TruncateAntireqQuery = `
+const truncateAntireqQuery = `
 TRUNCATE course_antirequisite;
 TRUNCATE work.course_antirequisite_delta;
 `
 
-const ClearAntireqQuery = `
+const clearAntireqQuery = `
 DELETE FROM course_antirequisite
 WHERE course_id IN (SELECT course_id FROM work.course_antirequisite_delta)
 `
 
-const InsertAntireqQuery = `
+const insertAntireqQuery = `
 INSERT INTO course_antirequisite(course_id, antirequisite_id)
 SELECT
   c.id, a.id
@@ -173,7 +173,7 @@ FROM work.course_antirequisite_delta d
 ON CONFLICT (course_id, antirequisite_id) DO NOTHING
 `
 
-func InsertAllAntireqs(conn *db.Conn, antireqs []Antireq) error {
+func insertAllAntireqs(conn *db.Conn, antireqs []antireq) error {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -182,12 +182,12 @@ func InsertAllAntireqs(conn *db.Conn, antireqs []Antireq) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateAntireqQuery)
+	_, err = tx.Exec(truncateAntireqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
-	_, err = tx.Exec(ClearAntireqQuery)
+	_, err = tx.Exec(clearAntireqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup target table: %w", err)
 	}
@@ -206,7 +206,7 @@ func InsertAllAntireqs(conn *db.Conn, antireqs []Antireq) error {
 		return fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(InsertAntireqQuery)
+	tag, err := tx.Exec(insertAntireqQuery)
 	if err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}

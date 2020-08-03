@@ -8,17 +8,17 @@ import (
 )
 
 type empty struct{}
-type Semaphore chan empty
+type semaphore chan empty
 
-const RateLimit = 20
+const rateLimit = 20
 
-func FetchAll(client *api.Client) ([]ApiCourse, error) {
+func fetchAll(client *api.Client) ([]apiCourse, error) {
 	courses, err := fetchStubs(client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch handles: %w", err)
 	}
 
-	sema := make(Semaphore, RateLimit)
+	sema := make(semaphore, rateLimit)
 	errch := make(chan error, len(courses))
 	for i := range courses {
 		go asyncFillStub(client, &courses[i], sema, errch)
@@ -34,20 +34,20 @@ func FetchAll(client *api.Client) ([]ApiCourse, error) {
 	return courses, nil
 }
 
-func asyncFillStub(client *api.Client, stub *ApiCourse, sema Semaphore, errch chan error) {
+func asyncFillStub(client *api.Client, stub *apiCourse, sema semaphore, errch chan error) {
 	sema <- empty{}
 	errch <- fillStub(client, stub)
 	<-sema
 }
 
-func fillStub(client *api.Client, stub *ApiCourse) error {
+func fillStub(client *api.Client, stub *apiCourse) error {
 	endpoint := fmt.Sprintf("courses/%s/%s", stub.Subject, stub.Number)
 	return client.Getv2(endpoint, &stub)
 }
 
-// fetchStubs fetches {subject, number, name} in ApiCourse.
-func fetchStubs(client *api.Client) ([]ApiCourse, error) {
-	var stubs []ApiCourse
+// fetchStubs fetches {subject, number, name} in apiCourse.
+func fetchStubs(client *api.Client) ([]apiCourse, error) {
+	var stubs []apiCourse
 	seenStub := make(map[string]bool)
 	// We are only intersted in the two upcoming terms
 	termIds := []int{util.CurrentTermId(), util.NextTermId()}
@@ -67,8 +67,8 @@ func fetchStubs(client *api.Client) ([]ApiCourse, error) {
 	return stubs, nil
 }
 
-func fetchStubsByTerm(client *api.Client, termId int) ([]ApiCourse, error) {
-	var stubs []ApiCourse
+func fetchStubsByTerm(client *api.Client, termId int) ([]apiCourse, error) {
+	var stubs []apiCourse
 	endpoint := fmt.Sprintf("terms/%d/courses", termId)
 	err := client.Getv2(endpoint, &stubs)
 	return stubs, err

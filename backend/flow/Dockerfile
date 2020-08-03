@@ -17,7 +17,7 @@ RUN apk add --no-cache g++ poppler-dev
 # Because every code change will invalidate everything past this point.
 # Thus we avoid wasting work (especially package installs, which are slow).
 COPY . .
-RUN go test -v ./.../test
+RUN go test ./...
 RUN cd api && go build
 RUN cd importer/uw && go build
 RUN cd email && go build

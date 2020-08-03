@@ -8,9 +8,9 @@ import (
 	"flow/importer/uw/log"
 )
 
-const TruncateTermQuery = `TRUNCATE work.term_delta`
+const truncateTermQuery = `TRUNCATE work.term_delta`
 
-const UpdateTermQuery = `
+const updateTermQuery = `
 UPDATE term SET
   start_date = delta.start_date,
   end_date   = delta.end_date
@@ -18,7 +18,7 @@ FROM work.term_delta delta
 WHERE term.id = delta.id
 `
 
-const InsertTermQuery = `
+const insertTermQuery = `
 INSERT INTO term(id, start_date, end_date)
 SELECT
   d.id, d.start_date, d.end_date
@@ -27,7 +27,7 @@ FROM work.term_delta d
 WHERE t.id IS NULL
 `
 
-func InsertAll(conn *db.Conn, terms []Term) (*log.DbResult, error) {
+func insertAll(conn *db.Conn, terms []Term) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -36,7 +36,7 @@ func InsertAll(conn *db.Conn, terms []Term) (*log.DbResult, error) {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateTermQuery)
+	_, err = tx.Exec(truncateTermQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
@@ -55,13 +55,13 @@ func InsertAll(conn *db.Conn, terms []Term) (*log.DbResult, error) {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdateTermQuery)
+	tag, err := tx.Exec(updateTermQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(InsertTermQuery)
+	tag, err = tx.Exec(insertTermQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}

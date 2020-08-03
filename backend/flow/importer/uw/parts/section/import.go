@@ -11,11 +11,11 @@ import (
 )
 
 func ImportAll(state *state.State, client *api.Client) error {
-	var converted ConvertResult
+	var converted convertResult
 	termIds := []int{util.PreviousTermId(), util.CurrentTermId(), util.NextTermId()}
 
 	for _, termId := range termIds {
-		apiSections, err := FetchByTerm(client, termId)
+		apiSections, err := fetchByTerm(client, termId)
 		if err != nil {
 			log.Warnf("failed to fetch sections for %04d, proceeding anyway", termId)
 			continue
@@ -27,7 +27,7 @@ func ImportAll(state *state.State, client *api.Client) error {
 			continue
 		}
 
-		err = ConvertAll(&converted, apiSections, term)
+		err = convertAll(&converted, apiSections, term)
 		if err != nil {
 			log.Warnf("failed to convert sections for %04d, proceeding anyway", termId)
 			continue
@@ -35,21 +35,21 @@ func ImportAll(state *state.State, client *api.Client) error {
 	}
 
 	log.StartImport("prof")
-	result, err := InsertAllProfs(state.Db, converted.Profs)
+	result, err := insertAllProfs(state.Db, converted.Profs)
 	if err != nil {
 		return fmt.Errorf("failed to insert profs: %w", err)
 	}
 	log.EndImport("prof", result)
 
 	log.StartImport("course_section")
-	result, err = InsertAllSections(state.Db, converted.Sections)
+	result, err = insertAllSections(state.Db, converted.Sections)
 	if err != nil {
 		return fmt.Errorf("failed to insert sections: %w", err)
 	}
 	log.EndImport("course_section", result)
 
 	log.StartImport("section_meeting")
-	result, err = InsertAllMeetings(state.Db, converted.Meetings)
+	result, err = insertAllMeetings(state.Db, converted.Meetings)
 	if err != nil {
 		return fmt.Errorf("failed to insert meetings: %w", err)
 	}

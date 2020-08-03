@@ -8,12 +8,12 @@ import (
 	"flow/importer/uw/log"
 )
 
-const DeleteQuery = `DELETE FROM term WHERE id < $1`
+const deleteQuery = `DELETE FROM term WHERE id < $1`
 
 func Vacuum(state *state.State) error {
 	log.StartVacuum("term")
 	// Retain only terms starting with the previous one
-	tag, err := state.Db.Exec(DeleteQuery, util.PreviousTermId())
+	tag, err := state.Db.Exec(deleteQuery, util.PreviousTermId())
 	if err != nil {
 		return fmt.Errorf("database write failed: %w", err)
 	}

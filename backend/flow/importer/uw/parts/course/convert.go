@@ -3,6 +3,8 @@ package course
 import (
 	"regexp"
 	"strings"
+
+	"github.com/jackc/pgtype"
 )
 
 var (
@@ -21,7 +23,7 @@ const (
 	subjectMatch
 )
 
-// ExpandCourseCodes takes a string containing course numbers
+// expandCourseCodes takes a string containing course numbers
 // not necessarily prefixed with a course subject
 // and outputs a best attempt at a string where all such numbers
 // are replaced with full uppercase course codes. For example,
@@ -32,7 +34,7 @@ const (
 //
 // Additionally, ExpandCourseCodes returns the list of all
 // course codes occuring in the string.
-func ExpandCourseCodes(input string) (string, []string) {
+func expandCourseCodes(input string) (string, []string) {
 	var output strings.Builder
 	// Output is at least as long as the input
 	output.Grow(len(input))
@@ -102,53 +104,92 @@ func ExpandCourseCodes(input string) (string, []string) {
 	return output.String(), codes
 }
 
-func ConvertAll(dst *ConvertResult, apiCourses []ApiCourse) error {
-	dst.Courses = make([]Course, len(apiCourses))
+func convertAll(dst *convertResult, apiCourses []apiCourse) error {
+	dst.Courses = make([]course, len(apiCourses))
 
 	for i, apiCourse := range apiCourses {
 		courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
-		prereqString, prereqCodes := ExpandCourseCodes(apiCourse.Prereqs)
-		coreqString, coreqCodes := ExpandCourseCodes(apiCourse.Coreqs)
-		antireqString, antireqCodes := ExpandCourseCodes(apiCourse.Antireqs)
 
-		dst.Courses[i] = Course{
-			Code:        courseCode,
-			Name:        apiCourse.Name,
-			Description: apiCourse.Description,
-			Prereqs:     prereqString,
-			Coreqs:      coreqString,
-			Antireqs:    antireqString,
+		dst.Courses[i] = course{
+			Code: courseCode,
+			Name: apiCourse.Name,
+		}
+		course := &dst.Courses[i]
+
+		if apiCourse.Description != "" {
+			course.Description = pgtype.Varchar{
+				String: apiCourse.Description,
+				Status: pgtype.Present,
+			}
+		} else {
+			course.Description.Status = pgtype.Null
 		}
 
-		for _, prereqCode := range prereqCodes {
-			dst.Prereqs = append(
-				dst.Prereqs,
-				Prereq{
-					CourseCode: courseCode,
-					PrereqCode: prereqCode,
-					IsCoreq:    false,
-				},
-			)
+		if apiCourse.Prereqs != "" {
+			prereqString, prereqCodes := expandCourseCodes(apiCourse.Prereqs)
+
+			course.Prereqs = pgtype.Varchar{
+				String: prereqString,
+				Status: pgtype.Present,
+			}
+
+			for _, prereqCode := range prereqCodes {
+				dst.Prereqs = append(
+					dst.Prereqs,
+					prereq{
+						CourseCode: courseCode,
+						PrereqCode: prereqCode,
+						IsCoreq:    false,
+					},
+				)
+			}
+		} else {
+			course.Prereqs.Status = pgtype.Null
 		}
-		for _, coreqCode := range coreqCodes {
-			dst.Prereqs = append(
-				dst.Prereqs,
-				Prereq{
-					CourseCode: courseCode,
-					PrereqCode: coreqCode,
-					IsCoreq:    true,
-				},
-			)
+
+		if apiCourse.Coreqs != "" {
+			coreqString, coreqCodes := expandCourseCodes(apiCourse.Coreqs)
+
+			course.Coreqs = pgtype.Varchar{
+				String: coreqString,
+				Status: pgtype.Present,
+			}
+
+			for _, coreqCode := range coreqCodes {
+				dst.Prereqs = append(
+					dst.Prereqs,
+					prereq{
+						CourseCode: courseCode,
+						PrereqCode: coreqCode,
+						IsCoreq:    true,
+					},
+				)
+			}
+		} else {
+			course.Coreqs.Status = pgtype.Null
 		}
-		for _, antireqCode := range antireqCodes {
-			dst.Antireqs = append(
-				dst.Antireqs,
-				Antireq{
-					CourseCode:  courseCode,
-					AntireqCode: antireqCode,
-				},
-			)
+
+		if apiCourse.Antireqs != "" {
+			antireqString, antireqCodes := expandCourseCodes(apiCourse.Antireqs)
+
+			course.Antireqs = pgtype.Varchar{
+				String: antireqString,
+				Status: pgtype.Present,
+			}
+
+			for _, antireqCode := range antireqCodes {
+				dst.Antireqs = append(
+					dst.Antireqs,
+					antireq{
+						CourseCode:  courseCode,
+						AntireqCode: antireqCode,
+					},
+				)
+			}
+		} else {
+			course.Antireqs.Status = pgtype.Null
 		}
 	}
+
 	return nil
 }

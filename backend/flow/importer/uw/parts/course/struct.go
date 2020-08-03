@@ -1,32 +1,36 @@
 package course
 
-type ConvertResult struct {
-	Courses  []Course
-	Prereqs  []Prereq
-	Antireqs []Antireq
+import (
+	"github.com/jackc/pgtype"
+)
+
+type convertResult struct {
+	Courses  []course
+	Prereqs  []prereq
+	Antireqs []antireq
 }
 
-type Course struct {
+type course struct {
 	Code        string
 	Name        string
-	Description string
-	Prereqs     string
-	Coreqs      string
-	Antireqs    string
+	Description pgtype.Varchar
+	Prereqs     pgtype.Varchar
+	Coreqs      pgtype.Varchar
+	Antireqs    pgtype.Varchar
 }
 
-type Prereq struct {
+type prereq struct {
 	CourseCode string
 	PrereqCode string
 	IsCoreq    bool
 }
 
-type Antireq struct {
+type antireq struct {
 	CourseCode  string
 	AntireqCode string
 }
 
-type ApiCourse struct {
+type apiCourse struct {
 	Subject     string `json:"subject"`
 	Number      string `json:"catalog_number"`
 	Name        string `json:"title"`

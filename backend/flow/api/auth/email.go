@@ -26,7 +26,7 @@ func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error)
 
 	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &hash)
 	if err != nil {
-		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s: %w", email))
+		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s: %v", email, err))
 	}
 
 	err = bcrypt.CompareHashAndPassword(hash, password)

@@ -1,14 +1,18 @@
 package section
 
-import "time"
+import (
+	"time"
 
-type ConvertResult struct {
-	Sections []Section
-	Meetings []Meeting
-	Profs    []Prof
+	"github.com/jackc/pgtype"
+)
+
+type convertResult struct {
+	Sections []section
+	Meetings []meeting
+	Profs    profMap
 }
 
-type Section struct {
+type section struct {
 	CourseCode         string
 	ClassNumber        int
 	SectionName        string
@@ -19,13 +23,13 @@ type Section struct {
 	UpdatedAt          time.Time
 }
 
-type Meeting struct {
+type meeting struct {
 	ClassNumber  int
 	TermId       int
-	ProfCode     *string
-	Location     *string
-	StartSeconds *int
-	EndSeconds   *int
+	ProfCode     pgtype.Varchar
+	Location     pgtype.Varchar
+	StartSeconds pgtype.Int4
+	EndSeconds   pgtype.Int4
 	StartDate    time.Time
 	EndDate      time.Time
 	Days         []string
@@ -34,14 +38,9 @@ type Meeting struct {
 	IsTba        bool
 }
 
-// Why is this here? Because there is no standalone endpoint for profs in v2.
-// We therefore have to extract profs from sections during conversion.
-type Prof struct {
-	Code string
-	Name string
-}
+type profMap map[string]string // code -> name
 
-type ApiSection struct {
+type apiSection struct {
 	Subject            string       `json:"subject"`
 	CatalogNumber      string       `json:"catalog_number"`
 	ClassNumber        int          `json:"class_number"`
@@ -51,10 +50,10 @@ type ApiSection struct {
 	EnrollmentTotal    int          `json:"enrollment_total"`
 	TermId             int          `json:"term"`
 	LastUpdated        time.Time    `json:"last_updated"`
-	Meetings           []ApiMeeting `json:"classes"`
+	Meetings           []apiMeeting `json:"classes"`
 }
 
-type ApiMeeting struct {
+type apiMeeting struct {
 	Date struct {
 		Weekdays    string  `json:"weekdays"`
 		IsCancelled bool    `json:"is_cancelled"`

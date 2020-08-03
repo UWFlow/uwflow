@@ -8,7 +8,6 @@ import (
 	"flow/common/state"
 	"flow/importer/uw/api"
 	"flow/importer/uw/parts/course"
-	"flow/importer/uw/parts/exam"
 	"flow/importer/uw/parts/section"
 	"flow/importer/uw/parts/term"
 )
@@ -35,10 +34,10 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) {
 }
 
 var DailyFuncs = []ImportFunc{
-	term.ImportAll, course.ImportAll, section.ImportAll, exam.ImportAll,
+	term.ImportAll, course.ImportAll, section.ImportAll,
 }
 var HourlyFuncs = []ImportFunc{section.ImportAll}
-var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum, section.Vacuum, exam.Vacuum}
+var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum, section.Vacuum}
 
 func main() {
 	if len(os.Args) != 2 {
@@ -58,8 +57,6 @@ func main() {
 		RunImport(state, client, course.ImportAll)
 	case "daily":
 		RunImport(state, client, DailyFuncs...)
-	case "exams":
-		RunImport(state, client, exam.ImportAll)
 	case "hourly":
 		RunImport(state, client, HourlyFuncs...)
 	case "sections":

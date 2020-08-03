@@ -31,14 +31,14 @@ var (
 	// characters that are exactly 0x20? This whitespace must be column padding.
 	// This distinguishes courses in the taken table from courses in the notes
 	// (e.g. course equivalences established during program transfer)
-	CourseRegexp = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
-	CreditRegexp = regexp.MustCompile(`\d.\d{2}`)
+	courseRegexp = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
+	creditRegexp = regexp.MustCompile(`\d.\d{2}`)
 	// Level may contain more than two letters or numbers.
-	LevelRegexp     = regexp.MustCompile(`Level:\s+(\w{2,})`)
-	StudentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
+	levelRegexp     = regexp.MustCompile(`Level:\s+(\w{2,})`)
+	studentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
 	// Term names may show up in transcript comments which should be ignored.
 	// We only want terms that show up on their own line.
-	TermRegexp = regexp.MustCompile(`(?m)^\s*(Fall|Winter|Spring)\s+(\d{4})\s*$`)
+	termRegexp = regexp.MustCompile(`(?m)^\s*(Fall|Winter|Spring)\s+(\d{4})\s*$`)
 )
 
 // courseLine is of one of the following forms:
@@ -50,15 +50,15 @@ var (
 // Those are, in order: past term course, current term course, transfer credit.
 // isTransferCredit should return true only for the last case.
 func isTransferCredit(courseLine string) bool {
-	matches := CreditRegexp.FindAllString(courseLine, -1)
+	matches := creditRegexp.FindAllString(courseLine, -1)
 	return len(matches) == 1
 }
 
 func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
-	terms := TermRegexp.FindAllStringSubmatchIndex(text, -1)
-	levels := LevelRegexp.FindAllStringSubmatchIndex(text, -1)
-	courses := CourseRegexp.FindAllStringSubmatchIndex(text, -1)
+	terms := termRegexp.FindAllStringSubmatchIndex(text, -1)
+	levels := levelRegexp.FindAllStringSubmatchIndex(text, -1)
+	courses := courseRegexp.FindAllStringSubmatchIndex(text, -1)
 	if len(terms) != len(levels) {
 		return nil, fmt.Errorf("some terms lack academic level")
 	}
@@ -107,7 +107,7 @@ func extractProgramName(text string) (string, error) {
 }
 
 func Parse(text string) (*Summary, error) {
-	submatches := StudentIdRegexp.FindStringSubmatchIndex(text)
+	submatches := studentIdRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
 		return nil, fmt.Errorf("student id not found")
 	}

@@ -8,11 +8,11 @@ import (
 	"flow/importer/uw/log"
 )
 
-const TruncateSectionQuery = `
+const truncateSectionQuery = `
   TRUNCATE work.course_section_delta
 `
 
-const UpdateSectionQuery = `
+const updateSectionQuery = `
 UPDATE course_section SET
   course_id = c.id,
   section_name = delta.section_name,
@@ -26,7 +26,7 @@ WHERE course_section.class_number = delta.class_number
   AND course_section.term_id = delta.term_id
 `
 
-const InsertSectionQuery = `
+const insertSectionQuery = `
 INSERT INTO course_section(
   class_number, course_id, section_name, campus,
   term_id, enrollment_capacity, enrollment_total, updated_at
@@ -42,7 +42,7 @@ FROM work.course_section_delta d
 WHERE cs.id IS NULL
 `
 
-func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error) {
+func insertAllSections(conn *db.Conn, sections []section) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -51,7 +51,7 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateSectionQuery)
+	_, err = tx.Exec(truncateSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
@@ -70,13 +70,13 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(UpdateSectionQuery)
+	tag, err := tx.Exec(updateSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to apply update: %w", err)
 	}
 	result.Updated = int(tag.RowsAffected())
 
-	tag, err = tx.Exec(InsertSectionQuery)
+	tag, err = tx.Exec(insertSectionQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
@@ -95,7 +95,7 @@ func InsertAllSections(conn *db.Conn, sections []Section) (*log.DbResult, error)
 
 // Only delete sections meetings with class numbers imported
 // from the UW API so that manually added sections are preserved.
-const TruncateMeetingQuery = `
+const truncateMeetingQuery = `
   WITH imported_course_sections AS
     (SELECT cs.id AS id FROM work.course_section_delta delta
   INNER JOIN course_section cs
@@ -107,7 +107,7 @@ const TruncateMeetingQuery = `
   TRUNCATE work.section_meeting_delta;
 `
 
-const InsertMeetingQuery = `
+const insertMeetingQuery = `
 INSERT INTO section_meeting(
   section_id, prof_id,
   location, start_seconds, end_seconds,
@@ -131,7 +131,7 @@ FROM work.section_meeting_delta d
     ON p.code = d.prof_code
 `
 
-func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error) {
+func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -140,7 +140,7 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error)
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateMeetingQuery)
+	_, err = tx.Exec(truncateMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
@@ -159,7 +159,7 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error)
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(InsertMeetingQuery)
+	tag, err := tx.Exec(insertMeetingQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
@@ -175,10 +175,10 @@ func InsertAllMeetings(conn *db.Conn, meetings []Meeting) (*log.DbResult, error)
 	return &result, nil
 }
 
-const TruncateProfQuery = `TRUNCATE work.prof_delta`
+const truncateProfQuery = `TRUNCATE work.prof_delta`
 
 // Profs have nothing to update: name and code are their identifiers
-const InsertProfQuery = `
+const insertProfQuery = `
 INSERT INTO prof(name, code)
 SELECT d.name, d.code
 FROM work.prof_delta d
@@ -186,7 +186,7 @@ FROM work.prof_delta d
 WHERE p.id IS NULL
 `
 
-func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
+func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {
 	var result log.DbResult
 
 	tx, err := conn.Begin()
@@ -195,31 +195,26 @@ func InsertAllProfs(conn *db.Conn, profs []Prof) (*log.DbResult, error) {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(TruncateProfQuery)
+	_, err = tx.Exec(truncateProfQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to truncate work table: %w", err)
 	}
 
 	var preparedProfs [][]interface{}
-	// Filter duplicates before going to database: this is faster
-	seenProfCode := make(map[string]bool)
-	for _, prof := range profs {
-		if !seenProfCode[prof.Code] {
-			preparedProfs = append(preparedProfs, util.AsSlice(prof))
-			seenProfCode[prof.Code] = true
-		}
+	for code, name := range profs {
+		preparedProfs = append(preparedProfs, []interface{}{code, name})
 	}
 
 	_, err = tx.CopyFrom(
 		db.Identifier{"work", "prof_delta"},
-		util.Fields(profs),
+		[]string{"code", "name"},
 		preparedProfs,
 	)
 	if err != nil {
 		return &result, fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	tag, err := tx.Exec(InsertProfQuery)
+	tag, err := tx.Exec(insertProfQuery)
 	if err != nil {
 		return &result, fmt.Errorf("failed to insert: %w", err)
 	}
