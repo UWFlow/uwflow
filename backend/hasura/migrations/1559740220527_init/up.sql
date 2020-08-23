@@ -87,7 +87,8 @@ CREATE TABLE "user" (
     CONSTRAINT email_length CHECK (LENGTH(email) <= 256)
     CONSTRAINT email_format CHECK (email ~* '^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'),
   join_source JOIN_SOURCE NOT NULL,
-  join_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  join_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  public_schedule BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE user_course_taken (
@@ -275,6 +276,15 @@ FROM review r
 CREATE VIEW review_user_id AS
 SELECT id AS review_id, user_id
 FROM review;
+
+CREATE VIEW public_user_schedule AS
+SELECT
+  secret_id,
+  section_id,
+  user_id
+FROM user_schedule us
+  LEFT JOIN "user" u ON us.user_id = u.id
+WHERE u.public_schedule = TRUE;
 
 -- END PUBLIC VIEWS
 

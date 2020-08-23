@@ -984,6 +984,53 @@
   delete_permissions: []
   event_triggers: []
   computed_fields: []
+  - table: public_user_schedule
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+    - using:
+        foreign_key_constraint_on: section_id
+      name: section
+      comment: null
+    - using:
+        foreign_key_constraint_on: user_id
+      name: user
+      comment: null
+  array_relationships: []
+  insert_permissions: []
+  select_permissions:
+  - role: anonymous
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+        - secret_id
+        - section_id
+        - user_id
+      filter: {}
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+        - secret_id
+        - section_id
+        - user_id
+        filter: {}
+  update_permissions: []
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
 - table: review
   is_enum: false
   configuration:
@@ -1376,9 +1423,8 @@
     permission:
       set: {}
       columns:
-      - first_name
-      - last_name
       - email
+      - public_schedule
       filter:
         id:
           _eq: X-Hasura-User-Id
