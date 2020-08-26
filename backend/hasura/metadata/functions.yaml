@@ -1,4 +1,6 @@
-- function: search_courses
-  configuration: {}
-- function: search_profs
-  configuration: {}
+- function:
+    schema: public
+    name: search_courses
+- function:
+    schema: public
+    name: search_profs
