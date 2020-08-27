@@ -1,66 +1,29 @@
 - table:
     schema: aggregate
     name: course_easy_buckets
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - value
       - count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - value
       - count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: course_rating
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - filled_count
@@ -69,11 +32,9 @@
       - easy
       - useful
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - filled_count
@@ -82,194 +43,91 @@
       - easy
       - useful
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: course_review_rating
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - review_id
       - upvote_count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - review_id
       - upvote_count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: course_useful_buckets
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - value
       - count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_id
       - value
       - count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: prof_clear_buckets
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - value
       - count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - value
       - count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: prof_engaging_buckets
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - value
       - count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - value
       - count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: prof_rating
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - filled_count
@@ -278,11 +136,9 @@
       - engaging
       - liked
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_id
       - filled_count
@@ -291,134 +147,101 @@
       - engaging
       - liked
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
+      allow_aggregations: true
 - table:
     schema: aggregate
     name: prof_review_rating
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - review_id
       - upvote_count
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - review_id
       - upvote_count
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+      allow_aggregations: true
+- table:
+    schema: public
+    name: course
   object_relationships:
-  - using:
+  - name: rating
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: course_rating
         column_mapping:
           id: course_id
-    name: rating
-    comment: null
   array_relationships:
-  - using:
+  - name: antirequisites
+    using:
       foreign_key_constraint_on:
         column: course_id
-        table: course_antirequisite
-    name: antirequisites
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: course_antirequisite
+  - name: course_easy_buckets
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: course_easy_buckets
         column_mapping:
           id: course_id
-    name: course_easy_buckets
-    comment: null
-  - using:
+  - name: course_useful_buckets
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: course_useful_buckets
         column_mapping:
           id: course_id
-    name: course_useful_buckets
-    comment: null
-  - using:
+  - name: postrequisites
+    using:
       manual_configuration:
-        remote_table: course_postrequisite
+        remote_table:
+          schema: public
+          name: course_postrequisite
         column_mapping:
           id: course_id
-    name: postrequisites
-    comment: null
-  - using:
+  - name: prerequisites
+    using:
       foreign_key_constraint_on:
         column: course_id
-        table: course_prerequisite
-    name: prerequisites
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: course_prerequisite
+  - name: profs_teaching
+    using:
       manual_configuration:
-        remote_table: prof_teaches_course
+        remote_table:
+          schema: public
+          name: prof_teaches_course
         column_mapping:
           id: course_id
-    name: profs_teaching
-    comment: null
-  - using:
+  - name: reviews
+    using:
       foreign_key_constraint_on:
         column: course_id
-        table: review
-    name: reviews
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: review
+  - name: sections
+    using:
       foreign_key_constraint_on:
         column: course_id
-        table: course_section
-    name: sections
-    comment: null
-  insert_permissions: []
+        table:
+          schema: public
+          name: course_section
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - code
@@ -429,10 +252,7 @@
       - antireqs
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - antireqs
@@ -442,173 +262,95 @@
       - name
       - prereqs
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course_antirequisite
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: course_antirequisite
   object_relationships:
-  - using:
+  - name: antirequisite
+    using:
       foreign_key_constraint_on: antirequisite_id
-    name: antirequisite
-    comment: null
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - antirequisite_id
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - antirequisite_id
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course_postrequisite
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: course_postrequisite
   object_relationships:
-  - using:
+  - name: course
+    using:
       manual_configuration:
-        remote_table: course
+        remote_table:
+          schema: public
+          name: course
         column_mapping:
           course_id: id
-    name: course
-    comment: null
-  - using:
+  - name: postrequisite
+    using:
       manual_configuration:
-        remote_table: course
+        remote_table:
+          schema: public
+          name: course
         column_mapping:
           postrequisite_id: id
-    name: postrequisite
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - postrequisite_id
       - is_corequisite
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - postrequisite_id
       - is_corequisite
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course_prerequisite
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: course_prerequisite
   object_relationships:
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
-  - using:
+  - name: prerequisite
+    using:
       foreign_key_constraint_on: prerequisite_id
-    name: prerequisite
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - prerequisite_id
       - is_corequisite
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - prerequisite_id
       - is_corequisite
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course_review_upvote
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
+- table:
+    schema: public
+    name: course_review_upvote
   insert_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       check:
         user_id:
           _eq: X-Hasura-User-Id
@@ -617,46 +359,25 @@
       - user_id
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - review_id
       - user_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
-- table: course_search_index
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
+- table:
+    schema: public
+    name: course_search_index
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_ids
       - terms
@@ -668,11 +389,9 @@
       - code
       - name
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - prof_ids
       - terms
@@ -684,46 +403,32 @@
       - code
       - name
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: course_section
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+      allow_aggregations: true
+- table:
+    schema: public
+    name: course_section
   object_relationships:
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
   array_relationships:
-  - using:
+  - name: exams
+    using:
       foreign_key_constraint_on:
         column: section_id
-        table: section_exam
-    name: exams
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: section_exam
+  - name: meetings
+    using:
       foreign_key_constraint_on:
         column: section_id
-        table: section_meeting
-    name: meetings
-    comment: null
-  insert_permissions: []
+        table:
+          schema: public
+          name: section_meeting
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - campus
       - class_number
@@ -736,10 +441,7 @@
       - updated_at
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - campus
       - class_number
@@ -751,70 +453,53 @@
       - term_id
       - updated_at
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: prof
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: prof
   object_relationships:
-  - using:
+  - name: rating
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: prof_rating
         column_mapping:
           id: prof_id
-    name: rating
-    comment: null
   array_relationships:
-  - using:
+  - name: prof_clear_buckets
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: prof_clear_buckets
         column_mapping:
           id: prof_id
-    name: prof_clear_buckets
-    comment: null
-  - using:
+  - name: prof_courses
+    using:
       manual_configuration:
-        remote_table: prof_teaches_course
+        remote_table:
+          schema: public
+          name: prof_teaches_course
         column_mapping:
           id: prof_id
-    name: prof_courses
-    comment: null
-  - using:
+  - name: prof_engaging_buckets
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: prof_engaging_buckets
         column_mapping:
           id: prof_id
-    name: prof_engaging_buckets
-    comment: null
-  - using:
+  - name: reviews
+    using:
       foreign_key_constraint_on:
         column: prof_id
-        table: review
-    name: reviews
-    comment: null
-  insert_permissions: []
+        table:
+          schema: public
+          name: review
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - code
@@ -822,38 +507,19 @@
       - picture_url
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - code
       - name
       - picture_url
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: prof_review_upvote
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
+- table:
+    schema: public
+    name: prof_review_upvote
   insert_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       check:
         user_id:
           _eq: X-Hasura-User-Id
@@ -862,46 +528,25 @@
       - user_id
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - review_id
       - user_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
-- table: prof_search_index
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
+- table:
+    schema: public
+    name: prof_search_index
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_ids
       - course_codes
@@ -913,11 +558,9 @@
       - name
       - code
       filter: {}
+      allow_aggregations: true
   - role: user
-    comment: null
     permission:
-      allow_aggregations: true
-      computed_fields: []
       columns:
       - course_ids
       - course_codes
@@ -929,131 +572,118 @@
       - name
       - code
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: prof_teaches_course
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+      allow_aggregations: true
+- table:
+    schema: public
+    name: prof_teaches_course
   object_relationships:
-  - using:
+  - name: course
+    using:
       manual_configuration:
-        remote_table: course
+        remote_table:
+          schema: public
+          name: course
         column_mapping:
           course_id: id
-    name: course
-    comment: null
-  - using:
+  - name: prof
+    using:
       manual_configuration:
-        remote_table: prof
+        remote_table:
+          schema: public
+          name: prof
         column_mapping:
           prof_id: id
-    name: prof
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - prof_id
       - course_id
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - prof_id
       - course_id
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: review
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: public_user_schedule
+  select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+      - section_id
+      - full_name
+      - secret_id
+      filter: {}
+  - role: user
+    permission:
+      columns:
+      - section_id
+      - full_name
+      - secret_id
+      filter: {}
+- table:
+    schema: public
+    name: review
   object_relationships:
-  - using:
+  - name: author
+    using:
       manual_configuration:
-        remote_table: review_author
+        remote_table:
+          schema: public
+          name: review_author
         column_mapping:
           id: review_id
-    name: author
-    comment: null
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
-  - using:
+  - name: course_review_rating
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: course_review_rating
         column_mapping:
           id: review_id
-    name: course_review_rating
-    comment: null
-  - using:
+  - name: prof
+    using:
       foreign_key_constraint_on: prof_id
-    name: prof
-    comment: null
-  - using:
+  - name: prof_review_rating
+    using:
       manual_configuration:
         remote_table:
           schema: aggregate
           name: prof_review_rating
         column_mapping:
           id: review_id
-    name: prof_review_rating
-    comment: null
-  - using:
+  - name: user
+    using:
       manual_configuration:
-        remote_table: review_user_id
+        remote_table:
+          schema: public
+          name: review_user_id
         column_mapping:
           id: review_id
-    name: user
-    comment: null
   array_relationships:
-  - using:
+  - name: course_review_upvotes
+    using:
       foreign_key_constraint_on:
         column: review_id
-        table: course_review_upvote
-    name: course_review_upvotes
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: course_review_upvote
+  - name: prof_review_upvotes
+    using:
       foreign_key_constraint_on:
         column: review_id
-        table: prof_review_upvote
-    name: prof_review_upvotes
-    comment: null
+        table:
+          schema: public
+          name: prof_review_upvote
   insert_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       check:
         user_id:
           _eq: X-Hasura-User-Id
@@ -1071,10 +701,7 @@
       - public
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - course_id
@@ -1091,10 +718,7 @@
       - updated_at
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - course_id
@@ -1112,9 +736,7 @@
       filter: {}
   update_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       columns:
       - prof_id
       - liked
@@ -1128,35 +750,19 @@
       filter:
         user_id:
           _eq: X-Hasura-User-Id
+      check: null
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
-- table: review_author
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
+- table:
+    schema: public
+    name: review_author
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - review_id
       - full_name
@@ -1164,70 +770,31 @@
       - picture_url
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - review_id
       - full_name
       - program
       - picture_url
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: review_user_id
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
+- table:
+    schema: public
+    name: review_user_id
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - review_id
       - user_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: section_exam
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
-  array_relationships: []
-  insert_permissions: []
+- table:
+    schema: public
+    name: section_exam
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - section_id
       - start_seconds
@@ -1238,10 +805,7 @@
       - is_tba
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - section_id
       - start_seconds
@@ -1251,34 +815,16 @@
       - day
       - is_tba
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: section_meeting
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: section_meeting
   object_relationships:
-  - using:
+  - name: prof
+    using:
       foreign_key_constraint_on: prof_id
-    name: prof
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: anonymous
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - section_id
       - prof_id
@@ -1293,10 +839,7 @@
       - is_tba
       filter: {}
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - section_id
       - prof_id
@@ -1310,54 +853,41 @@
       - is_closed
       - is_tba
       filter: {}
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: user
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
-  object_relationships: []
+- table:
+    schema: public
+    name: user
   array_relationships:
-  - using:
+  - name: courses_taken
+    using:
       foreign_key_constraint_on:
         column: user_id
-        table: user_course_taken
-    name: courses_taken
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: user_course_taken
+  - name: reviews
+    using:
       foreign_key_constraint_on:
         column: user_id
-        table: review
-    name: reviews
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: review
+  - name: schedule
+    using:
       foreign_key_constraint_on:
         column: user_id
-        table: user_schedule
-    name: schedule
-    comment: null
-  - using:
+        table:
+          schema: public
+          name: user_schedule
+  - name: shortlist
+    using:
       foreign_key_constraint_on:
         column: user_id
-        table: user_shortlist
-    name: shortlist
-    comment: null
-  insert_permissions: []
+        table:
+          schema: public
+          name: user_shortlist
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - id
       - secret_id
@@ -1372,49 +902,30 @@
           _eq: X-Hasura-User-Id
   update_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       columns:
-      - first_name
-      - last_name
       - email
+      - picture_url
       filter:
         id:
           _eq: X-Hasura-User-Id
+      check: null
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
-- table: user_course_taken
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: user_course_taken
   object_relationships:
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - user_id
@@ -1423,70 +934,35 @@
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: user_schedule
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: user_schedule
   object_relationships:
-  - using:
+  - name: section
+    using:
       foreign_key_constraint_on: section_id
-    name: section
-    comment: null
-  - using:
+  - name: user
+    using:
       foreign_key_constraint_on: user_id
-    name: user
-    comment: null
-  array_relationships: []
-  insert_permissions: []
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - user_id
       - section_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
-  delete_permissions: []
-  event_triggers: []
-  computed_fields: []
-- table: user_shortlist
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
+- table:
+    schema: public
+    name: user_shortlist
   object_relationships:
-  - using:
+  - name: course
+    using:
       foreign_key_constraint_on: course_id
-    name: course
-    comment: null
-  array_relationships: []
   insert_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       check:
         user_id:
           _eq: X-Hasura-User-Id
@@ -1495,10 +971,7 @@
       - user_id
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - course_id
       - user_id
@@ -1507,52 +980,33 @@
           _eq: X-Hasura-User-Id
   update_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       columns:
       - course_id
       - user_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
+      check: null
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
 - table:
     schema: queue
     name: section_subscribed
-  is_enum: false
-  configuration:
-    custom_root_fields:
-      select: null
-      select_by_pk: null
-      select_aggregate: null
-      insert: null
-      update: null
-      delete: null
-    custom_column_names: {}
   object_relationships:
-  - using:
+  - name: section
+    using:
       foreign_key_constraint_on: section_id
-    name: section
-    comment: null
-  - using:
+  - name: user
+    using:
       foreign_key_constraint_on: user_id
-    name: user
-    comment: null
-  array_relationships: []
   insert_permissions:
   - role: user
-    comment: null
     permission:
-      set: {}
       check:
         user_id:
           _eq: X-Hasura-User-Id
@@ -1561,23 +1015,16 @@
       - section_id
   select_permissions:
   - role: user
-    comment: null
     permission:
-      allow_aggregations: false
-      computed_fields: []
       columns:
       - user_id
       - section_id
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  update_permissions: []
   delete_permissions:
   - role: user
-    comment: null
     permission:
       filter:
         user_id:
           _eq: X-Hasura-User-Id
-  event_triggers: []
-  computed_fields: []
