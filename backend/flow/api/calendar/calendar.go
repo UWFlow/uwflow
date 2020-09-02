@@ -147,7 +147,7 @@ SELECT
 FROM
   user_schedule us
   JOIN course_section cs ON cs.id = us.section_id
-  JOIN section_meeting ON sm.section_id = us.section_id
+  JOIN section_meeting sm ON sm.section_id = us.section_id
   JOIN course c ON c.id = cs.course_id
 WHERE us.user_id = $1
 	-- Fetch meetings where start_seconds and end_seconds are present.
