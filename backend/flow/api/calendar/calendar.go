@@ -51,11 +51,6 @@ const (
 // - CRLF followed immediately by a single linear white-space character is ignored
 //   (therefore, we must take care to never have a leading space on a line)
 const webcalPreamble = ("BEGIN:VCALENDAR\r\n" +
-	// 3.7.2 METHOD: TEXT
-	// - MUST be the same as the Content-Type "method" parameter value
-	//
-	// This is required by some software like Outlook.
-	"METHOD:REQUEST\r\n" +
 	// 3.7.3 PRODID: TEXT
 	// - MUST be specified once in an iCalendar object
 	// - vendor [...] SHOULD assure that this is a globally unique identifier
@@ -253,8 +248,8 @@ func HandleCalendar(conn *db.Conn, w http.ResponseWriter, r *http.Request) error
 
 	// The name of the downloaded file should be user-friendly and not $SECRET_ID.ics
 	w.Header().Set("Content-Disposition", "attachment; filename=uwflow.ics")
-	// Google Calendar requires explicit charset; Outlook requires explicit method
-	w.Header().Set("Content-Type", `text/calendar; charset="utf-8"; method=REQUEST`)
+	// Google Calendar requires explicit charset
+	w.Header().Set("Content-Type", `text/calendar; charset="utf-8"`)
 	w.WriteHeader(http.StatusCreated)
 	writeCalendar(w, secretId, webcalEvents)
 
