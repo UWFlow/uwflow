@@ -15,7 +15,7 @@ import (
 var creds struct {
 	Server string `from:"SMTP_SERVER"`
 	Port   string `from:"SMTP_PORT"`
-	User   string `from:"SMTP_USER"`
+	User   string `from:"SMTP_USERNAME"`
 	Pass   string `from:"SMTP_PASSWORD"`
 }
 
