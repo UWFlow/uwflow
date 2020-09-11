@@ -6,14 +6,10 @@ import (
 	"flow/common/env"
 )
 
-var Global *env.Environment
+var Global env.Environment
 
 func init() {
-	var err error
-
-	Global, err = env.Get()
-
-	if err != nil {
+	if err := env.Get(&Global); err != nil {
 		log.Fatalf("Error: %s", err)
 	}
 }

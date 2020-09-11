@@ -19,15 +19,15 @@ type State struct {
 }
 
 func New(ctx context.Context, serviceName string) (*State, error) {
-	env, err := env.Get()
-	if err != nil {
+	stenv := new(env.Environment)
+	if err := env.Get(stenv); err != nil {
 		return nil, fmt.Errorf("loading environment failed: %w", err)
 	}
 
-	db, err := db.ConnectPool(ctx, env)
+	db, err := db.ConnectPool(ctx, stenv)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to database failed: %w", err)
 	}
 
-	return &State{Db: db, Env: env}, nil
+	return &State{Db: db, Env: stenv}, nil
 }
