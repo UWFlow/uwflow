@@ -7,32 +7,33 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"os"
 
+	"flow/common/env"
 	"flow/email/format"
 )
 
+var creds struct {
+	Server string `from:"SMTP_SERVER"`
+	Port   string `from:"SMTP_PORT"`
+	User   string `from:"SMTP_USER"`
+	Pass   string `from:"SMTP_PASSWORD"`
+}
+
 var (
-	from string
-	pass string
-
-	fromLong string
-
 	auth smtp.Auth
+
+	from string
+	host string
 )
 
 func init() {
-	var ok bool
-
-	if from, ok = os.LookupEnv("MAIL_USER"); !ok {
-		log.Fatal("Environment variable not found: MAIL_USER")
-	}
-	if pass, ok = os.LookupEnv("MAIL_PASSWORD"); !ok {
-		log.Fatal("Environment variable not found: MAIL_PASSWORD")
+	if err := env.Get(&creds); err != nil {
+		log.Fatal(err)
 	}
 
-	fromLong = fmt.Sprintf("UW Flow <%s>", from)
-	auth = smtp.PlainAuth("", from, pass, "smtp-relay.sendinblue.com")
+	from = fmt.Sprintf("UW Flow <%s>", creds.User)
+	host = fmt.Sprintf("%s:%s", creds.Server, creds.Port)
+	auth = smtp.PlainAuth("", creds.User, creds.Pass, creds.Server)
 }
 
 func writeASCIIHeader(buf *bytes.Buffer, key, value string) {
@@ -54,7 +55,7 @@ func writeUTF8Header(buf *bytes.Buffer, key, value string) {
 }
 
 func writeSMTPHeaders(buf *bytes.Buffer, msg format.Message) {
-	writeASCIIHeader(buf, "From", fromLong)
+	writeASCIIHeader(buf, "From", from)
 	writeASCIIHeader(buf, "To", msg.To)
 	writeUTF8Header(buf, "Subject", msg.Subject)
 	writeASCIIHeader(buf, "MIME-version", "1.0")
@@ -68,7 +69,7 @@ func Send(msg format.Message) error {
 	writeSMTPHeaders(&buf, msg)
 	buf.Write(msg.Body)
 
-	err := smtp.SendMail("smtp-relay.sendinblue.com:587", auth, from, []string{msg.To}, buf.Bytes())
+	err := smtp.SendMail(host, auth, creds.User, []string{msg.To}, buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("sending %q to %s: %w", msg.Subject, msg.To, err)
 	}
