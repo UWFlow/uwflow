@@ -12,8 +12,8 @@ import (
 type Environment struct {
 	ApiPort string `from:"API_PORT"`
 
-	GmailUser        string `from:"GMAIL_USER"`
-	GmailAppPassword string `from:"GMAIL_APP_PASSWORD"`
+	MailUser     string `from:"MAIL_USER"`
+	MailPassword string `from:"MAIL_PASSWORD"`
 
 	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
 

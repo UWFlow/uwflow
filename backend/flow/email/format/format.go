@@ -7,21 +7,6 @@ import (
 	"html/template"
 )
 
-func writeHeader(buf *bytes.Buffer, key, value string) {
-	buf.WriteString(key)
-	buf.WriteString(": ")
-	buf.WriteString(value)
-	buf.WriteString("\r\n")
-}
-
-func writeSMTPHeaders(buf *bytes.Buffer, to, subject string) {
-	writeHeader(buf, "To", to)
-	writeHeader(buf, "Subject", subject)
-	writeHeader(buf, "MIME-version", "1.0")
-	writeHeader(buf, "Content-Type", `text/html;charset="utf-8"`)
-	buf.WriteString("\r\n")
-}
-
 // Message implements QueueItem.
 func (item *ResetItem) Message() (Message, error) {
 	var (
@@ -29,16 +14,13 @@ func (item *ResetItem) Message() (Message, error) {
 		msg Message
 	)
 
-	const subject = "Reset your password on UW Flow"
-	writeSMTPHeaders(&buf, item.Email, subject)
-
 	if err := resetTemplate.Execute(&buf, item); err != nil {
 		return msg, err
 	}
 
 	msg = Message{
 		Body:    buf.Bytes(),
-		Subject: subject,
+		Subject: "Reset your password on UW Flow",
 		To:      item.Email,
 	}
 	return msg, nil
@@ -51,16 +33,13 @@ func (item *SubscribedItem) Message() (Message, error) {
 		msg Message
 	)
 
-	subject := "You’re all set to receive notifications for " + item.CourseCode
-	writeSMTPHeaders(&buf, item.Email, subject)
-
 	if err := subscribedTemplate.Execute(&buf, item); err != nil {
 		return msg, err
 	}
 
 	msg = Message{
 		Body:    buf.Bytes(),
-		Subject: subject,
+		Subject: "You’re all set to receive notifications for " + item.CourseCode,
 		To:      item.Email,
 	}
 	return msg, nil
@@ -72,9 +51,6 @@ func (item *VacatedItem) Message() (Message, error) {
 		buf bytes.Buffer
 		msg Message
 	)
-
-	subject := "Enrolment updates in " + item.CourseCode
-	writeSMTPHeaders(&buf, item.Email, subject)
 
 	var tmpl *template.Template
 	if len(item.SectionNames) == 1 {
@@ -88,7 +64,7 @@ func (item *VacatedItem) Message() (Message, error) {
 
 	msg = Message{
 		Body:    buf.Bytes(),
-		Subject: subject,
+		Subject: "Enrolment updates in " + item.CourseCode,
 		To:      item.Email,
 	}
 	return msg, nil
