@@ -15,6 +15,7 @@ import (
 var creds struct {
 	Server string `from:"SMTP_SERVER"`
 	Port   string `from:"SMTP_PORT"`
+	From   string `from:"SMTP_FROM"`
 	User   string `from:"SMTP_USERNAME"`
 	Pass   string `from:"SMTP_PASSWORD"`
 }
@@ -31,7 +32,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	from = fmt.Sprintf("UW Flow <%s>", creds.User)
+	from = fmt.Sprintf("UW Flow <%s>", creds.From)
 	host = fmt.Sprintf("%s:%s", creds.Server, creds.Port)
 	auth = smtp.PlainAuth("", creds.User, creds.Pass, creds.Server)
 }
@@ -69,7 +70,7 @@ func Send(msg format.Message) error {
 	writeSMTPHeaders(&buf, msg)
 	buf.Write(msg.Body)
 
-	err := smtp.SendMail(host, auth, creds.User, []string{msg.To}, buf.Bytes())
+	err := smtp.SendMail(host, auth, creds.From, []string{msg.To}, buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("sending %q to %s: %w", msg.Subject, msg.To, err)
 	}
