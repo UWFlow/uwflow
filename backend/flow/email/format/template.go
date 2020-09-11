@@ -1,33 +1,11 @@
-package produce
+package format
 
 import (
-	"bytes"
-	"flow/email/common"
-	"fmt"
 	"html/template"
+	"log"
 )
 
-func FormatWithTemplate(to string, subject string, htmlTemplate string, data interface{}) (*common.MailItem, error) {
-	var emailBody bytes.Buffer
-	t, err := template.New("email").Parse(htmlTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("creating new html template: %w", err)
-	}
-	err = t.Execute(&emailBody, data)
-	if err != nil {
-		return nil, fmt.Errorf("loading data into html template: %w", err)
-	}
-
-	item := &common.MailItem{
-		To:      to,
-		Subject: subject,
-		Body:    emailBody.String(),
-	}
-	return item, nil
-}
-
-const ResetTemplate = `
-<html>
+const resetText = `<html>
 <head>
 	<title></title>
 	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
@@ -36,7 +14,7 @@ const ResetTemplate = `
 <table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
 	<tbody>
 		<tr>
-			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+			<td><img src="https://uwflow.com/title.png" /></td>
 		</tr>
 	</tbody>
 </table>
@@ -55,8 +33,7 @@ const ResetTemplate = `
 </body>
 </html>`
 
-const SubscribedTemplate = `
-<html>
+const subscribedText = `<html>
 <head>
 	<title></title>
 	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
@@ -65,7 +42,7 @@ const SubscribedTemplate = `
 <table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
 	<tbody>
 		<tr>
-			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+			<td><img src="https://uwflow.com/title.png" /></td>
 		</tr>
 	</tbody>
 </table>
@@ -86,8 +63,7 @@ const SubscribedTemplate = `
 </body>
 </html>`
 
-const VacatedSingleSectionTemplate = `
-<html>
+const oneVacatedText = `<html>
 <head>
 	<title></title>
 	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
@@ -96,7 +72,7 @@ const VacatedSingleSectionTemplate = `
 <table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
 	<tbody>
 		<tr>
-			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+			<td><img src="https://uwflow.com/title.png"/></td>
 		</tr>
 	</tbody>
 </table>
@@ -105,7 +81,7 @@ const VacatedSingleSectionTemplate = `
 		<tr>
 			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">
 				Hi {{.UserName}},<br /><br />
-				{{.SectionName}} in {{.CourseCode}} has open seats!<br /><br />
+				{{index .SectionNames 0}} in {{.CourseCode}} has open seats!<br /><br />
 				Take a look at {{.CourseURL}}<br /><br />
 				Cheers,<br />
 				UW Flow
@@ -116,8 +92,7 @@ const VacatedSingleSectionTemplate = `
 </body>
 </html>`
 
-const VacatedMultipleSectionsTemplate = `
-<html>
+const manyVacatedText = `<html>
 <head>
 	<title></title>
 	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
@@ -126,7 +101,7 @@ const VacatedMultipleSectionsTemplate = `
 <table align="center" border="0" cellpadding="1" cellspacing="1" style="width:75px">
 	<tbody>
 		<tr>
-			<td><img src="https://drive.google.com/thumbnail?id=1YDOe56_8mQDFLGmDwXYl8IYq2MsicWO8"/></td>
+			<td><img src="https://uwflow.com/title.png" /></td>
 		</tr>
 	</tbody>
 </table>
@@ -148,3 +123,25 @@ const VacatedMultipleSectionsTemplate = `
 </table>
 </body>
 </html>`
+
+var (
+	resetTemplate       = template.New("reset")
+	subscribedTemplate  = template.New("subscribed")
+	oneVacatedTemplate  = template.New("one_vacated")
+	manyVacatedTemplate = template.New("many_vacated")
+)
+
+func init() {
+	if _, err := resetTemplate.Parse(resetText); err != nil {
+		log.Fatalf("Error: parse reset template: %v", err)
+	}
+	if _, err := subscribedTemplate.Parse(subscribedText); err != nil {
+		log.Fatalf("Error: parse subscribed template: %v", err)
+	}
+	if _, err := oneVacatedTemplate.Parse(oneVacatedText); err != nil {
+		log.Fatalf("Error: parse one-vacated template: %v", err)
+	}
+	if _, err := manyVacatedTemplate.Parse(manyVacatedText); err != nil {
+		log.Fatalf("Error: parse many-vacated template: %v", err)
+	}
+}
