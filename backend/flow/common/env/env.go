@@ -12,8 +12,8 @@ import (
 type Environment struct {
 	ApiPort string `from:"API_PORT"`
 
-	GmailUser        string `from:"GMAIL_USER"`
-	GmailAppPassword string `from:"GMAIL_APP_PASSWORD"`
+	MailUser     string `from:"MAIL_USER"`
+	MailPassword string `from:"MAIL_PASSWORD"`
 
 	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
 
@@ -29,8 +29,7 @@ type Environment struct {
 
 // To avoid mind-numbing boilerplate, use reflection.
 // This is expectedly slow; fortunately, we only need to run this once.
-func Get() (*Environment, error) {
-	env := &Environment{}
+func Get(env interface{}) error {
 	envReflect := reflect.Indirect(reflect.ValueOf(env))
 	envType := envReflect.Type()
 
@@ -45,8 +44,9 @@ func Get() (*Environment, error) {
 			convertedValue := reflect.ValueOf(value).Convert(fieldType)
 			envReflect.Field(i).Set(convertedValue)
 		} else {
-			return nil, fmt.Errorf("environment variable %s is not set", envKey)
+			return fmt.Errorf("environment variable %s is not set", envKey)
 		}
 	}
-	return env, nil
+
+	return nil
 }

@@ -1,30 +1,24 @@
+// email is a mail sending service.
+// It connects to a Postgres database, listens for 'queue' notifications,
+// generates HTML documents from unseen items from tables in the 'queue' schema,
+// and sends them as SMTP messages via the Google SMTP service.
 package main
 
 import (
 	"context"
-	"flow/api/env"
-	"flow/common/db"
-	"flow/email/common"
-	"flow/email/work"
 	"log"
 )
 
 func main() {
-	var conn *db.Conn
-	var err error
+	ctx := context.Background()
 
-	conn, err = db.ConnectPool(context.Background(), env.Global)
+	pool, err := connect(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer pool.Close()
 
-	var mch = make(chan *common.MailItem)
-	var ech = make(chan error)
-
-	work.Produce(conn, mch, ech)
-	work.Consume(mch, ech)
-	for {
-		err = <-ech
+	if err := listen(ctx, pool); err != nil {
 		log.Print(err)
 	}
 }

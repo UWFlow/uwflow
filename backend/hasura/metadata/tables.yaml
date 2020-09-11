@@ -608,24 +608,6 @@
       filter: {}
 - table:
     schema: public
-    name: public_user_schedule
-  select_permissions:
-  - role: anonymous
-    permission:
-      columns:
-      - section_id
-      - full_name
-      - secret_id
-      filter: {}
-  - role: user
-    permission:
-      columns:
-      - section_id
-      - full_name
-      - secret_id
-      filter: {}
-- table:
-    schema: public
     name: review
   object_relationships:
   - name: author
