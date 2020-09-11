@@ -3,6 +3,7 @@ package smtp
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/smtp"
@@ -34,19 +35,30 @@ func init() {
 	auth = smtp.PlainAuth("", from, pass, "smtp-relay.sendinblue.com")
 }
 
-func writeHeader(buf *bytes.Buffer, key, value string) {
+func writeASCIIHeader(buf *bytes.Buffer, key, value string) {
 	buf.WriteString(key)
 	buf.WriteString(": ")
 	buf.WriteString(value)
 	buf.WriteString("\r\n")
 }
 
+func writeUTF8Header(buf *bytes.Buffer, key, value string) {
+	buf.WriteString(key)
+	buf.WriteString(": =?utf-8?B?")
+
+	enc := base64.NewEncoder(base64.URLEncoding, buf)
+	enc.Write([]byte(value))
+	enc.Close()
+
+	buf.WriteString("?=\r\n")
+}
+
 func writeSMTPHeaders(buf *bytes.Buffer, msg format.Message) {
-	writeHeader(buf, "From", fromLong)
-	writeHeader(buf, "To", msg.To)
-	writeHeader(buf, "Subject", msg.Subject)
-	writeHeader(buf, "MIME-version", "1.0")
-	writeHeader(buf, "Content-Type", `text/html;charset="utf-8"`)
+	writeASCIIHeader(buf, "From", fromLong)
+	writeASCIIHeader(buf, "To", msg.To)
+	writeUTF8Header(buf, "Subject", msg.Subject)
+	writeASCIIHeader(buf, "MIME-version", "1.0")
+	writeASCIIHeader(buf, "Content-Type", `text/html;charset="utf-8"`)
 	buf.WriteString("\r\n")
 }
 
