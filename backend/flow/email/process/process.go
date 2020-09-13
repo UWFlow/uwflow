@@ -11,7 +11,7 @@ import (
 )
 
 func process(ctx context.Context, tx pgx.Tx, info queueInfo) error {
-	items, err := scan(ctx, tx, info)
+	items, err := info.scanFunc(ctx, tx)
 	if err != nil {
 		return err
 	}
