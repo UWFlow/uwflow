@@ -11,7 +11,7 @@ export $(cat .env | xargs)
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down --remove-orphans
-$PREFIX docker volume rm -f backend_postgres
+$PREFIX docker volume rm -f postgres_uwflow
 
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"

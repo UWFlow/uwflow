@@ -66,3 +66,4 @@ services:
     restart: always
 volumes:
   postgres:
+    name: postgres_uwflow

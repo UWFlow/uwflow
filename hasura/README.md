@@ -56,17 +56,3 @@ For example, with curl:
 $ curl -H 'x-hasura-admin-secret:secretinprod' http://localhost:8080/v1/graphql -d @payload
 ```
 will submit the contents of the file `payload` and get the response.
-
-## Console
-
-The graphical interface for Hasura does not generate mutations by default.
-For this reason, it is disabled.
-To bring up a graphical interface _with_ mutation support:
-```sh
-cd uwflow2.0/backend/hasura
-export $(cat ../.env | xargs)
-hasura console
-```
-This should ideally happen automatically;
-however, it is not easy to set this up from within the container.
-It is a known wrinkle in the way Docker and Hasura interoperate.
