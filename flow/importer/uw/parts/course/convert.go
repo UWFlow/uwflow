@@ -1,6 +1,7 @@
 package course
 
 import (
+	"flow/importer/uw/parts/term"
 	"regexp"
 	"strings"
 
@@ -104,21 +105,26 @@ func expandCourseCodes(input string) (string, []string) {
 	return output.String(), codes
 }
 
-func convertAll(dst *convertResult, apiCourses []apiCourse) error {
+func convertAll(
+	dst *convertResult,
+	apiCourses []apiCourse,
+	apiClasses []apiClass,
+	idToTerm map[int]*term.Term,
+) error {
 	dst.Courses = make([]course, len(apiCourses))
 
 	for i, apiCourse := range apiCourses {
-		courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
+		courseCode := strings.ToLower(*apiCourse.Subject + *apiCourse.Number)
 
 		dst.Courses[i] = course{
 			Code: courseCode,
-			Name: apiCourse.Name,
+			Name: *apiCourse.Name,
 		}
 		course := &dst.Courses[i]
 
-		if apiCourse.Description != "" {
+		if apiCourse.Description != nil && *apiCourse.Description != "" {
 			course.Description = pgtype.Varchar{
-				String: apiCourse.Description,
+				String: *apiCourse.Description,
 				Status: pgtype.Present,
 			}
 		} else {
