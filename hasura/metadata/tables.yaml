@@ -430,7 +430,6 @@
   - role: anonymous
     permission:
       columns:
-      - campus
       - class_number
       - course_id
       - enrollment_capacity
@@ -443,7 +442,6 @@
   - role: user
     permission:
       columns:
-      - campus
       - class_number
       - course_id
       - enrollment_capacity

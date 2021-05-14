@@ -1,7 +1,7 @@
 # Redirect stdout and stderr to Docker stdout/stderr respectively
 # Times are in UTC
 
-# Fetch important updates (e.g. courses, sections) hourly on the 20 minute mark
-20 * * * * /app/uw hourly >/proc/1/fd/1 2>/proc/1/fd/2
+# Fetch important updates (e.g. courses, sections) every 2 hours on the 20 minute mark
+20 */2 * * * /app/uw hourly >/proc/1/fd/1 2>/proc/1/fd/2
 # Vacuum daily at 00:30 EST = 05:30 UTC
 30 05 * * * /app/uw vacuum >/proc/1/fd/1 2>/proc/1/fd/2

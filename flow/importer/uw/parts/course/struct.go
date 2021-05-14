@@ -19,7 +19,6 @@ type section struct {
 	CourseCode         string
 	ClassNumber        int
 	SectionName        string
-	Campus             string
 	EnrollmentCapacity int
 	EnrollmentTotal    int
 	TermId             int

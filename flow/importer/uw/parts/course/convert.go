@@ -326,7 +326,6 @@ func convertSection(dst *convertResult, apiClass *apiClass, term *term.Term) err
 			CourseCode:         apiClass.CourseCode,
 			ClassNumber:        apiClass.ClassNumber,
 			SectionName:        sectionName,
-			Campus:             "",
 			EnrollmentCapacity: apiClass.EnrollmentCapacity,
 			EnrollmentTotal:    apiClass.EnrolledStudents,
 			TermId:             term.Id,
