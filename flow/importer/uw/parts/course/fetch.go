@@ -26,13 +26,18 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 	sema := make(semaphore, rateLimit)
 	errch := make(chan error, numClasses)
 
-	for i := range courses {
-		for j := range termIds {
-			go asyncFetchClass(client, &courses[i], termIds[j], sema, errch)
-			classes = append(classes, <-sema...)
+	for _, course := range courses {
+		for _, termId := range termIds {
+			go asyncFetchClass(client, course, termId, sema, errch)
+
+			for _, class := range <-sema {
+				class.CourseCode = strings.ToLower(course.Subject + course.Number)
+				classes = append(classes, class)
+			}
+
 			err = <-errch
 			if err != nil {
-				log.Warnf("failed to fetch section with error %w, proceeding anyway", err)
+				log.Warnf("failed to fetch section with error %s, proceeding anyway", err)
 				continue
 			}
 		}
@@ -43,7 +48,7 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 
 func asyncFetchClass(
 	client *api.Client,
-	course *apiCourse,
+	course apiCourse,
 	termId int,
 	sema semaphore,
 	errch chan error,
@@ -53,9 +58,9 @@ func asyncFetchClass(
 	errch <- err
 }
 
-func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
+func fetchClass(client *api.Client, course apiCourse, termId int) ([]apiClass, error) {
 	var classes []apiClass
-	endpoint := fmt.Sprintf("ClassSchedule/%d/%s/%s", termId, *course.Subject, *course.Number)
+	endpoint := fmt.Sprintf("ClassSchedule/%d/%s/%s", termId, course.Subject, course.Number)
 	err := client.Getv3(endpoint, &classes)
 
 	// Some courses returned for each term may not have class schedules and return a 404
@@ -77,9 +82,15 @@ func fetchCourses(client *api.Client, termIds []int) ([]apiCourse, error) {
 			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
 		}
 		for _, course := range termCourses {
-			if !seenCourse[*course.Subject+*course.Number] {
+			courseCode := course.Subject + course.Number
+			if err != nil {
+				log.Warnf("skipping course with missing data")
+				continue
+			}
+
+			if !seenCourse[courseCode] {
 				courses = append(courses, course)
-				seenCourse[*course.Subject+*course.Number] = true
+				seenCourse[courseCode] = true
 			}
 		}
 	}

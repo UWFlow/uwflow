@@ -2,92 +2,36 @@ package util
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 )
 
-var WeekdayCodes = []string{"Su", "M", "T", "W", "Th", "F", "S"}
+// This is *almost* ISO8601, but ever so slightly off (no timezone)
+// Unfortunately, this forces us to reify the parsing process.
+const ApiV3DateLayout = "2006-01-02T15:04:05"
 
-// Convert date to UW-style weekday abbreviation
-func DateToWeekdayCode(date time.Time) string {
-	return WeekdayCodes[date.Weekday()]
+// Weekday codes corresponding to order of days returned by the UW API
+var WeekdayCodes = []string{"M", "T", "W", "Th", "F", "S", "Su"}
+
+// Map API V3 date string to seconds since midnight: hh * 3600 + mm * 60
+func TimeStringToSeconds(date string) (int, error) {
+	parsedDate, err := time.Parse(ApiV3DateLayout, date)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse date: %w", err)
+	}
+	return parsedDate.Hour()*3600 + parsedDate.Minute()*60, nil
 }
 
-// Convert a "month/day" string to full date,
-// given that it occurs during the term identified by termId
-func MonthDayToDate(monthDay string, termId int) (time.Time, error) {
-	date, err := time.Parse("01/02", monthDay)
-	if err != nil {
-		return date, err
-	}
-	year := TermIdToYear(termId)
-	if year < 1980 || year > 2100 {
-		return date, fmt.Errorf("not a sane year: %d", year)
-	}
-	return date.AddDate(year, 0, 0), nil
-}
-
-// Map 24h time string to seconds since midnight: "hh:mm" => hh * 3600 + mm * 60
-func TimeString24HToSeconds(time string) (int, error) {
-	splits := strings.Split(time, ":")
-	if len(splits) != 2 {
-		return -1, fmt.Errorf("expected: hours:minutes; got: %s", time)
-	}
-	hours, err := strconv.Atoi(splits[0])
-	if err != nil {
-		return -1, fmt.Errorf("hours component is not an integer: %s", splits[0])
-	}
-	minutes, err := strconv.Atoi(splits[1])
-	if err != nil {
-		return -1, fmt.Errorf("minutes component is not an integer: %s", splits[1])
-	}
-	return hours*3600 + minutes*60, nil
-}
-
-// Map 12h time format to seconds since midnight:
-// "hh:mm [AM|PM]" => hh * 3600 + mm * 60 + [0 | 12 * 3600]
-func TimeString12HToSeconds(time string) (int, error) {
-	splits := strings.Split(time, " ")
-	if len(splits) != 2 {
-		return -1, fmt.Errorf("expected: time [AM|PM]; got: %s", time)
-	}
-	// Offload time parsing to the 24h version, then fix up
-	seconds, err := TimeString24HToSeconds(splits[0])
-	if err != nil {
-		return -1, err
-	}
-	// 12th hour is actually 0th hour wrt the half-day it starts:
-	// 12:00am = 00:00, 01:00am = 01:00, ..., 12:00pm = 12:00, 01:00pm = 13;00, ...
-	if 12*3600 <= seconds && seconds < 13*3600 {
-		seconds -= 12 * 3600
-	}
-	switch splits[1] {
-	case "AM":
-		break
-	case "PM":
-		seconds += 12 * 3600
-	default:
-		return -1, fmt.Errorf("not an AM/PM suffix: %s", splits[1])
-	}
-	return seconds, nil
-}
-
-// Split a unified weekday string like "MTTh"
-// into separate strings for each day like ["M", "T", "Th"]
-func SplitWeekdayString(weekdays string) []string {
+// Parse a weekday string like "NYNYNNN" into
+// separate strings for each day like ["T", "Th"]
+func ParseWeekdayString(weekdays string) []string {
 	// Crucially, splitWeekdays should never be nil, so allocate zero-length slice
 	splitWeekdays := make([]string, 0)
-	i, N := 0, len(weekdays)
-	for i < N {
-		// Day names are two characters iff the next char is lowercase
-		if i+1 < N && 'a' <= weekdays[i+1] && weekdays[i+1] <= 'z' {
-			splitWeekdays = append(splitWeekdays, weekdays[i:i+2])
-			i += 2
-		} else {
-			splitWeekdays = append(splitWeekdays, weekdays[i:i+1])
-			i += 1
+	i := 0
+	for i < len(weekdays) {
+		if weekdays[i] == 'Y' {
+			splitWeekdays = append(splitWeekdays, WeekdayCodes[i])
 		}
+		i += 1
 	}
 	return splitWeekdays
 }

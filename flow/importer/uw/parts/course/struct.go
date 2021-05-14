@@ -64,28 +64,35 @@ type antireq struct {
 }
 
 type apiCourse struct {
-	Subject      *string `json:"subjectCode"`
-	Number       *string `json:"catalogNumber"`
-	Name         *string `json:"title"`
+	Subject      string  `json:"subjectCode"`
+	Number       string  `json:"catalogNumber"`
+	Name         string  `json:"title"`
 	Description  *string `json:"description"`
 	Requirements *string `json:"requirementsDescription"`
 }
 
 type apiClass struct {
-	ClassNumber        int                `json:"classNumber"`
-	CourseComponent    *string            `json:"courseComponent"`
-	EnrollmentCapacity int                `json:"maxEnrollmentCapacity"`
-	EnrolledStudents   int                `json:"enrolledStudents"`
-	TermId             *string            `json:"termCode"`
-	Meetings           []apiClassSchedule `json:"scheduleData"`
+	CourseCode         string               // Must be populated manually
+	ClassNumber        int                  `json:"classNumber"`
+	CourseComponent    *string              `json:"courseComponent"`
+	SectionNumber      int                  `json:"classSection"`
+	EnrollmentCapacity int                  `json:"maxEnrollmentCapacity"`
+	EnrolledStudents   int                  `json:"enrolledStudents"`
+	TermId             *string              `json:"termCode"`
+	Meetings           []apiClassSchedule   `json:"scheduleData"`
+	Instructors        []apiClassInstructor `json:"instructorData"`
 }
 
 type apiClassSchedule struct {
-	StartDate   string  `json:"scheduleStartDate"`
-	EndDate     string  `json:"scheduleEndDate"`
-	StartTime   string  `json:"classMeetingStartTime"`
-	EndTime     string  `json:"classMeetingEndTime"`
-	Location    *string `json:"locationName"`
-	Weekdays    *string `json:"classMeetingWeekPatternCode"`
-	ClassNumber int     `json:"classMeetingNumber"`
+	StartDate     string  `json:"scheduleStartDate"`
+	EndDate       string  `json:"scheduleEndDate"`
+	StartTime     string  `json:"classMeetingStartTime"`
+	EndTime       string  `json:"classMeetingEndTime"`
+	Location      *string `json:"locationName"`
+	Weekdays      *string `json:"classMeetingWeekPatternCode"`
+	MeetingNumber int     `json:"classMeetingNumber"`
+}
+
+type apiClassInstructor struct {
+	SectionNumber int `json:"classSection"`
 }
