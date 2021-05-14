@@ -23,12 +23,18 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 	// Fetch class schedules for all returned courses, for upcoming terms
 	var classes []apiClass
 	var numClasses = len(courses) * len(termIds)
+	var numFetched = 0
+
 	sema := make(semaphore, rateLimit)
 	errch := make(chan error, numClasses)
 
 	for _, course := range courses {
 		for _, termId := range termIds {
 			go asyncFetchClass(client, course, termId, sema, errch)
+			numFetched += 1
+			if numFetched%1000 == 0 {
+				log.Warnf("fetched %d/%d courses", numFetched, numClasses)
+			}
 
 			for _, class := range <-sema {
 				class.CourseCode = strings.ToLower(course.Subject + course.Number)
