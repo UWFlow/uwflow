@@ -12,16 +12,7 @@ export $(cat ../.env | xargs)
 ./uw
 ```
 
-You will need at least `go v1.13`.
-
-## How to obtain a `UW_API_KEY_V2`?
-
-It is [claimed](https://uwaterloo.ca/api/register-api-key) that it cannot be done:
-
-> Registration of API keys is currently disabled [...]
-
-The claim is false due to what is likely an oversight.
-Get your key through [this page](https://uwaterloo.ca/api/register).
+You will need at least `go v1.15`.
 
 ## How to obtain a `UW_API_KEY_V3`?
 

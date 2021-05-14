@@ -2,74 +2,111 @@ package course
 
 import (
 	"fmt"
+	"strings"
 
-	"flow/common/util"
 	"flow/importer/uw/api"
+	"flow/importer/uw/log"
 )
 
 type empty struct{}
-type semaphore chan empty
+type semaphore chan []apiClass
 
-const rateLimit = 20
+const rateLimit = 30
 
-func fetchAll(client *api.Client) ([]apiCourse, error) {
-	courses, err := fetchStubs(client)
+func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error) {
+	// Fetch course data
+	courses, err := fetchCourses(client, termIds)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch handles: %w", err)
+		return nil, nil, fmt.Errorf("failed to fetch courses: %w", err)
 	}
+
+	// Fetch class schedules for all returned courses, for upcoming terms
+	var classes []apiClass
+	var numClasses = len(courses) * len(termIds)
+	var numFetched = 0
 
 	sema := make(semaphore, rateLimit)
-	errch := make(chan error, len(courses))
-	for i := range courses {
-		go asyncFillStub(client, &courses[i], sema, errch)
+	errch := make(chan error, numClasses)
+
+	for _, course := range courses {
+		for _, termId := range termIds {
+			go asyncFetchClass(client, course, termId, sema, errch)
+			numFetched += 1
+			if numFetched%500 == 0 {
+				log.Warnf("fetched %d/%d courses", numFetched, numClasses)
+			}
+
+			for _, class := range <-sema {
+				class.CourseCode = strings.ToLower(course.Subject + course.Number)
+				classes = append(classes, class)
+			}
+
+			err = <-errch
+			if err != nil {
+				log.Warnf("failed to fetch section with error %s, proceeding anyway", err)
+				continue
+			}
+		}
 	}
 
-	for i := 0; i < len(courses); i++ {
-		err = <-errch
+	return courses, classes, nil
+}
+
+func asyncFetchClass(
+	client *api.Client,
+	course apiCourse,
+	termId int,
+	sema semaphore,
+	errch chan error,
+) {
+	classes, err := fetchClass(client, &course, termId)
+	sema <- classes
+	errch <- err
+}
+
+func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
+	var classes []apiClass
+	endpoint := fmt.Sprintf("ClassSchedules/%d/%s/%s", termId, course.Subject, course.Number)
+	err := client.Getv3(endpoint, &classes)
+
+	// Many courses returned for each term may not have class schedules and return a 404
+	if err != nil && strings.Contains(err.Error(), "404") {
+		return classes, nil
+	}
+
+	return classes, err
+}
+
+func fetchCourses(client *api.Client, termIds []int) ([]apiCourse, error) {
+	var courses []apiCourse
+	seenCourse := make(map[string]bool)
+
+	// Fetch courses termwise with deduplication
+	for _, termId := range termIds {
+		termCourses, err := fetchCoursesByTerm(client, termId)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
+		}
+		for _, course := range termCourses {
+			courseCode := course.Subject + course.Number
+			if err != nil {
+				log.Warnf("skipping course with missing data")
+				continue
+			}
+
+			if !seenCourse[courseCode] {
+				courses = append(courses, course)
+				seenCourse[courseCode] = true
+			}
 		}
 	}
 
 	return courses, nil
 }
 
-func asyncFillStub(client *api.Client, stub *apiCourse, sema semaphore, errch chan error) {
-	sema <- empty{}
-	errch <- fillStub(client, stub)
-	<-sema
-}
-
-func fillStub(client *api.Client, stub *apiCourse) error {
-	endpoint := fmt.Sprintf("courses/%s/%s", stub.Subject, stub.Number)
-	return client.Getv2(endpoint, &stub)
-}
-
-// fetchStubs fetches {subject, number, name} in apiCourse.
-func fetchStubs(client *api.Client) ([]apiCourse, error) {
-	var stubs []apiCourse
-	seenStub := make(map[string]bool)
-	// We are only intersted in the two upcoming terms
-	termIds := []int{util.CurrentTermId(), util.NextTermId()}
-	// Fetch stubs termwise with deduplication
-	for _, termId := range termIds {
-		termStubs, err := fetchStubsByTerm(client, termId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
-		}
-		for _, stub := range termStubs {
-			if !seenStub[stub.Subject+stub.Number] {
-				stubs = append(stubs, stub)
-				seenStub[stub.Subject+stub.Number] = true
-			}
-		}
-	}
-	return stubs, nil
-}
-
-func fetchStubsByTerm(client *api.Client, termId int) ([]apiCourse, error) {
-	var stubs []apiCourse
-	endpoint := fmt.Sprintf("terms/%d/courses", termId)
-	err := client.Getv2(endpoint, &stubs)
-	return stubs, err
+func fetchCoursesByTerm(client *api.Client, termId int) ([]apiCourse, error) {
+	var courses []apiCourse
+	endpoint := fmt.Sprintf("Courses/%d", termId)
+	err := client.Getv3(endpoint, &courses)
+	return courses, err
 }

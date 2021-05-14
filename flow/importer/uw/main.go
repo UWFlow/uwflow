@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 	"os"
+	_ "time/tzdata"
 
 	"flow/common/state"
 	"flow/importer/uw/api"
 	"flow/importer/uw/parts/course"
-	"flow/importer/uw/parts/section"
 	"flow/importer/uw/parts/term"
 )
 
@@ -33,11 +33,8 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) {
 	}
 }
 
-var DailyFuncs = []ImportFunc{
-	term.ImportAll, course.ImportAll, section.ImportAll,
-}
-var HourlyFuncs = []ImportFunc{section.ImportAll}
-var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum, section.Vacuum}
+var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
+var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum}
 
 func main() {
 	if len(os.Args) != 2 {
@@ -55,12 +52,8 @@ func main() {
 	switch os.Args[1] {
 	case "courses":
 		RunImport(state, client, course.ImportAll)
-	case "daily":
-		RunImport(state, client, DailyFuncs...)
 	case "hourly":
 		RunImport(state, client, HourlyFuncs...)
-	case "sections":
-		RunImport(state, client, section.ImportAll)
 	case "terms":
 		RunImport(state, client, term.ImportAll)
 	case "vacuum":

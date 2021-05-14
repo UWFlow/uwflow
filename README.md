@@ -34,7 +34,7 @@ and apply common sense, as the following docs may be outdated.
     Use the password from the shared Bitwarden vault.
 3. Copy `.env.sample` to `.env` and edit the latter as needed. In particular:
   - `POSTGRES_DUMP_PATH` should point to `pg_backup` obtained at the end of (2)
-  - `UW_API_KEY_V{2,3}` should be set as instructed in the
+  - `UW_API_KEY_V3` should be set as instructed in the
     [uwapi-importer README](uwapi-importer/README.md)
   - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems
     and `0.0.0.0` on Windows (which is incidentally otherwise unsupported)
