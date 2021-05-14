@@ -196,14 +196,14 @@ func convertAll(
 		}
 
 		termId, err := strconv.Atoi(*apiClass.TermId)
-		if err == nil {
+		if err != nil {
 			continue
 		}
 
 		term := idToTerm[termId]
 		err = convertSection(dst, &apiClass, term)
 		if err != nil {
-			return fmt.Errorf("failed to convert section: %w", err)
+			log.Warnf("failed to convert section: %v", err)
 		}
 	}
 
@@ -312,7 +312,11 @@ func convertSection(dst *convertResult, apiClass *apiClass, term *term.Term) err
 		return fmt.Errorf("section missing course component for course: %s", apiClass.CourseCode)
 	}
 
-	loc, _ := time.LoadLocation("Canada/Eastern")
+	tz, err := time.LoadLocation("Canada/Eastern")
+	if err != nil {
+		return fmt.Errorf("failed to load location Canada/Eastern")
+	}
+
 	sectionNumber := strconv.Itoa(apiClass.SectionNumber)
 	sectionNumber = strings.Repeat("0", 3-len(sectionNumber)) + sectionNumber
 	sectionName := *apiClass.CourseComponent + " " + sectionNumber
@@ -326,14 +330,14 @@ func convertSection(dst *convertResult, apiClass *apiClass, term *term.Term) err
 			EnrollmentCapacity: apiClass.EnrollmentCapacity,
 			EnrollmentTotal:    apiClass.EnrolledStudents,
 			TermId:             term.Id,
-			UpdatedAt:          time.Now().In(loc),
+			UpdatedAt:          time.Now().In(tz),
 		},
 	)
 
 	for _, apiClassSchedule := range apiClass.Meetings {
 		err := convertMeeting(dst, apiClass, &apiClassSchedule, term)
 		if err != nil {
-			return fmt.Errorf("failed to convert meeting: %w", err)
+			log.Warnf("failed to convert meeting: %v", err)
 		}
 	}
 

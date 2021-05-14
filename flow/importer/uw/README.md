@@ -12,7 +12,7 @@ export $(cat ../.env | xargs)
 ./uw
 ```
 
-You will need at least `go v1.13`.
+You will need at least `go v1.15`.
 
 ## How to obtain a `UW_API_KEY_V3`?
 

@@ -32,7 +32,7 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 		for _, termId := range termIds {
 			go asyncFetchClass(client, course, termId, sema, errch)
 			numFetched += 1
-			if numFetched%1000 == 0 {
+			if numFetched%500 == 0 {
 				log.Warnf("fetched %d/%d courses", numFetched, numClasses)
 			}
 
@@ -59,18 +59,18 @@ func asyncFetchClass(
 	sema semaphore,
 	errch chan error,
 ) {
-	classes, err := fetchClass(client, course, termId)
+	classes, err := fetchClass(client, &course, termId)
 	sema <- classes
 	errch <- err
 }
 
-func fetchClass(client *api.Client, course apiCourse, termId int) ([]apiClass, error) {
+func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
 	var classes []apiClass
-	endpoint := fmt.Sprintf("ClassSchedule/%d/%s/%s", termId, course.Subject, course.Number)
+	endpoint := fmt.Sprintf("ClassSchedules/%d/%s/%s", termId, course.Subject, course.Number)
 	err := client.Getv3(endpoint, &classes)
 
-	// Some courses returned for each term may not have class schedules and return a 404
-	if strings.Contains(err.Error(), "404") {
+	// Many courses returned for each term may not have class schedules and return a 404
+	if err != nil && strings.Contains(err.Error(), "404") {
 		return classes, nil
 	}
 

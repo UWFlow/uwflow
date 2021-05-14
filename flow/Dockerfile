@@ -1,6 +1,6 @@
 ######## BUILD STAGE ########
 # Release image is alpine, so use alpine in builder also for ABI compatibility
-FROM golang:alpine as builder
+FROM golang:1.16-alpine as builder
 
 WORKDIR /build
 
@@ -26,7 +26,7 @@ RUN cd email && go build
 FROM alpine:latest AS api
 
 # parsing and webcal pull in these runtime dependencies
-RUN apk add --no-cache poppler tzdata
+RUN apk add --no-cache poppler
 
 COPY --from=builder /build/api/api /app/api
 

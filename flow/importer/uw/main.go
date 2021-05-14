@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	_ "time/tzdata"
 
 	"flow/common/state"
 	"flow/importer/uw/api"
