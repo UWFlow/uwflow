@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	_ "time/tzdata"
 
 	"flow/api/auth"
 	"flow/api/calendar"

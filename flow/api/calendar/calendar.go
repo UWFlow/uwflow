@@ -86,7 +86,7 @@ const webcalEventTemplate = ("BEGIN:VEVENT\r\n" +
 	// - MUST be specified as a date with local time
 	//   if and only if the "DTSTART" property is also specified as a date with local time
 	//
-	// We can use local time (with explicit TZID=America/Toronto), UTC time or floating time
+	// We can use local time (with explicit TZID=Canada/Eastern), UTC time or floating time
 	// ("picture of a clock", like TIMEZONE WITHOUT TIMESTAMP in SQL).
 	// We use UTC time in both cases: Google Calendar unfortunately treats floating as UTC,
 	// and local time is complex, seemingly requiring a handcrafted VTIMEZONE entity.
