@@ -11,7 +11,7 @@ import (
 type empty struct{}
 type semaphore chan []apiClass
 
-const rateLimit = 20
+const rateLimit = 30
 
 func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error) {
 	// Fetch course data
