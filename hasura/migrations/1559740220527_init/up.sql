@@ -404,12 +404,6 @@ SELECT
   COALESCE(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.prof_id)
     FILTER (WHERE materialized.prof_teaches_course.prof_id IS NOT NULL),
     ARRAY[]::INT[])                           AS prof_ids,
-  -- check if prereqs are either empty or null
-  COALESCE(TRIM(course.prereqs), '') != '' OR
-    COALESCE(ARRAY_LENGTH(ARRAY_AGG(
-      DISTINCT course_prerequisite.course_id)
-      FILTER (WHERE course_prerequisite.course_id IS NOT NULL),
-    1), 0) > 0                                AS has_prereqs,
   to_tsvector('simple', course.code) ||
   to_tsvector('simple', course.name) ||
   -- index course numbers to support queries where the course code is split
@@ -418,11 +412,10 @@ SELECT
   to_tsvector('simple', ARRAY_TO_STRING(REGEXP_MATCHES(course.code,
     '^[a-z|A-Z]+([0-9]+[a-z|A-Z]*)'), ''))    AS document
 FROM course
-  LEFT JOIN course_prerequisite ON course_prerequisite.course_id = course.id
   LEFT JOIN course_section ON course_section.course_id = course.id
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.course_id = course.id
   LEFT JOIN materialized.course_rating ON materialized.course_rating.course_id = course.id
-GROUP BY course.id, ratings, liked, easy, useful, course_prerequisite.course_id;
+GROUP BY course.id, ratings, liked, easy, useful;
 
 CREATE VIEW course_search_index AS
 SELECT * FROM materialized.course_search_index;
