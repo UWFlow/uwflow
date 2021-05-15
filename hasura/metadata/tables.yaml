@@ -388,6 +388,7 @@
       - useful
       - code
       - name
+      - has_prereqs
       filter: {}
       allow_aggregations: true
   - role: user
@@ -402,6 +403,7 @@
       - useful
       - code
       - name
+      - has_prereqs
       filter: {}
       allow_aggregations: true
 - table:
