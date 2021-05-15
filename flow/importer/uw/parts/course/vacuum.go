@@ -31,7 +31,7 @@ func Vacuum(state *state.State) error {
 
 	log.StartVacuum("section")
 	// Retain only sections starting with the previous term
-	tag, err := state.Db.Exec(deleteSectionQuery, util.PreviousTermId())
+	tag, err := state.Db.Exec(deleteSectionQuery, util.PreviousTermId(2))
 	if err != nil {
 		return fmt.Errorf("deleting old sections: %w", err)
 	}

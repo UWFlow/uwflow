@@ -14,8 +14,11 @@ func ImportAll(state *state.State, client *api.Client) error {
 	var converted convertResult
 	idToTerm := make(map[int]*term.Term)
 
-	// Fetch for previous, current, and next terms
-	termIds := []int{util.PreviousTermId(), util.CurrentTermId(), util.NextTermId()}
+	// Fetch for previous two, current, and next terms
+	termIds := []int{
+		util.PreviousTermId(2), util.PreviousTermId(1),
+		util.CurrentTermId(), util.NextTermId(),
+	}
 	for _, termId := range termIds {
 		term, err := term.Select(state.Db, termId)
 		if err != nil {
