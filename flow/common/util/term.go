@@ -13,10 +13,11 @@ func CurrentTermId() int {
 	return DateToTermId(time.Now())
 }
 
-// Quest id of the previous term according to system time.
-func PreviousTermId() int {
-	// Conveniently, the previous term is the term that was current 4 months ago
-	return DateToTermId(time.Now().AddDate(0, -4, 0))
+// Quest id of the nth previous term according to system time.
+func PreviousTermId(numTerms int) int {
+	// Conveniently, each previous term is the term
+	// that was current 4 * numTerms months ago
+	return DateToTermId(time.Now().AddDate(0, -4*numTerms, 0))
 }
 
 // Quest id of the next term according to system time.
