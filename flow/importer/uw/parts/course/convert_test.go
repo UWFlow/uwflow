@@ -222,7 +222,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "Online",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 66600, Status: pgtype.Present},
@@ -320,7 +320,7 @@ func TestConvertSection(t *testing.T) {
 			"classMeetingStartTime": "2021-05-13T08:30:00",
 			"classMeetingEndTime": "2021-05-13T11:20:00",
 			"classMeetingWeekPatternCode": "NNNYNNN",
-			"locationName": "Spring 2021"
+			"locationName": "MC 1085"
 		}
 	],
 	"instructorData": null
@@ -350,7 +350,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "Online",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
@@ -364,7 +364,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "Online",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
@@ -378,7 +378,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "Online",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
@@ -392,7 +392,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "Online",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
@@ -406,7 +406,7 @@ func TestConvertSection(t *testing.T) {
 						TermId:      1215,
 						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
 						Location: pgtype.Varchar{
-							String: "Spring 2021",
+							String: "MC 1085",
 							Status: pgtype.Present,
 						},
 						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
