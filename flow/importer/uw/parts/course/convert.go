@@ -388,6 +388,11 @@ func convertMeeting(
 
 	if apiClassSchedule.Location != nil {
 		location := *apiClassSchedule.Location
+		// Online courses currently set their location to the term name
+		_, err := util.TermNameToId(location)
+		if err == nil {
+			location = "Online"
+		}
 		meeting.Location = pgtype.Varchar{String: location, Status: pgtype.Present}
 	} else {
 		meeting.Location.Status = pgtype.Null
