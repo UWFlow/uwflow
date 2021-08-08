@@ -43,13 +43,23 @@ func TestParseSchedule(t *testing.T) {
 				},
 			},
 		},
-		// This schedule has an abrnomal amount of whitespace
+		// This schedule has an abnormal amount of whitespace
 		{
 			"whitespace",
 			&Summary{
 				TermId: 1199,
 				ClassNumbers: []int{
 					4669, 4658, 4660, 4699, 4655, 4656, 4661, 4662, 4850, 4664, 4666, 4936, 4639, 4668, 7634,
+				},
+			},
+		},
+		// This schedule has class codes longer than 4 digits
+		{
+			"long-classnumber",
+			&Summary{
+				TermId: 1219,
+				ClassNumbers: []int{
+					4262, 11810, 9336, 6336, 6367, 10692, 10310, 8204, 10376,
 				},
 			},
 		},
