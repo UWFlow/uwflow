@@ -1,0 +1,135 @@
+
+go to ...
+GO!
+My Academics
+Course Selection (Undergrad only)
+Search for Classes
+Enroll
+ 	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information	 
+My Class Schedule
+List View
+Weekly Calendar View
+Select Display Option
+L
+Fall 2021 | Undergraduate | University of Waterloo
+Group Box
+Collapse section Class Schedule Filter Options Class Schedule Filter Options 
+Show Enrolled Classes
+Show Dropped Classes
+Show Waitlisted Classes
+AFM 132 - Intro to Business Stages
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+4262
+001
+LEC
+Th 10:00AM - 10:50AM
+ONLN - Online
+Manhhung Ha
+2021/09/08 - 2021/12/07
+11810
+101
+TUT
+F 1:00PM - 1:50PM
+ONLN - Online
+Staff
+2021/09/08 - 2021/12/07
+CFM 101 - Intro to Fin. Markets & Data A
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+9336
+002
+LEC
+TTh 11:30AM - 12:50PM
+ONLN - Online
+James Thompson
+2021/09/08 - 2021/12/07
+CS 135 - Designing Functional Programs
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6336
+001
+LEC
+ 
+ONLN - Online
+Byron Becker,
+Daniel Holtby,
+Kamal Zille Huma,
+Karen Anderson,
+Olga Zorin,
+Paul Nijjar,
+Stacey Watson
+2021/09/08 - 2021/12/07
+6367
+105
+PRA
+Th 2:30PM - 3:50PM
+ONLN - Online
+Staff
+2021/09/08 - 2021/12/07
+10692
+201
+DIS
+M 9:30AM - 10:20AM
+ONLN - Online
+Staff
+2021/09/08 - 2021/12/07
+MATH 135 - Algebra for Hons Mathematics
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+10310
+081
+LEC
+ 
+ONLN - Online
+Mohammad Mahmoud,
+Wentang Kuo,
+Yu-Ru Liu
+2021/09/08 - 2021/12/07
+MATH 137 - Calculus 1 for Honours Math
+Status	Units	Grading	Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+8204
+021
+LEC
+ 
+ONLN - Online
+Arkadiusz Bembenek,
+Benjamin Anderson-Sackaney,
+Diana Castaneda Santos
+2021/09/08 - 2021/12/07
+MTHEL 99 - First-Year Math Readiness
+Status	Units	Grading	Deadlines
+Enrolled
+0.00
+Credit / Non-Credit Basis
+Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+10376
+001
+LEC
+ 
+ONLN - Online
+Christine Agur,
+Shane Bauman
+2021/08/03 - 2021/09/07

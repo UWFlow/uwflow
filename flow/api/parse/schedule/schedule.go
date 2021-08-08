@@ -18,9 +18,12 @@ type Summary struct {
 
 var (
 	termRegexp = regexp.MustCompile(`(Spring|Fall|Winter)\s+(\d{4})`)
-	// Class numbers are *the* four-digit sequences
+	// Class numbers are *the* four or five digit sequences
 	// which occur on a separate line, perhaps parenthesized.
-	classNumberRegexp = regexp.MustCompile(`\n\(?(\d{4})\)?\n`)
+	// To be safe, we pre-emptively handle sequences up to length 8.
+	// This should be fine since the only other numbers that appear
+	// on their own line are the course code numbers (length 2 or 3).
+	classNumberRegexp = regexp.MustCompile(`\n\(?(\d{4,8})\)?\n`)
 )
 
 func extractTerm(text string) (int, error) {
