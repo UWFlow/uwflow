@@ -186,10 +186,6 @@ func convertAll(
 		convertCourse(dst, &apiCourse)
 	}
 
-	if dst.Profs == nil {
-		dst.Profs = make(profMap)
-	}
-
 	for _, apiClass := range apiClasses {
 		if apiClass.TermId == nil {
 			continue
@@ -366,25 +362,24 @@ func convertMeeting(
 	)
 	meeting := &dst.Meetings[len(dst.Meetings)-1]
 
-	/* TODO: Add back once the V3 API returns prof names
 	if len(apiClass.Instructors) > 0 {
+		if dst.Profs == nil {
+			dst.Profs = make(profMap)
+		}
+
 		// FIXME: it is not actually correct to discard instructors after 0th!
 		// There exists at least one grad seminar with more than one instructor.
 		// However, this does not happen with undergrad courses,
 		// and having an array column of foreign keys is not possible.
 		// This may well be a reasonable compromise in the end.
-		name, err := util.LastFirstToFirstLast(apiClass.Instructors[0])
-		if err != nil {
-			return fmt.Errorf("failed to convert name: %w", err)
-		}
+		instructor := apiClass.Instructors[0]
+		name := fmt.Sprintf("%s %s", instructor.FirstName, instructor.LastName)
 		code := util.ProfNameToCode(name)
 		dst.Profs[code] = name
 		meeting.ProfCode = pgtype.Varchar{String: code, Status: pgtype.Present}
 	} else {
 		meeting.ProfCode.Status = pgtype.Null
 	}
-	*/
-	meeting.ProfCode.Status = pgtype.Null
 
 	if apiClassSchedule.Location != nil {
 		location := *apiClassSchedule.Location

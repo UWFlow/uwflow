@@ -20,21 +20,6 @@ func TestCamelToSnakeCase(t *testing.T) {
 	}
 }
 
-func TestLastFirstToFirstLast(t *testing.T) {
-	inputs := []string{
-		"Jao,David", "Marcoux,Laurent W.",
-		"Mansour", "Andrew Kennings", "",
-	}
-	want := []util.Outcome{
-		{Value: "David Jao"}, {Value: "Laurent W. Marcoux"},
-		{Error: true}, {Error: true}, {Error: true},
-	}
-	for i, input := range inputs {
-		got, err := util.LastFirstToFirstLast(input)
-		want[i].Test(t, input, got, err)
-	}
-}
-
 func TestProfNameToCode(t *testing.T) {
 	inputs := []string{
 		"David Jao", "Laurent W. Marcoux", "  David   McKinnon ",

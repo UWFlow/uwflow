@@ -93,5 +93,6 @@ type apiClassSchedule struct {
 }
 
 type apiClassInstructor struct {
-	SectionNumber int `json:"classSection"`
+	FirstName string `json:"instructorFirstName"`
+	LastName  string `json:"instructorLastName"`
 }
