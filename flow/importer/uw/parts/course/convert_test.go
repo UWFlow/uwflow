@@ -323,7 +323,12 @@ func TestConvertSection(t *testing.T) {
 			"locationName": "MC 1085"
 		}
 	],
-	"instructorData": null
+	"instructorData":  [
+		{
+			"instructorFirstName": "Firas",
+			"instructorLastName": "Mansour"
+		}
+	]
 }
 				`,
 			"ece106",
@@ -348,7 +353,10 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
+						ProfCode: pgtype.Varchar{
+							String: "firas_mansour",
+							Status: pgtype.Present,
+						},
 						Location: pgtype.Varchar{
 							String: "Online",
 							Status: pgtype.Present,
@@ -362,7 +370,10 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
+						ProfCode: pgtype.Varchar{
+							String: "firas_mansour",
+							Status: pgtype.Present,
+						},
 						Location: pgtype.Varchar{
 							String: "Online",
 							Status: pgtype.Present,
@@ -376,7 +387,10 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
+						ProfCode: pgtype.Varchar{
+							String: "firas_mansour",
+							Status: pgtype.Present,
+						},
 						Location: pgtype.Varchar{
 							String: "Online",
 							Status: pgtype.Present,
@@ -390,7 +404,10 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
+						ProfCode: pgtype.Varchar{
+							String: "firas_mansour",
+							Status: pgtype.Present,
+						},
 						Location: pgtype.Varchar{
 							String: "Online",
 							Status: pgtype.Present,
@@ -404,7 +421,10 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
+						ProfCode: pgtype.Varchar{
+							String: "firas_mansour",
+							Status: pgtype.Present,
+						},
 						Location: pgtype.Varchar{
 							String: "MC 1085",
 							Status: pgtype.Present,
@@ -415,6 +435,9 @@ func TestConvertSection(t *testing.T) {
 						EndDate:      time.Date(2021, 7, 22, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},
 					},
+				},
+				Profs: profMap{
+					"firas_mansour": "Firas Mansour",
 				},
 			},
 		},

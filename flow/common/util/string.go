@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -37,15 +36,6 @@ func CamelToSnakeCase(in string) string {
 	}
 
 	return sb.String()
-}
-
-// Map name in "Last,First..." format to "First...Last" format
-func LastFirstToFirstLast(name string) (string, error) {
-	splits := strings.Split(name, ",")
-	if len(splits) != 2 {
-		return "", fmt.Errorf("expected: Last,First; got: %s", name)
-	}
-	return fmt.Sprintf("%s %s", splits[1], splits[0]), nil
 }
 
 // Map prof name to prof code: "First Middle Last" => "first_middle_last"
