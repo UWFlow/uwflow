@@ -9,7 +9,7 @@ import (
 
 	"flow/api/env"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type HasuraClaims struct {

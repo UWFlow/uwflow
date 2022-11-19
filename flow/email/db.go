@@ -7,7 +7,7 @@ import (
 
 	"flow/common/env"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var connectTimeout = 5 * time.Second
@@ -33,5 +33,5 @@ func connect(ctx context.Context) (*pgxpool.Pool, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, connectTimeout)
 	defer cancel()
 
-	return pgxpool.Connect(connectCtx, uri)
+	return pgxpool.New(connectCtx, uri)
 }

@@ -9,7 +9,9 @@ import (
 
 // We would like to use persistent ids here, but none are available.
 // As per UW API v3 documentation:
-//  id: [...] unique, *non-persistent* Api Id [...]
+//
+//	id: [...] unique, *non-persistent* Api Id [...]
+//
 // As long as this remains the case, string comparisons will be necessary.
 const (
 	startEventName = "Classes begin"

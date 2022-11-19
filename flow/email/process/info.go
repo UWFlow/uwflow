@@ -5,7 +5,7 @@ import (
 
 	"flow/email/format"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 // queueInfo fully describes a queue table.

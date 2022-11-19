@@ -11,7 +11,7 @@ import (
 	"flow/importer/uw/log"
 	"flow/importer/uw/parts/term"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -34,9 +34,13 @@ const (
 // not necessarily prefixed with a course subject
 // and outputs a best attempt at a string where all such numbers
 // are replaced with full uppercase course codes. For example,
-//  "One of STAT 230/240/206"
+//
+//	"One of STAT 230/240/206"
+//
 // becomes
-//  "One of STAT230/STAT240/STAT206"
+//
+//	"One of STAT230/STAT240/STAT206"
+//
 // For {pre,co,anti}requisite strings, this guess is always accurate.
 //
 // Additionally, ExpandCourseCodes returns the list of all
@@ -214,12 +218,10 @@ func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
 	}
 
 	if apiCourse.Description != nil && *apiCourse.Description != "" {
-		newCourse.Description = pgtype.Varchar{
+		newCourse.Description = pgtype.Text{
 			String: *apiCourse.Description,
-			Status: pgtype.Present,
+			Valid:  true,
 		}
-	} else {
-		newCourse.Description.Status = pgtype.Null
 	}
 
 	// Parse requirements and add to results
@@ -231,9 +233,9 @@ func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
 	if prereqs != "" {
 		prereqString, prereqCodes := expandCourseCodes(prereqs)
 
-		newCourse.Prereqs = pgtype.Varchar{
+		newCourse.Prereqs = pgtype.Text{
 			String: prereqString,
-			Status: pgtype.Present,
+			Valid:  true,
 		}
 
 		for _, prereqCode := range prereqCodes {
@@ -246,16 +248,14 @@ func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
 				},
 			)
 		}
-	} else {
-		newCourse.Prereqs.Status = pgtype.Null
 	}
 
 	if coreqs != "" {
 		coreqString, coreqCodes := expandCourseCodes(coreqs)
 
-		newCourse.Coreqs = pgtype.Varchar{
+		newCourse.Coreqs = pgtype.Text{
 			String: coreqString,
-			Status: pgtype.Present,
+			Valid:  true,
 		}
 
 		for _, coreqCode := range coreqCodes {
@@ -268,16 +268,14 @@ func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
 				},
 			)
 		}
-	} else {
-		newCourse.Coreqs.Status = pgtype.Null
 	}
 
 	if antireqs != "" {
 		antireqString, antireqCodes := expandCourseCodes(antireqs)
 
-		newCourse.Antireqs = pgtype.Varchar{
+		newCourse.Antireqs = pgtype.Text{
 			String: antireqString,
-			Status: pgtype.Present,
+			Valid:  true,
 		}
 
 		for _, antireqCode := range antireqCodes {
@@ -289,8 +287,6 @@ func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
 				},
 			)
 		}
-	} else {
-		newCourse.Antireqs.Status = pgtype.Null
 	}
 
 	dst.Courses = append(dst.Courses, newCourse)
@@ -376,9 +372,7 @@ func convertMeeting(
 		name := fmt.Sprintf("%s %s", instructor.FirstName, instructor.LastName)
 		code := util.ProfNameToCode(name)
 		dst.Profs[code] = name
-		meeting.ProfCode = pgtype.Varchar{String: code, Status: pgtype.Present}
-	} else {
-		meeting.ProfCode.Status = pgtype.Null
+		meeting.ProfCode = pgtype.Text{String: code, Valid: true}
 	}
 
 	if apiClassSchedule.Location != nil {
@@ -388,9 +382,7 @@ func convertMeeting(
 		if err == nil {
 			location = "Online"
 		}
-		meeting.Location = pgtype.Varchar{String: location, Status: pgtype.Present}
-	} else {
-		meeting.Location.Status = pgtype.Null
+		meeting.Location = pgtype.Text{String: location, Valid: true}
 	}
 
 	var err error
@@ -398,13 +390,13 @@ func convertMeeting(
 	if err != nil {
 		return fmt.Errorf("failed to convert time: %w", err)
 	}
-	meeting.StartSeconds = pgtype.Int4{Int: int32(startSeconds), Status: pgtype.Present}
+	meeting.StartSeconds = pgtype.Int4{Int32: int32(startSeconds), Valid: true}
 
 	endSeconds, err := util.TimeStringToSeconds(apiClassSchedule.EndTime)
 	if err != nil {
 		return fmt.Errorf("failed to convert time: %w", err)
 	}
-	meeting.EndSeconds = pgtype.Int4{Int: int32(endSeconds), Status: pgtype.Present}
+	meeting.EndSeconds = pgtype.Int4{Int32: int32(endSeconds), Valid: true}
 
 	meeting.StartDate, err = time.Parse(util.ApiV3DateLayout, apiClassSchedule.StartDate)
 	if err != nil {
