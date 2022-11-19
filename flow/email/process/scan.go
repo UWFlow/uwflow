@@ -7,7 +7,7 @@ import (
 
 	"flow/email/format"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func scanReset(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {

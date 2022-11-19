@@ -11,7 +11,7 @@ export $(cat .env | xargs)
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down --remove-orphans
-$PREFIX docker volume rm -f postgres_uwflow
+$PREFIX docker volume rm -f backend_postgres
 
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"
@@ -30,6 +30,7 @@ done
 
 $PREFIX docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $POSTGRES_DUMP_PATH
 $PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB /pg_backup
+$PREFIX docker stop postgres_bootstrap
 $PREFIX docker-compose down
 
 # Launch all containers

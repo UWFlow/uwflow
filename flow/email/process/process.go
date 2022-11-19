@@ -7,7 +7,7 @@ import (
 
 	"flow/email/smtp"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func process(ctx context.Context, tx pgx.Tx, info queueInfo) error {

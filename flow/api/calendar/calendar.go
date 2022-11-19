@@ -12,7 +12,7 @@ import (
 	"flow/api/serde"
 	"flow/common/db"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 type postgresEvent struct {
@@ -47,9 +47,9 @@ const (
 )
 
 // 3.1 CONTENT LINES
-// - delimited by a line break, which is a CRLF sequence
-// - CRLF followed immediately by a single linear white-space character is ignored
-//   (therefore, we must take care to never have a leading space on a line)
+//   - delimited by a line break, which is a CRLF sequence
+//   - CRLF followed immediately by a single linear white-space character is ignored
+//     (therefore, we must take care to never have a leading space on a line)
 const webcalPreamble = ("BEGIN:VCALENDAR\r\n" +
 	// 3.7.3 PRODID: TEXT
 	// - MUST be specified once in an iCalendar object

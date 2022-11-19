@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func TestConvertCourse(t *testing.T) {
@@ -33,15 +33,15 @@ func TestConvertCourse(t *testing.T) {
 					{
 						Code: "cs145",
 						Name: "Designing Functional Programs (Advanced Level)",
-						Description: pgtype.Varchar{
+						Description: pgtype.Text{
 							String: "CS 145 is an advanced-level version of CS 135.",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Prereqs: pgtype.Varchar{Status: pgtype.Null},
-						Coreqs:  pgtype.Varchar{Status: pgtype.Null},
-						Antireqs: pgtype.Varchar{
+						Prereqs: pgtype.Text{Valid: false},
+						Coreqs:  pgtype.Text{Valid: false},
+						Antireqs: pgtype.Text{
 							String: "CS115, CS135, CS137, CS138",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
 					},
 				},
@@ -81,18 +81,18 @@ func TestConvertCourse(t *testing.T) {
 					{
 						Code: "stat230",
 						Name: "Probability",
-						Description: pgtype.Varchar{
+						Description: pgtype.Text{
 							String: "This course provides an introduction to probability models including sample spaces, mutually exclusive and independent events, conditional probability and Bayes' Theorem. The named distributions (Discrete Uniform, Hypergeometric, Binomial, Negative Binomial, Geometric, Poisson, Continuous Uniform, Exponential, Normal (Gaussian), and Multinomial) are used to model real phenomena. Discrete and continuous univariate random variables and their distributions are discussed. Joint probability functions, marginal probability functions, and conditional probability functions of two or more discrete random variables and functions of random variables are also discussed. Students learn how to calculate and interpret means, variances and covariances particularly for the named distributions. The Central Limit Theorem is used to approximate probabilities. [Note: Many upper-year Statistics courses require a grade of at least 60% in STAT 230. Offered: F,W,S]",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Prereqs: pgtype.Varchar{
+						Prereqs: pgtype.Text{
 							String: "((One of MATH116, MATH117, MATH137, MATH147) with a minimum grade of 80%) or (MATH128 with a minimum grade of 60%) or (one of MATH118, MATH119, MATH138, MATH148); Honours Math or Math/Phys students only.",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Coreqs: pgtype.Varchar{Status: pgtype.Null},
-						Antireqs: pgtype.Varchar{
+						Coreqs: pgtype.Text{Valid: false},
+						Antireqs: pgtype.Text{
 							String: "STAT220, STAT240",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
 					},
 				},
@@ -220,13 +220,13 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 3533,
 						TermId:      1215,
-						ProfCode:    pgtype.Varchar{Status: pgtype.Null},
-						Location: pgtype.Varchar{
+						ProfCode:    pgtype.Text{Valid: false},
+						Location: pgtype.Text{
 							String: "Online",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 66600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 76800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 66600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 76800, Valid: true},
 						StartDate:    time.Date(2021, 5, 10, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 8, 4, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"T"},
@@ -353,16 +353,16 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode: pgtype.Varchar{
+						ProfCode: pgtype.Text{
 							String: "firas_mansour",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Location: pgtype.Varchar{
+						Location: pgtype.Text{
 							String: "Online",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 40800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 30600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 40800, Valid: true},
 						StartDate:    time.Date(2021, 5, 20, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 5, 20, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},
@@ -370,16 +370,16 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode: pgtype.Varchar{
+						ProfCode: pgtype.Text{
 							String: "firas_mansour",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Location: pgtype.Varchar{
+						Location: pgtype.Text{
 							String: "Online",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 40800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 30600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 40800, Valid: true},
 						StartDate:    time.Date(2021, 6, 3, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 6, 3, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},
@@ -387,16 +387,16 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode: pgtype.Varchar{
+						ProfCode: pgtype.Text{
 							String: "firas_mansour",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Location: pgtype.Varchar{
+						Location: pgtype.Text{
 							String: "Online",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 40800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 30600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 40800, Valid: true},
 						StartDate:    time.Date(2021, 6, 17, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 6, 17, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},
@@ -404,16 +404,16 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode: pgtype.Varchar{
+						ProfCode: pgtype.Text{
 							String: "firas_mansour",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Location: pgtype.Varchar{
+						Location: pgtype.Text{
 							String: "Online",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 40800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 30600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 40800, Valid: true},
 						StartDate:    time.Date(2021, 7, 8, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 7, 8, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},
@@ -421,16 +421,16 @@ func TestConvertSection(t *testing.T) {
 					{
 						ClassNumber: 2811,
 						TermId:      1215,
-						ProfCode: pgtype.Varchar{
+						ProfCode: pgtype.Text{
 							String: "firas_mansour",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						Location: pgtype.Varchar{
+						Location: pgtype.Text{
 							String: "MC 1085",
-							Status: pgtype.Present,
+							Valid:  true,
 						},
-						StartSeconds: pgtype.Int4{Int: 30600, Status: pgtype.Present},
-						EndSeconds:   pgtype.Int4{Int: 40800, Status: pgtype.Present},
+						StartSeconds: pgtype.Int4{Int32: 30600, Valid: true},
+						EndSeconds:   pgtype.Int4{Int32: 40800, Valid: true},
 						StartDate:    time.Date(2021, 7, 22, 0, 0, 0, 0, time.UTC),
 						EndDate:      time.Date(2021, 7, 22, 0, 0, 0, 0, time.UTC),
 						Days:         []string{"Th"},

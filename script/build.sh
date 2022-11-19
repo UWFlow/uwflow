@@ -6,5 +6,9 @@ DIR="$(dirname $(realpath $0))"
 # Build all images in sequence
 for target in api email uw
 do
-  $PREFIX docker build --target $target -t neuwflow/$target:latest $BACKEND_DIR/flow
+  $PREFIX docker build $BACKEND_DIR/flow \
+    -t neuwflow/$target:latest \
+    --target $target \
+    --label org.opencontainers.image.revision=$(git rev-parse HEAD) \
+    --label org.opencontainers.image.source=github.com/AyushK1/uwflow2.0
 done

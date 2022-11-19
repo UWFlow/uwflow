@@ -7,7 +7,7 @@ import (
 
 	"flow/common/env"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Connection to database must complete within this timeframe.
@@ -23,7 +23,7 @@ func ConnectPool(ctx context.Context, env *env.Environment) (*Conn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, ConnectTimeout)
 	defer cancel()
 
-	pool, err := pgxpool.Connect(connectCtx, uri)
+	pool, err := pgxpool.New(connectCtx, uri)
 	if err != nil {
 		return nil, err
 	}

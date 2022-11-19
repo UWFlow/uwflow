@@ -3,7 +3,7 @@ package course
 import (
 	"time"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type convertResult struct {
@@ -28,8 +28,8 @@ type section struct {
 type meeting struct {
 	ClassNumber  int
 	TermId       int
-	ProfCode     pgtype.Varchar
-	Location     pgtype.Varchar
+	ProfCode     pgtype.Text
+	Location     pgtype.Text
 	StartSeconds pgtype.Int4
 	EndSeconds   pgtype.Int4
 	StartDate    time.Time
@@ -45,10 +45,10 @@ type profMap map[string]string // code -> name
 type course struct {
 	Code        string
 	Name        string
-	Description pgtype.Varchar
-	Prereqs     pgtype.Varchar
-	Coreqs      pgtype.Varchar
-	Antireqs    pgtype.Varchar
+	Description pgtype.Text
+	Prereqs     pgtype.Text
+	Coreqs      pgtype.Text
+	Antireqs    pgtype.Text
 }
 
 type prereq struct {
