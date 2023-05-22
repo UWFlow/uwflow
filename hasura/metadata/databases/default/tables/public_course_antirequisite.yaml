@@ -1,0 +1,23 @@
+table:
+  name: course_antirequisite
+  schema: public
+object_relationships:
+  - name: antirequisite
+    using:
+      foreign_key_constraint_on: antirequisite_id
+  - name: course
+    using:
+      foreign_key_constraint_on: course_id
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - course_id
+        - antirequisite_id
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - course_id
+        - antirequisite_id
+      filter: {}

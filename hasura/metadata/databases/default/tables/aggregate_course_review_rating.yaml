@@ -1,0 +1,18 @@
+table:
+  name: course_review_rating
+  schema: aggregate
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - review_id
+        - upvote_count
+      filter: {}
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - review_id
+        - upvote_count
+      filter: {}
+      allow_aggregations: true

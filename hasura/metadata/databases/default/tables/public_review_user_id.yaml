@@ -1,0 +1,12 @@
+table:
+  name: review_user_id
+  schema: public
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - review_id
+        - user_id
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id

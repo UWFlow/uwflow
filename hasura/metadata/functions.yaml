@@ -1,6 +1,0 @@
-- function:
-    schema: public
-    name: search_courses
-- function:
-    schema: public
-    name: search_profs

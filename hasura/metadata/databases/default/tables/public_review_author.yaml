@@ -1,0 +1,20 @@
+table:
+  name: review_author
+  schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - review_id
+        - full_name
+        - program
+        - picture_url
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - review_id
+        - full_name
+        - program
+        - picture_url
+      filter: {}

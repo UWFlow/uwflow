@@ -1,0 +1,26 @@
+table:
+  name: section_exam
+  schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - section_id
+        - start_seconds
+        - end_seconds
+        - date
+        - location
+        - day
+        - is_tba
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - section_id
+        - start_seconds
+        - end_seconds
+        - date
+        - location
+        - day
+        - is_tba
+      filter: {}
