@@ -1,0 +1,47 @@
+table:
+  name: course_section
+  schema: public
+object_relationships:
+  - name: course
+    using:
+      foreign_key_constraint_on: course_id
+array_relationships:
+  - name: exams
+    using:
+      foreign_key_constraint_on:
+        column: section_id
+        table:
+          name: section_exam
+          schema: public
+  - name: meetings
+    using:
+      foreign_key_constraint_on:
+        column: section_id
+        table:
+          name: section_meeting
+          schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - class_number
+        - course_id
+        - enrollment_capacity
+        - enrollment_total
+        - id
+        - section_name
+        - term_id
+        - updated_at
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - class_number
+        - course_id
+        - enrollment_capacity
+        - enrollment_total
+        - id
+        - section_name
+        - term_id
+        - updated_at
+      filter: {}

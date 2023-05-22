@@ -1,0 +1,137 @@
+table:
+  name: review
+  schema: public
+object_relationships:
+  - name: author
+    using:
+      manual_configuration:
+        column_mapping:
+          id: review_id
+        insertion_order: null
+        remote_table:
+          name: review_author
+          schema: public
+  - name: course
+    using:
+      foreign_key_constraint_on: course_id
+  - name: course_review_rating
+    using:
+      manual_configuration:
+        column_mapping:
+          id: review_id
+        insertion_order: null
+        remote_table:
+          name: course_review_rating
+          schema: aggregate
+  - name: prof
+    using:
+      foreign_key_constraint_on: prof_id
+  - name: prof_review_rating
+    using:
+      manual_configuration:
+        column_mapping:
+          id: review_id
+        insertion_order: null
+        remote_table:
+          name: prof_review_rating
+          schema: aggregate
+  - name: user
+    using:
+      manual_configuration:
+        column_mapping:
+          id: review_id
+        insertion_order: null
+        remote_table:
+          name: review_user_id
+          schema: public
+array_relationships:
+  - name: course_review_upvotes
+    using:
+      foreign_key_constraint_on:
+        column: review_id
+        table:
+          name: course_review_upvote
+          schema: public
+  - name: prof_review_upvotes
+    using:
+      foreign_key_constraint_on:
+        column: review_id
+        table:
+          name: prof_review_upvote
+          schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        user_id:
+          _eq: X-Hasura-User-Id
+      columns:
+        - course_id
+        - prof_id
+        - user_id
+        - liked
+        - course_easy
+        - course_useful
+        - course_comment
+        - prof_clear
+        - prof_engaging
+        - prof_comment
+        - public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - id
+        - course_id
+        - prof_id
+        - liked
+        - course_easy
+        - course_useful
+        - course_comment
+        - prof_clear
+        - prof_engaging
+        - prof_comment
+        - public
+        - created_at
+        - updated_at
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - course_id
+        - prof_id
+        - liked
+        - course_easy
+        - course_useful
+        - course_comment
+        - prof_clear
+        - prof_engaging
+        - prof_comment
+        - public
+        - created_at
+        - updated_at
+      filter: {}
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - prof_id
+        - liked
+        - course_easy
+        - course_useful
+        - course_comment
+        - prof_clear
+        - prof_engaging
+        - prof_comment
+        - public
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check: null
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id

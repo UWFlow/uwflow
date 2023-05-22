@@ -1,0 +1,101 @@
+table:
+  name: course
+  schema: public
+object_relationships:
+  - name: rating
+    using:
+      manual_configuration:
+        column_mapping:
+          id: course_id
+        insertion_order: null
+        remote_table:
+          name: course_rating
+          schema: aggregate
+array_relationships:
+  - name: antirequisites
+    using:
+      foreign_key_constraint_on:
+        column: course_id
+        table:
+          name: course_antirequisite
+          schema: public
+  - name: course_easy_buckets
+    using:
+      manual_configuration:
+        column_mapping:
+          id: course_id
+        insertion_order: null
+        remote_table:
+          name: course_easy_buckets
+          schema: aggregate
+  - name: course_useful_buckets
+    using:
+      manual_configuration:
+        column_mapping:
+          id: course_id
+        insertion_order: null
+        remote_table:
+          name: course_useful_buckets
+          schema: aggregate
+  - name: postrequisites
+    using:
+      manual_configuration:
+        column_mapping:
+          id: course_id
+        insertion_order: null
+        remote_table:
+          name: course_postrequisite
+          schema: public
+  - name: prerequisites
+    using:
+      foreign_key_constraint_on:
+        column: course_id
+        table:
+          name: course_prerequisite
+          schema: public
+  - name: profs_teaching
+    using:
+      manual_configuration:
+        column_mapping:
+          id: course_id
+        insertion_order: null
+        remote_table:
+          name: prof_teaches_course
+          schema: public
+  - name: reviews
+    using:
+      foreign_key_constraint_on:
+        column: course_id
+        table:
+          name: review
+          schema: public
+  - name: sections
+    using:
+      foreign_key_constraint_on:
+        column: course_id
+        table:
+          name: course_section
+          schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - id
+        - code
+        - name
+        - description
+        - prereqs
+        - coreqs
+        - antireqs
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - antireqs
+        - code
+        - coreqs
+        - description
+        - name
+        - prereqs
+      filter: {}

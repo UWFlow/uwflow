@@ -1,0 +1,37 @@
+table:
+  name: course_postrequisite
+  schema: public
+object_relationships:
+  - name: course
+    using:
+      manual_configuration:
+        column_mapping:
+          course_id: id
+        insertion_order: null
+        remote_table:
+          name: course
+          schema: public
+  - name: postrequisite
+    using:
+      manual_configuration:
+        column_mapping:
+          postrequisite_id: id
+        insertion_order: null
+        remote_table:
+          name: course
+          schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - course_id
+        - postrequisite_id
+        - is_corequisite
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - course_id
+        - postrequisite_id
+        - is_corequisite
+      filter: {}

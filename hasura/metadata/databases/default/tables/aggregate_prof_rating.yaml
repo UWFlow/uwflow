@@ -1,0 +1,26 @@
+table:
+  name: prof_rating
+  schema: aggregate
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - prof_id
+        - filled_count
+        - comment_count
+        - clear
+        - engaging
+        - liked
+      filter: {}
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - prof_id
+        - filled_count
+        - comment_count
+        - clear
+        - engaging
+        - liked
+      filter: {}
+      allow_aggregations: true

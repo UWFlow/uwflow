@@ -1,0 +1,2 @@
+- "!include public_search_courses.yaml"
+- "!include public_search_profs.yaml"

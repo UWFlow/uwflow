@@ -1,0 +1,34 @@
+table:
+  name: course_search_index
+  schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - prof_ids
+        - terms
+        - course_id
+        - ratings
+        - easy
+        - liked
+        - useful
+        - code
+        - name
+        - has_prereqs
+      filter: {}
+      allow_aggregations: true
+  - role: user
+    permission:
+      columns:
+        - prof_ids
+        - terms
+        - course_id
+        - ratings
+        - easy
+        - liked
+        - useful
+        - code
+        - name
+        - has_prereqs
+      filter: {}
+      allow_aggregations: true

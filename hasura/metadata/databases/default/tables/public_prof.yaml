@@ -1,0 +1,65 @@
+table:
+  name: prof
+  schema: public
+object_relationships:
+  - name: rating
+    using:
+      manual_configuration:
+        column_mapping:
+          id: prof_id
+        insertion_order: null
+        remote_table:
+          name: prof_rating
+          schema: aggregate
+array_relationships:
+  - name: prof_clear_buckets
+    using:
+      manual_configuration:
+        column_mapping:
+          id: prof_id
+        insertion_order: null
+        remote_table:
+          name: prof_clear_buckets
+          schema: aggregate
+  - name: prof_courses
+    using:
+      manual_configuration:
+        column_mapping:
+          id: prof_id
+        insertion_order: null
+        remote_table:
+          name: prof_teaches_course
+          schema: public
+  - name: prof_engaging_buckets
+    using:
+      manual_configuration:
+        column_mapping:
+          id: prof_id
+        insertion_order: null
+        remote_table:
+          name: prof_engaging_buckets
+          schema: aggregate
+  - name: reviews
+    using:
+      foreign_key_constraint_on:
+        column: prof_id
+        table:
+          name: review
+          schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - id
+        - code
+        - name
+        - picture_url
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - code
+        - name
+        - picture_url
+      filter: {}
