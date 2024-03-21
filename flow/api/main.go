@@ -11,14 +11,16 @@ import (
 	"flow/api/calendar"
 	"flow/api/data"
 	"flow/api/env"
+	"flow/api/middleware"
 	"flow/api/parse"
 	"flow/api/serde"
 
 	"flow/common/db"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
+
 
 func setupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
@@ -26,11 +28,12 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Use(
 		// Responses are typically JSON, with the notable exception of webcal.
 		// We set the most common type here and override it as necessary.
-		middleware.SetHeader("Content-Type", "application/json"),
-		middleware.Logger,
-		middleware.Recoverer,
-		middleware.RequestID,
-		middleware.Timeout(10*time.Second),
+		middleware.CorsMiddleware(), // Enable CORS for development environments
+		chi_middleware.SetHeader("Content-Type", "application/json"),
+		chi_middleware.Logger,
+		chi_middleware.Recoverer,
+		chi_middleware.RequestID,
+		chi_middleware.Timeout(10*time.Second),
 	)
 
 	router.Post(
