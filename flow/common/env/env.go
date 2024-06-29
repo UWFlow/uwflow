@@ -20,7 +20,9 @@ type Environment struct {
 	PostgresPort     string `from:"POSTGRES_PORT"`
 	PostgresUser     string `from:"POSTGRES_USER"`
 
-	UWApiKeyv3 string `from:"UW_API_KEY_V3"`
+	RunMode		string `from:"RUN_MODE"`
+
+	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.

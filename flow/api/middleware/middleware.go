@@ -3,7 +3,7 @@ package middleware
 import "net/http"
 
 // CORS middleware for localhost environments
-func CorsMiddleware() func(http.Handler) http.Handler {
+func CorsLocalhostMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check if the Origin header is set to a localhost value

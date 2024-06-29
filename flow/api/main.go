@@ -25,10 +25,13 @@ import (
 func setupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
 
+	if env.Global.RunMode == "dev" {
+		router.Use(middleware.CorsLocalhostMiddleware())
+	}
+
 	router.Use(
 		// Responses are typically JSON, with the notable exception of webcal.
 		// We set the most common type here and override it as necessary.
-		middleware.CorsMiddleware(), // Enable CORS for development environments
 		chi_middleware.SetHeader("Content-Type", "application/json"),
 		chi_middleware.Logger,
 		chi_middleware.Recoverer,
