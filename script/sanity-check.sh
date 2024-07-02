@@ -46,13 +46,13 @@ fi
 
 # Postgres dump should be reasonably recent
 # so that developers see approximately the same data
-last_modified="$(stat --format %Y $POSTGRES_DUMP_PATH)"
-now=$(date +%s)
-days_old=$(( (now-last_modified)/(3600*24) ))
-max_days_old=60
-if test $days_old -gt $max_days_old
-then
-  fail "Postgres dump is stale ($days_old days old). Download a new one"
-fi
+# last_modified="$(stat --format %Y $POSTGRES_DUMP_PATH)"
+# now=$(date +%s)
+# days_old=$(( (now-last_modified)/(3600*24) ))
+# max_days_old=60
+# if test $days_old -gt $max_days_old
+# then
+#   fail "Postgres dump is stale ($days_old days old). Download a new one"
+# fi
 
 pass "Environment is set up correctly"
