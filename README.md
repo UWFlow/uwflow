@@ -4,7 +4,29 @@ This is a collection of services comprising the UWFlow backend.
 
 ## Architecture
 
-The architecture is explained in a standalone RFC.
+The UWFlow backend is composed of 5 components that will be explained in detail below.
+Each of these components runs as a separate Docker container, orchestrated by `docker-compose`.
+
+1. **Postgres**: Our Postgres database stores all of the data for UWFlow.
+
+2. **Hasura**: Hasura is a GraphQL engine that sits on top of our Postgres database.
+  It provides a GraphQL API for our frontend to interact with and is generally used for CRUD operations.
+  We also use Hasura to enforce permissions and relationships between tables and manage DB migrations.
+
+3. **API**: Our API is a Go server that provides custom endpoints for our frontend to interact with.
+  It is generally used for more complex operations that cannot be done with Hasura alone.
+  This includes authentication, parsing for transcripts and calendars, webcal generation,
+  and dumping raw search data for the frontend to use for autocomplete.
+
+4. **UW Importer**: This is a cron job that runs on a schedule to import data from the UW API.
+  We use this to fetch updates for courses, instructors, and term schedules.
+
+5. **Email**: This is a service that watches a "queue" in our Postgres database for emails to send.
+  It sends emails by generating HTML documents and sending them using the Google SMTP service.
+
+In production, we run an Nginx reverse proxy in front of Hasura, the API, and the frontend
+to route requests to the correct service. Hasura is exposed via `/graphql`, the API via `/api`,
+and the frontend via `/`.
 
 ## Requirements
 
@@ -15,7 +37,7 @@ The following packages are required for core functionality:
 
 The following packages are required by optional components:
 
-- [`hasura-cli`](https://docs.hasura.io/1.0/graphql/manual/hasura-cli/install-hasura-cli.html#install): Hasura web interface
+- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface
 
 Exact package names may vary across distributions;
 for example, Ubuntu refers to `docker` as `docker.io`.
