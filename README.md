@@ -12,6 +12,7 @@ Each of these components runs as a separate Docker container, orchestrated by `d
 2. **Hasura**: Hasura is a GraphQL engine that sits on top of our Postgres database.
   It provides a GraphQL API for our frontend to interact with and is generally used for CRUD operations.
   We also use Hasura to enforce permissions and relationships between tables and manage DB migrations.
+  For more details on using Hasura and creating new DB migrations, see the [./hasura/README.md](Hasura README).
 
 3. **API**: Our API is a Go server that provides custom endpoints for our frontend to interact with.
   It is generally used for more complex operations that cannot be done with Hasura alone.
