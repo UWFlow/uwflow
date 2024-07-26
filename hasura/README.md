@@ -1,6 +1,7 @@
 # Hasura backend
 
 This serves as a Postgres -> GraphQL adapter.
+We use GraphQL to perform all CRUD operations for UWFlow.
 
 ## Interface
 
@@ -68,7 +69,7 @@ $ hasura migrate create "migration_name_here"
 
 2. Update the generated `up.sql` and `down.sql` to perform the migration.
 
-  In general, migrations of normal tables are fairly straightforward. However, materialized views cannot be modified, so you will need drop the entire materialized view, as well as any associated functions and views, before recreating everything. However, it shouldn't be necessary to drop or recreate and indexes associated with the materialized view. The `course_search_prereqs` migration contains an example of how to do this.
+  In general, migrations of normal tables are fairly straightforward. However, materialized views cannot be modified, so you will need drop the entire materialized view, as well as any associated functions and views, before recreating everything. However, it shouldn't be necessary to drop or recreate any indexes associated with the materialized view. The `course_search_prereqs` migration contains an example of how to do this.
 
 3. Update `metadata/tables.yaml` with any required metadata changes to the GraphQL API.
 

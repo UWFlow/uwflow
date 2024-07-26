@@ -10,5 +10,5 @@ do
     -t neuwflow/$target:latest \
     --target $target \
     --label org.opencontainers.image.revision=$(git rev-parse HEAD) \
-    --label org.opencontainers.image.source=github.com/AyushK1/uwflow2.0
+    --label org.opencontainers.image.source=github.com/UWFlow/uwflow
 done
