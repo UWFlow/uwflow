@@ -93,6 +93,11 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbDirect(conn, calendar.HandleCalendar, "calendar generation"),
 	)
 
+	router.Delete(
+        "/user",
+        serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+    )
+
 	return router
 }
 
