@@ -20,11 +20,17 @@ func ImportAll(state *state.State, client *api.Client) error {
 		util.CurrentTermId(), util.NextTermId(),
 	}
 	for _, termId := range termIds {
-		term, err := term.Select(state.Db, termId)
+		term_object, err := term.Select(state.Db, termId)
 		if err != nil {
 			log.Warnf("no record for term %04d, proceeding anyway", termId)
+
+			// Create a dummy term object with only the ID set
+			term_object = &term.Term{
+				Id: termId,
+			}
 		}
-		idToTerm[termId] = term
+		idToTerm[termId] = term_object
+		
 	}
 
 	courses, classes, err := fetchAll(client, termIds)
