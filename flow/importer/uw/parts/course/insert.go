@@ -413,6 +413,10 @@ func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {
 
 	var preparedProfs [][]interface{}
 	for code, name := range profs {
+		if code == "" {
+			result.Rejected++
+			continue
+		}
 		preparedProfs = append(preparedProfs, []interface{}{code, name})
 	}
 
