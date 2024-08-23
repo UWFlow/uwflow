@@ -21,7 +21,6 @@ import (
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
-
 func setupRouter(conn *db.Conn) *chi.Mux {
 	router := chi.NewRouter()
 
@@ -94,9 +93,9 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	)
 
 	router.Delete(
-        "/user",
-        serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
-    )
+		"/user",
+		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+	)
 
 	return router
 }
