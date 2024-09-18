@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"flow/api/serde"
 	"flow/common/db"
@@ -32,13 +31,6 @@ func DeleteAccount(conn *db.Conn, w http.ResponseWriter, r *http.Request) error 
 		return serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
 	}
 
-	// Parse query string to determine if reviews should be deleted
-	deleteReviews := r.URL.Query().Get("deleteReviews")
-	shouldDeleteReviews, err := strconv.ParseBool(deleteReviews)
-	if err != nil {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid deleteReviews parameter: %w", err))
-	}
-
 	var info userInfo
 	err = conn.QueryRow(selectAccountQuery, userId).Scan(&info.Email, &info.FirstName, &info.LastName)
 	if err != nil {
@@ -46,15 +38,6 @@ func DeleteAccount(conn *db.Conn, w http.ResponseWriter, r *http.Request) error 
 			return serde.WithStatus(http.StatusNotFound, fmt.Errorf("user id not found: %d", userId))
 		}
 		return fmt.Errorf("fetching user data: %w", err)
-	}
-
-	// Optionally delete user reviews
-	if shouldDeleteReviews {
-		tag, err := conn.Exec(deleteReviewsQuery, userId)
-		if err != nil {
-			return fmt.Errorf("deleting user reviews: %w", err)
-		}
-		log.Printf("Deleted %d reviews for user %d", tag.RowsAffected(), userId)
 	}
 
 	// Delete the user account
