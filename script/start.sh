@@ -21,7 +21,7 @@ $PREFIX docker-compose run --name postgres_bootstrap -d postgres
 
 # Wait for postgres server to settle
 while ! $PREFIX docker exec postgres_bootstrap \
-  psql -U $POSTGRES_USER $POSTGRES_DB -c 'SELECT TRUE' \
+  psql -U $POSTGRES_USER $POSTGRES_DB -p $POSTGRES_PORT -c 'SELECT TRUE' \
   >/dev/null 2>/dev/null
 do
   echo "Waiting for bootstrap server..."
@@ -29,7 +29,7 @@ do
 done
 
 $PREFIX docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $POSTGRES_DUMP_PATH
-$PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB /pg_backup
+$PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB -p $POSTGRES_PORT /pg_backup
 $PREFIX docker stop postgres_bootstrap
 $PREFIX docker-compose down
 
