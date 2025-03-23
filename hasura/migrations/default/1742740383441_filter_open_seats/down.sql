@@ -1,4 +1,4 @@
--- This migration removes the terms_with_room column from the course_search_index views
+-- This migration removes the terms_with_seats column from the course_search_index views
 -- by reverting to the previous structure
 
 -- DROP RELATED VIEWS AND FUNCTIONS

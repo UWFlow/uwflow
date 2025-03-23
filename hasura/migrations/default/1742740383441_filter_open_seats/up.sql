@@ -1,4 +1,4 @@
--- This migration adds the terms_with_room column to the course_search_index views
+-- This migration adds the terms_with_seats column to the course_search_index views
 -- and then recreates all dependent functions and indexes
 
 -- DROP RELATED VIEWS AND FUNCTIONS
@@ -11,7 +11,7 @@ DROP FUNCTION search_profs;
 DROP VIEW course_search_index;
 DROP MATERIALIZED VIEW materialized.course_search_index;
 
--- RECREATE NEW MATERIALIZED VIEW AND FUNCTIONS (with both has_prereqs and terms_with_room)
+-- RECREATE NEW MATERIALIZED VIEW AND FUNCTIONS (with both has_prereqs and terms_with_seats)
 CREATE MATERIALIZED VIEW materialized.course_search_index AS
 SELECT
   course.id                                   AS course_id,
