@@ -11,11 +11,15 @@ import (
 	"flow/api/calendar"
 	"flow/api/data"
 	"flow/api/env"
+	"flow/api/logger"
 	"flow/api/middleware"
 	"flow/api/parse"
 	"flow/api/serde"
-
 	"flow/common/db"
+	sentry_client "flow/common/sentry"
+
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
@@ -28,6 +32,11 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		router.Use(middleware.CorsLocalhostMiddleware())
 	}
 
+	// Initialize Sentry handler
+	sentryMiddleware := sentryhttp.New(sentryhttp.Options{
+		Repanic: true,
+	})
+
 	router.Use(
 		// Responses are typically JSON, with the notable exception of webcal.
 		// We set the most common type here and override it as necessary.
@@ -36,6 +45,11 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		chi_middleware.Recoverer,
 		chi_middleware.RequestID,
 		chi_middleware.Timeout(10*time.Second),
+		// Important: Chi has a middleware stack and thus it is important to put the
+		// Sentry handler on the appropriate place. If using middleware.Recoverer,
+		// the Sentry middleware must come afterwards (and configure it with
+		// Repanic: true).
+		sentryMiddleware.Handle,    
 	)
 
 	router.Post(
@@ -100,15 +114,32 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	return router
 }
 
+
 func main() {
+	logger.ConfigureLoggers()
+	
+	// Initialize Sentry
+	if err := sentry_client.InitSentry(1, 0.3); err != nil {
+		log.Printf("Sentry initialization failed: %v", err)
+	}
+	// Flush buffered events on exit
+	defer sentry.Flush(2 * time.Second)
+
 	conn, err := db.ConnectPool(context.Background(), &env.Global)
 	if err != nil {
+		sentry.CaptureException(err)
 		log.Fatalf("Error: %s", err)
 	}
 
 	router := setupRouter(conn)
 	socket := ":" + env.Global.ApiPort
 
-	err = http.ListenAndServe(socket, router)
+	log.Printf("Starting API server on %s", socket)
+
+	// Wrap the router with Sentry handler
+	handler := sentryhttp.New(sentryhttp.Options{}).Handle(router)
+	err = http.ListenAndServe(socket, handler)
+
 	log.Fatalf("Error: %s", err)
+	sentry.CaptureException(err)
 }

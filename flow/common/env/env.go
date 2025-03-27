@@ -23,6 +23,10 @@ type Environment struct {
 	RunMode		string `from:"RUN_MODE"`
 
 	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
+	
+	// Sentry configuration
+	SentryDsn           string `from:"SENTRY_DSN"`
+	SentryTracesSampleRate string `from:"SENTRY_TRACES_SAMPLE_RATE"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.
