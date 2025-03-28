@@ -140,6 +140,6 @@ func main() {
 	handler := sentryhttp.New(sentryhttp.Options{}).Handle(router)
 	err = http.ListenAndServe(socket, handler)
 
-	log.Fatalf("Error: %s", err)
 	sentry.CaptureException(err)
+	log.Fatalf("Error: %s", err)
 }

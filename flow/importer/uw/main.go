@@ -54,7 +54,7 @@ func monitoredImport(monitorSlug string, state *state.State, client *api.Client,
 			Status:      sentry.CheckInStatusInProgress,
 		},
 		&sentry.MonitorConfig{
-			Schedule:      sentry.CrontabSchedule("20 */2 * * * "),
+			Schedule:      sentry.CrontabSchedule("20 */2 * * *"),
 			MaxRuntime:    30, // 30 minute timeout
 			CheckInMargin: 5,  // 5 minute margin
 		},
