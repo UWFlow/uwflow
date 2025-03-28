@@ -10,7 +10,7 @@ func CorsLocalhostMiddleware() func(http.Handler) http.Handler {
 			origin := r.Header.Get("Origin")
 			if origin == "http://localhost" || origin == "http://localhost:3000" {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
 				w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
 			}
