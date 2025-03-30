@@ -25,7 +25,7 @@ services:
       - ./.ssl:/ssl:ro
   postgres:
     container_name: postgres
-    command: postgres -c 'max_connections=256'
+    command: postgres -c 'max_connections=256' -p $POSTGRES_PORT
     env_file: .env
     image: postgres:15-alpine
     ports:
