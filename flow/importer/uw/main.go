@@ -93,9 +93,6 @@ func monitoredVacuum(monitorSlug string, state *state.State, vacuums ...VacuumFu
 			Status:      sentry.CheckInStatusInProgress,
 		},
 		&sentry.MonitorConfig{
-			Schedule:      sentry.CrontabSchedule("30 05 * * *"), // Run daily
-			MaxRuntime:    60, // 60 minute timeout
-			CheckInMargin: 10, // 10 minute margin
 		},
 	)
 
@@ -128,13 +125,6 @@ var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
 var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum}
 
 func main() {
-
-	// Initialize Sentry
-	if err := sentry_client.InitSentry(1, 1); err != nil {
-		log.Printf("Sentry initialization failed: %v", err)
-	}
-	defer sentry.Flush(2 * time.Second)
-
 	if len(os.Args) != 2 {
 		log.Fatalf("Usage: %s ACTION", os.Args[0])
 	}
@@ -145,6 +135,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Initialization failed: %v\n", err)
 	}
+	// Initialize Sentry
+	if err := sentry_client.InitSentry(state.Env.SentryErrorSampleRate, state.Env.SentryTracesSampleRate); err != nil {
+		log.Printf("Sentry initialization failed: %v", err)
+	}
+	defer sentry.Flush(2 * time.Second)
 	client := api.NewClient(ctx, state.Env)
 
 	switch os.Args[1] {

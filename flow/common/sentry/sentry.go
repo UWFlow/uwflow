@@ -7,7 +7,7 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-func InitSentry(sampleRate float64, traceSampleRate float64) error {
+func InitSentry(errorSampleRate float64, traceSampleRate float64) error {
 
 	// If SentryDsn is not set, we'll skip Sentry initialization
 	if env.Global.SentryDsn == "" {
@@ -20,7 +20,7 @@ func InitSentry(sampleRate float64, traceSampleRate float64) error {
 
 	// Set sample rates to 1 in dev mode, otherwise use provided values
 	if debug {
-		sampleRate = 1.0
+		errorSampleRate = 1.0
 		traceSampleRate = 1.0
 	} 
 
@@ -36,7 +36,7 @@ func InitSentry(sampleRate float64, traceSampleRate float64) error {
 		Environment: environment,
 
 		// Sample rate for errors
-		SampleRate: sampleRate,
+		SampleRate: errorSampleRate,
 
 		// Sample rate for traces
 		TracesSampleRate: traceSampleRate,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 // Variables from the OS environment are pulled in and stored here.
@@ -26,7 +27,8 @@ type Environment struct {
 	
 	// Sentry configuration
 	SentryDsn           string `from:"SENTRY_DSN"`
-	SentryTracesSampleRate string `from:"SENTRY_TRACES_SAMPLE_RATE"`
+	SentryTracesSampleRate float64 `from:"SENTRY_TRACES_SAMPLE_RATE"`
+	SentryErrorSampleRate float64`from:"SENTRY_ERROR_SAMPLE_RATE"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.
@@ -39,12 +41,25 @@ func Get(env interface{}) error {
 		envKey := envType.Field(i).Tag.Get("from")
 		value, exists := os.LookupEnv(envKey)
 		if exists {
-			// Potentially cast to []byte if necessary. Why not have everything be a string?
+			// Potentially cast to []byte or Float 64 if necessary. Why not have everything be a string?
 			// If a variable is conceptually a []byte, we expect to have to cast it everywhere.
 			// Better to do it once.
 			fieldType := envType.Field(i).Type
-			convertedValue := reflect.ValueOf(value).Convert(fieldType)
-			envReflect.Field(i).Set(convertedValue)
+			field := envReflect.Field(i)
+
+			switch fieldType.Kind() {
+				case reflect.Float64:
+					// Parse string to float64
+					floatVal, err := strconv.ParseFloat(value, 64)
+					if err != nil {
+						return fmt.Errorf("failed to parse %s as float64: %v", envKey, err)
+					}
+					field.SetFloat(floatVal)
+				default:
+					// Attempt to convert the value to the field type using reflection
+					convertedValue := reflect.ValueOf(value).Convert(fieldType)
+					field.Set(convertedValue)
+			}
 		} else {
 			return fmt.Errorf("environment variable %s is not set", envKey)
 		}
