@@ -46,17 +46,38 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) {
 	}
 }
 
-// Wrap import function to include Sentry monitoring
-func monitoredImport(monitorSlug string, state *state.State, client *api.Client, importers ...ImportFunc) {
+func checkIn(monitorSlug string, status sentry.CheckInStatus) *sentry.EventID {
 	checkinId := sentry.CaptureCheckIn(
 		&sentry.CheckIn{
 			MonitorSlug: monitorSlug,
-			Status:      sentry.CheckInStatusInProgress,
+			Status:      status,
 		},
 		&sentry.MonitorConfig{
 			// More convenient to configure this in the Sentry UI
 		},
 	)
+	return checkinId
+}
+
+func checkOut(monitorSlug string, checkinId *sentry.EventID, success bool) {
+	status := sentry.CheckInStatusOK
+	if !success {
+		status = sentry.CheckInStatusError
+	}
+
+	sentry.CaptureCheckIn(
+		&sentry.CheckIn{
+			ID:          *checkinId,
+			MonitorSlug: monitorSlug,
+			Status:      status,
+		},
+		&sentry.MonitorConfig{
+		},
+	)
+}
+// Wrap import function to include Sentry monitoring
+func monitoredImport(monitorSlug string, state *state.State, client *api.Client, importers ...ImportFunc) {
+	checkinId := checkIn(monitorSlug, sentry.CheckInStatusInProgress)
 
 	success := true
 	for _, importer := range importers {
@@ -68,31 +89,12 @@ func monitoredImport(monitorSlug string, state *state.State, client *api.Client,
 		}
 	}
 
-	status := sentry.CheckInStatusOK
-	if !success {
-		status = sentry.CheckInStatusError
-	}
-
-	sentry.CaptureCheckIn(
-		&sentry.CheckIn{
-			ID:          *checkinId,
-			MonitorSlug: monitorSlug,
-			Status:      status,
-		},
-		nil,
-	)
+	checkOut(monitorSlug, checkinId, success)
 }
 
 // Similar wrapper for vacuum operations
 func monitoredVacuum(monitorSlug string, state *state.State, vacuums ...VacuumFunc) {
-	checkinId := sentry.CaptureCheckIn(
-		&sentry.CheckIn{
-			MonitorSlug: monitorSlug,
-			Status:      sentry.CheckInStatusInProgress,
-		},
-		&sentry.MonitorConfig{
-		},
-	)
+	checkinId := checkIn(monitorSlug, sentry.CheckInStatusInProgress)
 
 	success := true
 	for _, vacuum := range vacuums {
@@ -104,19 +106,7 @@ func monitoredVacuum(monitorSlug string, state *state.State, vacuums ...VacuumFu
 		}
 	}
 
-	status := sentry.CheckInStatusOK
-	if !success {
-		status = sentry.CheckInStatusError
-	}
-
-	sentry.CaptureCheckIn(
-		&sentry.CheckIn{
-			ID:          *checkinId,
-			MonitorSlug: monitorSlug,
-			Status:      status,
-		},
-		nil,
-	)
+	checkOut(monitorSlug, checkinId, success)
 }
 
 var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
