@@ -1,13 +1,11 @@
-version: "3.6"
+version: '3.6'
 services:
   api:
     container_name: api
     depends_on:
       - postgres
     env_file: .env
-    build:
-      context: ./flow
-      target: api
+    image: neuwflow/api:latest
     ports:
       - $API_PORT:$API_PORT
     restart: always
@@ -25,7 +23,7 @@ services:
       - ./.ssl:/ssl:ro
   postgres:
     container_name: postgres
-    command: postgres -c 'max_connections=256' -p $POSTGRES_PORT
+    command: postgres -c 'max_connections=256'
     env_file: .env
     image: postgres:15-alpine
     ports:
@@ -40,8 +38,8 @@ services:
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_GRAPHQL_ADMIN_SECRET
       HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "false" # Must be run manually to track migrations
-      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false" # Why is this even enabled by default?!
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "false"  # Must be run manually to track migrations
+      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"  # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
     image: hasura/graphql-engine:v2.25.1.cli-migrations-v3
@@ -56,18 +54,14 @@ services:
     depends_on:
       - postgres
     env_file: .env
-    build:
-      context: ./flow
-      target: uw
+    image: neuwflow/uw:latest
     restart: always
   email:
     container_name: email
     depends_on:
       - postgres
     env_file: .env
-    build:
-      context: ./flow
-      target: email
+    image: neuwflow/email:latest
     restart: always
 volumes:
   postgres:
