@@ -53,7 +53,7 @@ func checkIn(monitorSlug string, status sentry.CheckInStatus) *sentry.EventID {
 			Status:      status,
 		},
 		&sentry.MonitorConfig{
-			// More convenient to configure this in the Sentry UI
+			MaxRuntime: 2 * 60,
 		},
 	)
 	return checkinId
@@ -72,6 +72,7 @@ func checkOut(monitorSlug string, checkinId *sentry.EventID, success bool) {
 			Status:      status,
 		},
 		&sentry.MonitorConfig{
+			MaxRuntime: 2 * 60,
 		},
 	)
 }
