@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
@@ -103,6 +104,10 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 
 	payload.RequestId = middleware.GetReqID(r.Context())
 	log.Printf("Error in %s: %s", payload.RequestId, err)
+	
+	// Add Sentry error forwarding here
+	hub := sentry.GetHubFromContext(r.Context())
+	hub.CaptureException(err)
 
 	var st statusErr
 	if ok := errors.As(err, &st); ok {
