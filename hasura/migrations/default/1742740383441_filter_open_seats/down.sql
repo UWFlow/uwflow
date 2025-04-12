@@ -3,6 +3,7 @@
 
 -- DROP RELATED VIEWS AND FUNCTIONS
 DROP TRIGGER refresh_section_meeting ON section_meeting;
+DROP TRIGGER IF EXISTS refresh_course_section ON course_section;
 
 DROP FUNCTION refresh_section_meeting_views;
 DROP FUNCTION search_courses;

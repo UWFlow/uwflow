@@ -3,6 +3,7 @@
 
 -- DROP RELATED VIEWS AND FUNCTIONS
 DROP TRIGGER refresh_section_meeting ON section_meeting;
+DROP TRIGGER IF EXISTS refresh_course_section ON course_section;
 
 DROP FUNCTION refresh_section_meeting_views;
 DROP FUNCTION search_courses;
@@ -117,5 +118,11 @@ $$ LANGUAGE plpgsql STABLE;
 
 CREATE TRIGGER refresh_section_meeting
 AFTER INSERT OR UPDATE OR DELETE ON section_meeting
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_section_meeting_views();
+
+-- Add trigger for course_section table to update terms_with_seats when enrollment changes
+CREATE TRIGGER refresh_course_section
+AFTER INSERT OR UPDATE OR DELETE ON course_section
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_section_meeting_views();
