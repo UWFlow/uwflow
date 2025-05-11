@@ -17,6 +17,8 @@ import (
 
 	"flow/common/db"
 
+	ingest "flow/api/admin"
+
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
@@ -35,7 +37,7 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		chi_middleware.Logger,
 		chi_middleware.Recoverer,
 		chi_middleware.RequestID,
-		chi_middleware.Timeout(10*time.Second),
+		chi_middleware.Timeout(10*time.Minute),
 	)
 
 	router.Post(
@@ -95,6 +97,12 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Delete(
 		"/user",
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+	)
+
+	// admin endpoints
+	router.Post(
+		"/admin/prof",
+		serde.WithDbResponse(conn, ingest.IngestProfData, "prof taught course ingestion"),
 	)
 
 	return router

@@ -23,6 +23,9 @@ type Environment struct {
 	RunMode		string `from:"RUN_MODE"`
 
 	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
+
+	ManualScrapeKey string `from:"MANUAL_SCRAPE_KEY"`
+	
 }
 
 // To avoid mind-numbing boilerplate, use reflection.
