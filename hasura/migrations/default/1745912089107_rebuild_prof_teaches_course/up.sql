@@ -27,6 +27,27 @@ COMMENT ON TABLE public.parsed_prof_taught_course IS 'Stores associations betwee
 COMMENT ON COLUMN public.parsed_prof_taught_course.course_id IS 'Foreign key referencing the course.';
 COMMENT ON COLUMN public.parsed_prof_taught_course.prof_id IS 'Foreign key referencing the professor.';
 
+---------------------------------- ADD NEW TABLE prof_teaches_course_delta ----------------------------------
+
+CREATE TYPE work.prof_teaches_course_category AS ENUM ('INSERT_AND_ADD_PROF', 'INSERT', 'AMBIGUOUS', 'IGNORE');
+
+CREATE TABLE work.prof_teaches_course_delta(
+  prof_id INT NOT NULL,
+  course_id INT NOT NULL,
+  category work.prof_teaches_course_category NOT NULL,
+  similarity FLOAT DEFAULT NULL,
+
+  CONSTRAINT prof_teaches_course_delta_pkey PRIMARY KEY (prof_id, course_id)
+);
+
+-- Add comments to the new table and columns
+COMMENT ON TABLE work.prof_teaches_course_delta IS 'Stores associations between courses and professors, initially seeded from review data.';
+COMMENT ON COLUMN work.prof_teaches_course_delta.prof_id IS 'Foreign key referencing the professor.';
+COMMENT ON COLUMN work.prof_teaches_course_delta.course_id IS 'Foreign key referencing the course.';
+COMMENT ON COLUMN work.prof_teaches_course_delta.category IS 'The category of the association between the course and the professor.';
+
+
+
 
 
 ---------------------------------- REPLACE MATERIALIZED VIEWS ----------------------------------
