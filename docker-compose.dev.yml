@@ -33,30 +33,6 @@ services:
       target: email
     restart: always
 
-  # frontend:
-  #   container_name: frontend
-  #   build:
-  #     context: ../uwflow_frontend
-  #   depends_on:
-  #     - hasura
-  #     - api
-  #   working_dir: /work
-  #   volumes:
-  #     - ../uwflow_frontend:/work
-  #     - /work/node_modules
-  #   command:
-  #     ["sh", "-c", "yarn install && yarn build && npx serve -s build -l 3500"]
-  #   ports:
-  #     - $NGINX_HTTP_PORT:3500
-  #   environment:
-  #     - HOST=0.0.0.0
-  #     - PORT=3500
-  #     - CHOKIDAR_USEPOLLING=true
-  #   env_file: .env
-  #   stdin_open: true
-  #   tty: true
-  #   restart: always
-
   postgres:
     container_name: postgres
     command: postgres -c 'max_connections=256' -p $POSTGRES_PORT
