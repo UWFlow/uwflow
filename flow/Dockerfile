@@ -26,7 +26,8 @@ RUN cd email && go build
 FROM alpine:latest AS api
 
 # parsing and webcal pull in these runtime dependencies
-RUN apk add --no-cache poppler
+RUN apk add --no-cache poppler && \
+    ln -s /usr/lib/libpoppler-cpp.so.2 /usr/lib/libpoppler-cpp.so.0
 
 COPY --from=builder /build/api/api /app/api
 
