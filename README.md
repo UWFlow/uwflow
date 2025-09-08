@@ -92,5 +92,14 @@ will spawn a Postgres shell connected to the database container.
 If you do not happen to have `postgres-client` installed, this also works:
 ```sh
 $ docker exec -it postgres sh
-(docker) # psql -U postgres flow
+(docker) # psql -U postgres flow 
+```
+
+## Testing your changes 
+There is a `docker-compose.dev.yml` file to build and start all backend services using local repo (`docker-compose.yml` uses public images). 
+
+Run this command to apply your changes: 
+
+```
+docker-compose -f docker-compose.dev.yml up --build
 ```
