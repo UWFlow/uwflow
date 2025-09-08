@@ -1,8 +1,13 @@
 #include <cstring>
 #include <string>
 
-#include "poppler/cpp/poppler-document.h"
-#include "poppler/cpp/poppler-page.h"
+// #cgo pkg-config: poppler-cpp
+// #cgo CXXFLAGS: -std=c++11
+// #include <stdlib.h>
+// const char *pdftotext(const char *data, int data_size);
+#include "poppler-document.h"
+#include "poppler-page.h"
+
 
 void donothing(const std::string &, void *) {}
 

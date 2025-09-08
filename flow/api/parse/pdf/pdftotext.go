@@ -1,7 +1,7 @@
 package pdf
 
-// #cgo CFLAGS: -O2 -Wall -I/usr/include/poppler/cpp
-// #cgo LDFLAGS: -lpoppler-cpp
+// #cgo pkg-config:poppler-cpp
+// #cgo CXXFLAGS: -std=c++11
 // #include <stdlib.h>
 // const char *pdftotext(const char *data, int data_size);
 import "C"

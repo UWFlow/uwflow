@@ -1,6 +1,9 @@
 package middleware
 
-import "net/http"
+import (
+	"flow/api/env"
+	"net/http"
+)
 
 // CORS middleware for localhost environments
 func CorsLocalhostMiddleware() func(http.Handler) http.Handler {
@@ -24,4 +27,15 @@ func CorsLocalhostMiddleware() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// RequireAdminSecret middleware for manual scrape key
+func RequireAdminSecret(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.Header.Get("X-Admin-Secret") != env.Global.ManualScrapeKey {
+            http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
 }
