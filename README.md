@@ -79,6 +79,20 @@ not necessary clear database state, so the following command suffices:
 docker-compose up -d --build
 ```
 
+## Development
+
+For development, run `docker-compose.dev.yml` to build the `api`, `importer` and `email` images locally. 
+
+```sh
+docker-compose -f docker-compose.dev.yml up --build --detach
+```
+
+After making local changes to the `api` image for instance, rebuild by running:
+
+```sh
+docker-compose -f docker-compose.dev.yml up --build api --detach
+```
+
 ## Interacting with the backend
 
 When `docker-compose` is active, services may be accessed
