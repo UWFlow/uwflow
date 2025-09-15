@@ -2,67 +2,16 @@ version: "3.9"
 
 services:
   api:
-    container_name: api
-    depends_on:
-      - postgres
-    env_file: .env
     build:
       context: ./flow
       target: api
-    ports:
-      - $API_PORT:$API_PORT
-    restart: always
 
   uw:
-    container_name: uw
-    depends_on:
-      - postgres
-    env_file: .env
     build:
       context: ./flow
       target: uw
-    restart: always
 
   email:
-    container_name: email
-    depends_on:
-      - postgres
-    env_file: .env
     build:
       context: ./flow
       target: email
-    restart: always
-
-  postgres:
-    container_name: postgres
-    command: postgres -c 'max_connections=256' -p $POSTGRES_PORT
-    env_file: .env
-    image: postgres:15-alpine
-    ports:
-      - $POSTGRES_PORT:$POSTGRES_PORT
-    restart: always
-    volumes:
-      - postgres:/var/lib/postgresql/data
-
-  hasura:
-    container_name: hasura
-    depends_on:
-      - postgres
-    environment:
-      HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_GRAPHQL_ADMIN_SECRET
-      HASURA_GRAPHQL_DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_ENABLE_TELEMETRY: "false"
-      HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
-      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
-    image: hasura/graphql-engine:v2.25.1.cli-migrations-v3
-    ports:
-      - $HASURA_PORT:$HASURA_PORT
-    restart: always
-    volumes:
-      - ./hasura/migrations:/hasura-migrations
-      - ./hasura/metadata:/hasura-metadata
-
-volumes:
-  postgres:
-    name: backend_postgres
