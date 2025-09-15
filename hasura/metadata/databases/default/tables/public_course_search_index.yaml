@@ -1,6 +1,16 @@
 table:
   name: course_search_index
   schema: public
+object_relationships:
+  - name: course
+    using:
+      manual_configuration:
+        column_mapping:
+          course_id: id
+        insertion_order: null
+        remote_table:
+          name: course
+          schema: public
 select_permissions:
   - role: anonymous
     permission:

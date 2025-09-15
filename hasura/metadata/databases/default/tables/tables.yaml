@@ -13,6 +13,7 @@
 - "!include public_course_review_upvote.yaml"
 - "!include public_course_search_index.yaml"
 - "!include public_course_section.yaml"
+- "!include public_course_term_delivery_modes.yaml"
 - "!include public_prof.yaml"
 - "!include public_prof_review_upvote.yaml"
 - "!include public_prof_search_index.yaml"

@@ -76,6 +76,13 @@ array_relationships:
         table:
           name: course_section
           schema: public
+  - name: term_delivery_modes
+    using:
+      foreign_key_constraint_on:
+        column: course_id
+        table:
+          name: course_term_delivery_modes
+          schema: public
 select_permissions:
   - role: anonymous
     permission:
