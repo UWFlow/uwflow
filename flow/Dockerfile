@@ -1,6 +1,6 @@
 ######## BUILD STAGE ########
 # Release image is alpine, so use alpine in builder also for ABI compatibility
-FROM golang:1.19-alpine as builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 

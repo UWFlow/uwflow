@@ -1,6 +1,6 @@
 module flow
 
-go 1.20
+go 1.25
 
 require (
 	github.com/go-chi/chi/v5 v5.0.8
