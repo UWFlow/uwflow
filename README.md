@@ -115,5 +115,5 @@ There is a `docker-compose.dev.yml` file to build and start all backend services
 Run this command to apply your changes: 
 
 ```
-docker-compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
