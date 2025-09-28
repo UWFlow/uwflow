@@ -1,6 +1,7 @@
 package serde
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,7 +10,7 @@ import (
 
 	"flow/api/env"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type HasuraClaims struct {
@@ -20,7 +21,7 @@ type HasuraClaims struct {
 
 type CombinedClaims struct {
 	Hasura HasuraClaims `json:"https://hasura.io/jwt/claims"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 const ExpirationPeriod = 24 * time.Hour
@@ -29,10 +30,10 @@ func NewSignedJwt(userId int) (string, error) {
 	now := time.Now()
 
 	claims := CombinedClaims{
-		StandardClaims: jwt.StandardClaims{
-			IssuedAt:  now.Unix(),
-			NotBefore: now.Unix(),
-			ExpiresAt: now.Add(ExpirationPeriod).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ExpirationPeriod)),
 		},
 		Hasura: HasuraClaims{
 			AllowedRoles: []string{"user"},
@@ -66,13 +67,10 @@ func UserIdFromRequest(request *http.Request) (int, error) {
 
 	token, err := jwt.ParseWithClaims(tokenString, new(CombinedClaims), globalKey)
 	if err != nil {
-		if vErr, ok := err.(*jwt.ValidationError); ok {
-			if vErr.Errors&jwt.ValidationErrorExpired != 0 {
-				return 0, WithEnum(ExpiredJwt, fmt.Errorf("expired token"))
-			}
-			return 0, fmt.Errorf("invalid token: %w", vErr)
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return 0, WithEnum(ExpiredJwt, fmt.Errorf("expired token"))
 		}
-		return 0, fmt.Errorf("malformed token: %w", err)
+		return 0, fmt.Errorf("invalid token: %w", err)
 	}
 
 	// This will work because ParseWithClaims encountered no error
