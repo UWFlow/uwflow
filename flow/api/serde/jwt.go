@@ -70,6 +70,9 @@ func UserIdFromRequest(request *http.Request) (int, error) {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return 0, WithEnum(ExpiredJwt, fmt.Errorf("expired token"))
 		}
+		if errors.Is(err, jwt.ErrTokenMalformed) {
+			return 0, fmt.Errorf("malformed token: %w", err)
+		}
 		return 0, fmt.Errorf("invalid token: %w", err)
 	}
 
