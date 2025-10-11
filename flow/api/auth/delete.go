@@ -15,11 +15,6 @@ DELETE FROM "user"
 WHERE id = $1
 `
 
-const deleteReviewsQuery = `
-DELETE FROM review
-WHERE user_id = $1
-`
-
 const selectAccountQuery = `
 SELECT email, first_name, last_name FROM "user" WHERE id = $1
 `
