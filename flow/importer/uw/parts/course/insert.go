@@ -230,7 +230,8 @@ UPDATE course_section SET
   section_name = delta.section_name,
   enrollment_capacity = delta.enrollment_capacity,
   enrollment_total = delta.enrollment_total,
-  updated_at = delta.updated_at
+  updated_at = delta.updated_at,
+  is_online = delta.is_online
 FROM work.course_section_delta delta
   JOIN course c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
@@ -240,11 +241,11 @@ WHERE course_section.class_number = delta.class_number
 const insertSectionQuery = `
 INSERT INTO course_section(
   class_number, course_id, section_name, term_id,
-  enrollment_capacity, enrollment_total, updated_at
+  enrollment_capacity, enrollment_total, updated_at, is_online
 )
 SELECT
   d.class_number, c.id, d.section_name, d.term_id,
-  d.enrollment_capacity, d.enrollment_total, d.updated_at
+  d.enrollment_capacity, d.enrollment_total, d.updated_at, d.is_online
 FROM work.course_section_delta d
   JOIN course c ON c.code = d.course_code
   LEFT JOIN course_section cs

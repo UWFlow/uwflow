@@ -322,6 +322,10 @@ func convertSection(dst *convertResult, apiClass *apiClass, term *term.Term) err
 			EnrollmentTotal:    apiClass.EnrolledStudents,
 			TermId:             term.Id,
 			UpdatedAt:          time.Now().In(tz),
+
+			// Sections with X8X are online classes
+			// See: https://uwaterloo.ca/the-centre/academics/academics-undergraduate-students/registering-courses/understanding-schedule-classes
+			IsOnline: sectionNumber[1] == '8',
 		},
 	)
 
