@@ -1,5 +1,5 @@
-alter table "public"."course_section" add column "is_online" Boolean
-not null default 'false';
+ALTER TABLE "public"."course_section" ADD COLUMN "is_online" BOOLEAN
+NOT NULL DEFAULT 'false';
 
-alter table "work"."course_section_delta" add column "is_online" Boolean
-not null default 'false';
+ALTER TABLE "work"."course_section_delta" ADD COLUMN "is_online" BOOLEAN
+NOT NULL DEFAULT 'false';
