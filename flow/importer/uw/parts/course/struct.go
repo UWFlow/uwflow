@@ -23,6 +23,7 @@ type section struct {
 	EnrollmentTotal    int
 	TermId             int
 	UpdatedAt          time.Time
+	IsOnline           bool
 }
 
 type meeting struct {
