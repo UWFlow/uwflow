@@ -1,4 +1,4 @@
--- This migration adds the terms_with_seats column to the course_search_index views
+-- This migration adds the has_online_sections column to the course_search_index views
 -- and then recreates all dependent functions and indexes
 
 -- DROP RELATED VIEWS AND FUNCTIONS
@@ -31,7 +31,7 @@ SELECT
     FILTER (WHERE course_section.term_id IS NOT NULL 
             AND course_section.enrollment_total < course_section.enrollment_capacity),
     ARRAY[]::INT[])                           AS terms_with_seats,
-  -- New field that identifies terms with available seats
+  -- New field that identifies terms with online sections
   COALESCE(BOOL_OR(course_section.is_online), False) as has_online_sections, 
   COALESCE(
     ARRAY_AGG(DISTINCT materialized.prof_teaches_course.prof_id)
@@ -55,7 +55,7 @@ FROM course
   LEFT JOIN course_section ON course_section.course_id = course.id
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.course_id = course.id
   LEFT JOIN materialized.course_rating ON materialized.course_rating.course_id = course.id
--- New field that identifies terms with available seats
+
 GROUP BY course.id, ratings, liked, easy, useful;
 
 CREATE VIEW course_search_index AS

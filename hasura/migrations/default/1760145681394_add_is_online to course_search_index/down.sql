@@ -1,4 +1,4 @@
--- This migration adds the terms_with_seats column to the course_search_index views
+-- This migration removes the has_online_sections column to the course_search_index views
 -- and then recreates all dependent functions and indexes
 
 -- DROP RELATED VIEWS AND FUNCTIONS
