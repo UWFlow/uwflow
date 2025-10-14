@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
+	"go.uber.org/zap"
 )
 
 func setupRouter(conn *db.Conn) *chi.Mux {
@@ -26,6 +27,8 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 
 	if env.Global.RunMode == "dev" {
 		router.Use(middleware.CorsLocalhostMiddleware())
+	} else {
+		router.Use(middleware.CorsProductionMiddleware(env.Global.Domain))
 	}
 
 	router.Use(
@@ -36,41 +39,42 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		chi_middleware.Recoverer,
 		chi_middleware.RequestID,
 		chi_middleware.Timeout(10*time.Second),
+		chi_middleware.Compress(5),
 	)
 
 	router.Post(
 		"/auth/email/login",
-		serde.WithDbResponse(conn, auth.LoginEmail, "email login"),
+		middleware.RateLimitMiddleware(serde.WithDbResponse(conn, auth.LoginEmail, "email login")),
 	)
 	router.Post(
 		"/auth/email/register",
-		serde.WithDbResponse(conn, auth.RegisterEmail, "email register"),
+		middleware.RateLimitMiddleware(serde.WithDbResponse(conn, auth.RegisterEmail, "email register")),
 	)
 	router.Post(
 		"/auth/facebook/login",
-		serde.WithDbResponse(conn, auth.LoginFacebook, "facebook login"),
+		middleware.RateLimitMiddleware(serde.WithDbResponse(conn, auth.LoginFacebook, "facebook login")),
 	)
 	router.Post(
 		"/auth/google/login",
-		serde.WithDbResponse(conn, auth.LoginGoogle, "google login"),
+		middleware.RateLimitMiddleware(serde.WithDbResponse(conn, auth.LoginGoogle, "google login")),
 	)
 
 	router.Post(
 		"/auth/refresh",
-		serde.WithDbResponse(conn, auth.RefreshToken, "refresh jwt token"),
+		middleware.RateLimitMiddleware(serde.WithDbResponse(conn, auth.RefreshToken, "refresh jwt token")),
 	)
 
 	router.Post(
 		"/auth/forgot-password/send-email",
-		serde.WithDbNoResponse(conn, auth.SendEmail, "password reset initiation"),
+		middleware.RateLimitMiddleware(serde.WithDbNoResponse(conn, auth.SendEmail, "password reset initiation")),
 	)
 	router.Post(
 		"/auth/forgot-password/verify",
-		serde.WithDbNoResponse(conn, auth.VerifyKey, "password reset verification"),
+		middleware.RateLimitMiddleware(serde.WithDbNoResponse(conn, auth.VerifyKey, "password reset verification")),
 	)
 	router.Post(
 		"/auth/forgot-password/reset",
-		serde.WithDbNoResponse(conn, auth.ResetPassword, "password reset completion"),
+		middleware.RateLimitMiddleware(serde.WithDbNoResponse(conn, auth.ResetPassword, "password reset completion")),
 	)
 
 	router.Post(
@@ -101,9 +105,15 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 }
 
 func main() {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	middleware.InitRedis(env.Global.Redis.Host, env.Global.Redis.Port)
+	data.InitRedis(middleware.GetRedisClient())
+
 	conn, err := db.ConnectPool(context.Background(), &env.Global)
 	if err != nil {
-		log.Fatalf("Error: %s", err)
+		logger.Fatal("Error connecting to DB", zap.Error(err))
 	}
 
 	router := setupRouter(conn)

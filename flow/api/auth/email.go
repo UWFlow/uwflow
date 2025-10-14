@@ -1,14 +1,16 @@
 package auth
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"flow/api/serde"
 	"flow/common/db"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type emailLoginRequest struct {
@@ -50,15 +52,25 @@ func LoginEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	if body.Email == "" || body.Password == "" {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email, password"))
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("email and password required"))
+	}
+
+	if !emailRegex.MatchString(body.Email) {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid email format"))
 	}
 
 	response, err := loginEmail(tx, body.Email, []byte(body.Password))
+	err = bcrypt.CompareHashAndPassword(hash, password)
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
+		return nil, serde.WithEnum(serde.EmailWrongPassword, fmt.Errorf("comparing hash and password: %w", err))
 	}
 
-	return response, nil
+	response.Token, err = serde.NewSignedJwt(response.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("signing jwt: %w", err)
+	}
+
+	return &response, nil
 }
 
 const insertUserEmailQuery = `
@@ -92,7 +104,7 @@ type emailRegisterRequest struct {
 }
 
 const (
-	MinPasswordLength = 6
+	MinPasswordLength = 8
 	MinEmailLength    = 6
 )
 
@@ -128,4 +140,12 @@ func RegisterEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	return resp, nil
+}
+
+var (
+	emailRegexp = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+)
+
+func isValidEmail(email string) bool {
+	return emailRegexp.MatchString(email)
 }

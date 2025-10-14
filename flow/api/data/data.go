@@ -1,11 +1,20 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"flow/common/db"
+
+	"github.com/redis/go-redis/v9"
 )
+
+var redisClient *redis.Client
+
+func InitRedis(client *redis.Client) {
+	redisClient = client
+}
 
 type course struct {
 	Id          int      `json:"id"`
@@ -50,7 +59,36 @@ FROM prof p
 GROUP BY p.id, pr.filled_count
 `
 
+package data
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"flow/api/serde"
+	"flow/common/db"
+
+	"github.com/redis/go-redis/v9"
+)
+
+var redisClient *redis.Client
+
+func InitRedis(client *redis.Client) {
+	redisClient = client
+}
+
 func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
+	cacheKey := "search_data"
+
+	// Try to get from cache
+	cached, err := redisClient.Get(r.Context(), cacheKey).Result()
+	if err == nil {
+		var response dumpResponse
+		if json.Unmarshal([]byte(cached), &response) == nil {
+			return &response, nil
+		}
+	}
+
 	rows, err := tx.Query(courseQuery)
 	if err != nil {
 		return nil, fmt.Errorf("querying courses: %w", err)
@@ -81,6 +119,10 @@ func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 		}
 		response.Profs = append(response.Profs, p)
 	}
+
+	// Cache for 1 hour
+	jsonData, _ := json.Marshal(response)
+	redisClient.Set(r.Context(), cacheKey, jsonData, 3600*1000000000) // 1 hour
 
 	return &response, nil
 }
