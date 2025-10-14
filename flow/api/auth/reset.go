@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"time"
 
@@ -14,7 +15,9 @@ import (
 	"flow/common/util/random"
 )
 
-const verifyKeyLength = 6
+const verifyKeyLength = 16
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 const updatePasswordResetQuery = `
 INSERT INTO queue.password_reset(user_id, secret_key, expiry)
@@ -37,7 +40,7 @@ func sendEmail(tx *db.Tx, email string) error {
 	}
 
 	expiry := time.Now().Add(time.Hour)
-	key, err := random.String(verifyKeyLength, random.AllLetters)
+	key, err := random.String(verifyKeyLength, random.All)
 	if err != nil {
 		return fmt.Errorf("generating reset key: %w", err)
 	}
@@ -63,6 +66,14 @@ func SendEmail(tx *db.Tx, r *http.Request) error {
 
 	if body.Email == "" {
 		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("empty email"))
+	}
+
+	if !emailRegex.MatchString(body.Email) {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid email format"))
+	}
+
+	if !emailRegex.MatchString(body.Email) {
+		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid email format"))
 	}
 
 	return sendEmail(tx, body.Email)

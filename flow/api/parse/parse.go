@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"flow/api/parse/pdf"
 	"flow/api/parse/schedule"
@@ -84,10 +85,24 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("expected form/multipart: {file}"))
 	}
 
-	var fileContents bytes.Buffer
+	const maxFileSize = 10 << 20 // 10 MB
+	if header.Size > maxFileSize {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("file too large: max 10MB"))
+	}
+
+	var fileContents = bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(fileContents)
+	fileContents.Reset()
 	fileContents.Grow(int(header.Size))
 	fileContents.ReadFrom(file)
-	text, err := pdf.ToText(fileContents.Bytes())
+	data := fileContents.Bytes()
+
+	// Validate PDF magic bytes
+	if len(data) < 4 || string(data[:4]) != "%PDF" {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid file type: expected PDF"))
+	}
+
+	text, err := pdf.ToText(data)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting to text: %w", err))
 	}
@@ -102,7 +117,7 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	log.Printf("Imported transcript for user %d: %+v", userId, summary)
+	log.Printf("Imported transcript for user %d", userId)
 	return response, nil
 }
 
@@ -205,6 +220,11 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
 
+	const maxTextSize = 1 << 20 // 1 MB
+	if len(req.Text) > maxTextSize {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("text too large: max 1MB"))
+	}
+
 	summary, err := schedule.Parse(req.Text)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
@@ -215,6 +235,10 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, fmt.Errorf("saving: %w", err)
 	}
 
-	log.Printf("Imported schedule for user %d: %+v", userId, summary)
+	log.Printf("Imported schedule for user %d", userId)
 	return response, nil
+}
+
+var bufferPool = sync.Pool{
+	New: func() interface{} { return &bytes.Buffer{} },
 }
