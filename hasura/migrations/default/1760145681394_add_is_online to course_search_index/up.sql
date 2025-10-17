@@ -31,12 +31,13 @@ SELECT
     FILTER (WHERE course_section.term_id IS NOT NULL 
             AND course_section.enrollment_total < course_section.enrollment_capacity),
     ARRAY[]::INT[])                           AS terms_with_seats,
-  -- New field that identifies terms with online sections
-  COALESCE(BOOL_OR(course_section.is_online), False) as has_online_sections, 
-  COALESCE(
-    ARRAY_AGG(DISTINCT materialized.prof_teaches_course.prof_id)
+  COALESCE(ARRAY_AGG(DISTINCT materialized.prof_teaches_course.prof_id)
     FILTER (WHERE materialized.prof_teaches_course.prof_id IS NOT NULL),
     ARRAY[]::INT[])                           AS prof_ids,
+    -- New field that identifies terms with online sections 
+  COALESCE(ARRAY_AGG(DISTINCT course_section.term_id)
+    FILTER (WHERE course_section.is_online=True),
+    ARRAY[]::INT[]) as terms_with_online_sections,
   -- check if prereqs are either empty or null
   COALESCE(TRIM(course.prereqs), '') != '' OR
     COALESCE(ARRAY_LENGTH(ARRAY_AGG(
@@ -55,7 +56,6 @@ FROM course
   LEFT JOIN course_section ON course_section.course_id = course.id
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.course_id = course.id
   LEFT JOIN materialized.course_rating ON materialized.course_rating.course_id = course.id
-
 GROUP BY course.id, ratings, liked, easy, useful;
 
 CREATE VIEW course_search_index AS

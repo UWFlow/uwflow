@@ -1,5 +1,5 @@
--- This migration removes the has_online_sections column to the course_search_index views
--- and then recreates all dependent functions and indexes
+-- This migration removes the terms_with_online_sections column from the course_search_index views
+-- by reverting to the previous structure
 
 -- DROP RELATED VIEWS AND FUNCTIONS
 DROP TRIGGER refresh_section_meeting ON section_meeting;
@@ -12,7 +12,7 @@ DROP FUNCTION search_profs;
 DROP VIEW course_search_index;
 DROP MATERIALIZED VIEW materialized.course_search_index;
 
--- RECREATE NEW MATERIALIZED VIEW AND FUNCTIONS (with both has_prereqs and terms_with_seats)
+-- RECREATE PREVIOUS MATERIALIZED VIEW AND FUNCTIONS 
 CREATE MATERIALIZED VIEW materialized.course_search_index AS
 SELECT
   course.id                                   AS course_id,
@@ -121,7 +121,6 @@ AFTER INSERT OR UPDATE OR DELETE ON section_meeting
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_section_meeting_views();
 
--- Add trigger for course_section table to update terms_with_seats when enrollment changes
 CREATE TRIGGER refresh_course_section
 AFTER INSERT OR UPDATE OR DELETE ON course_section
 FOR EACH STATEMENT
