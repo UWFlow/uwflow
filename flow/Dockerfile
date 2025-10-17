@@ -22,6 +22,27 @@ RUN cd api && go build
 RUN cd importer/uw && go build
 RUN cd email && go build
 
+######## DEV STAGE (for live reload with Air) ########
+FROM golang:1.25-alpine AS dev
+
+WORKDIR /build
+
+# Install build dependencies and Air
+RUN apk add --no-cache git g++ poppler-dev && \
+    go install github.com/air-verse/air@latest
+
+# Copy go.mod and go.sum for dependency caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy Air config
+COPY .air.toml ./
+
+# Source code will be mounted as volume in docker-compose.dev.yml
+# Air will watch for changes and rebuild automatically
+
+CMD ["air"]
+
 ######## RELEASE STAGE: API ########
 FROM alpine:latest AS api
 

@@ -2,7 +2,10 @@ services:
   api:
     build:
       context: ./flow
-      target: api
+      target: dev
+    command: sh -c "cd api && air"
+    volumes:
+      - ./flow:/build
 
   uw:
     build:
@@ -12,4 +15,7 @@ services:
   email:
     build:
       context: ./flow
-      target: email
+      target: dev
+    command: sh -c "cd email && air"
+    volumes:
+      - ./flow:/build
