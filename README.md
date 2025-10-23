@@ -47,7 +47,7 @@ and is not necessarily consistent with any single distribution.
 
 ## First-time setup
 
-To find out what is really expected, peruse `scripts/sanity-check.sh`
+To find out what is really expected, peruse `script/sanity-check.sh`
 and apply common sense, as the following docs may be outdated.
 
 1. Ensure the required packages are installed (see above).
