@@ -16,6 +16,7 @@ select_permissions:
         - code
         - name
         - has_prereqs
+        - terms_with_online_sections
       filter: {}
       allow_aggregations: true
   - role: user
@@ -32,5 +33,6 @@ select_permissions:
         - code
         - name
         - has_prereqs
+        - terms_with_online_sections 
       filter: {}
       allow_aggregations: true
