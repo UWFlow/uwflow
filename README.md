@@ -38,26 +38,38 @@ The following packages are required for core functionality:
 
 The following packages are required by optional components:
 
-- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface
+- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface. For outside contributors, this is mandatory for setting up your local DB for the first time. 
 
 Exact package names may vary across distributions;
 for example, Ubuntu refers to `docker` as `docker.io`.
 The above list is intended as an unambiguous guideline for humans
 and is not necessarily consistent with any single distribution.
 
-## First-time setup (Maintainers)
+## First-time setup 
+
+### Maintainers
 We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
 
 1. Ensure the required packages are installed (see above).
 2. Obtain a postgres dump: We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
-3. Copy `.env.sample` to `.env` and edit the latter as needed. In particular:
+3. Copy `.env.sample` to `.env` and edit the latter (apply common sense) as needed. In particular:
   - `POSTGRES_DUMP_PATH` should point to `pg_backup` obtained at the end of (2)
   - `UW_API_KEY_V3` should be set as instructed in the
     [uwapi-importer README](uwapi-importer/README.md)
   - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems
     and `0.0.0.0` on Windows (which is incidentally otherwise unsupported)
-4. Run `make setup`, this will get your postgres volume ready. 
+4. Run `make setup`, this will get your postgres volume ready. Whenever you want to update your local DB, setup your postgres dump file and rerun `make setup`
 
+### Contributors 
+Simply run:
+```sh
+make setup-contrib
+```
+It will create a postgres container for you, with desired schema and course data. It won't contain user data or review data as in prod.
+
+Also, it does not contain any prof data unfortunately since UW API is not providing this anymore :(
+
+We are looking into adding a new script to address this. 
 ## Development
 
 Make sure you have finished the above section first. 

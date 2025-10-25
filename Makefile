@@ -1,4 +1,4 @@
-.PHONY: help start start-public stop setup db-restore import-course import-vacuum migrate test build-test docker-build-test logs clean
+.PHONY: help start start-public stop setup setup-contrib db-restore import-course import-vacuum migrate test build-test docker-build-test logs clean
 
 # Load environment variables
 include .env
@@ -19,6 +19,8 @@ start: ## Start all backend services in development mode (without frontend)
 	$(DOCKER_COMPOSE) up -d api postgres hasura uw email
 
 start-public: ## Start all services using public images
+	@echo "Pulling latest images..."
+	$(DOCKER_COMPOSE_PUBLIC) pull
 	@echo "Starting services with public images..."
 	$(DOCKER_COMPOSE_PUBLIC) up -d
 
@@ -26,10 +28,14 @@ stop: ## Stop all running services
 	@echo "Stopping all services..."
 	docker-compose down
 
-setup: ## Initialize database with backup data
+setup: ## Initialize database with backup data (maintainers)
 	@echo "Starting setup..."
 	@bash script/start.sh
 	@echo "Setup complete! Run 'make start' to start services."
+
+setup-contrib: ## Initialize database from scratch using migrations and UW API (contributors)
+	@echo "Starting contributor setup..."
+	@bash script/setup-contrib.sh
 
 import-course: ## Run UW course importer job (rebuilds importer service)
 	@echo "Rebuilding and running course import job..."
