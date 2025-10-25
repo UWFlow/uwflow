@@ -1,4 +1,4 @@
-.PHONY: help start start-public stop setup db-restore import-course import-vacuum migrate logs clean
+.PHONY: help start start-public stop setup db-restore import-course import-vacuum migrate test build-test docker-build-test logs clean
 
 # Load environment variables
 include .env
@@ -27,57 +27,19 @@ stop: ## Stop all running services
 	docker-compose down
 
 setup: ## Initialize database with backup data
-	@echo "Setting up database..."
-	@if [ -z "$(POSTGRES_DUMP_PATH)" ]; then \
-		echo "Error: POSTGRES_DUMP_PATH is not set in .env file"; \
-		exit 1; \
-	fi
-	@if [ ! -f "$(POSTGRES_DUMP_PATH)" ]; then \
-		echo "Error: Database dump file not found at $(POSTGRES_DUMP_PATH)"; \
-		exit 1; \
-	fi
-	@echo "Stopping existing containers..."
-	docker-compose down --remove-orphans
-	@echo "Removing old postgres volume..."
-	docker volume rm -f backend_postgres || true
-	@echo "Starting postgres container..."
-	docker-compose run --name postgres_bootstrap -d postgres
-	@echo "Waiting for postgres to be ready..."
-	@while ! docker exec postgres_bootstrap \
-		psql -U $(POSTGRES_USER) $(POSTGRES_DB) -p $(POSTGRES_PORT) -c 'SELECT TRUE' \
-		>/dev/null 2>/dev/null; do \
-		echo "Waiting for bootstrap server..."; \
-		sleep 5; \
-	done
-	@echo "Restoring database from backup..."
-	docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $(POSTGRES_DUMP_PATH)
-	docker exec -i postgres_bootstrap pg_restore -U $(POSTGRES_USER) -d $(POSTGRES_DB) -p $(POSTGRES_PORT) /pg_backup
-	@echo "Cleaning up bootstrap container..."
-	docker stop postgres_bootstrap
-	docker-compose down
-	@echo "Database setup complete! Run 'make start' to start services."
+	@echo "Starting setup..."
+	@bash script/start.sh
+	@echo "Setup complete! Run 'make start' to start services."
 
-db-restore: ## Restore database from backup (without full setup)
-	@echo "Restoring database from backup..."
-	@if [ -z "$(POSTGRES_DUMP_PATH)" ]; then \
-		echo "Error: POSTGRES_DUMP_PATH is not set in .env file"; \
-		exit 1; \
-	fi
-	@if [ ! -f "$(POSTGRES_DUMP_PATH)" ]; then \
-		echo "Error: Database dump file not found at $(POSTGRES_DUMP_PATH)"; \
-		exit 1; \
-	fi
-	docker exec -i postgres sh -c 'cat > /pg_backup' < $(POSTGRES_DUMP_PATH)
-	docker exec -i postgres pg_restore -U $(POSTGRES_USER) -d $(POSTGRES_DB) -p $(POSTGRES_PORT) /pg_backup
-	@echo "Database restore complete!"
-
-import-course: ## Run UW course importer job
-	@echo "Running course import job..."
-	docker exec uw app/uw courses
+import-course: ## Run UW course importer job (rebuilds importer service)
+	@echo "Rebuilding and running course import job..."
+	$(DOCKER_COMPOSE) up -d --build uw
+	docker exec uw /app/uw hourly
 	@echo "Course import complete!"
 
-import-vacuum: ## Run UW importer vacuum job
-	@echo "Running vacuum job..."
+import-vacuum: ## Run UW importer vacuum job (rebuilds importer service)
+	@echo "Rebuilding and running vacuum job..."
+	$(DOCKER_COMPOSE) up -d --build uw
 	docker exec uw /app/uw vacuum
 	@echo "Vacuum complete!"
 
@@ -95,6 +57,21 @@ migrate: ## Apply Hasura migrations
 migrate-status: ## Check Hasura migration status
 	@echo "Checking migration status..."
 	cd hasura && hasura migrate status --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
+
+test: ## Run Go tests
+	@echo "Running Go tests..."
+	cd flow && go test ./...
+	@echo "Tests complete!"
+
+build-test: ## Test Go build compilation
+	@echo "Testing Go build..."
+	cd flow && go build ./...
+	@echo "Build test complete!"
+
+docker-build-test: ## Dry run Docker Compose build
+	@echo "Testing Docker build (dry run)..."
+	$(DOCKER_COMPOSE) build --dry-run
+	@echo "Docker build test complete!"
 
 logs: ## Tail logs from all services
 	docker-compose logs -f
