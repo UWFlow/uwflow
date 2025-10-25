@@ -38,7 +38,7 @@ The following packages are required for core functionality:
 
 The following packages are required by optional components:
 
-- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface. For outside contributors, this is mandatory for setting up your local DB for the first time. 
+- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface. 
 
 Exact package names may vary across distributions;
 for example, Ubuntu refers to `docker` as `docker.io`.

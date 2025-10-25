@@ -70,23 +70,27 @@ done
 
 echo "Postgres is ready!"
 
-# Apply Hasura migrations to create schema
-echo "Applying Hasura migrations to create database schema..."
+# Start Hasura to apply migrations and create schema
+echo "Starting Hasura to apply migrations..."
 $PREFIX docker-compose up -d hasura
-sleep 10
-# Apply migrations using local hasura CLI
-cd hasura
-hasura metadata apply --admin-secret $HASURA_GRAPHQL_ADMIN_SECRET 
-hasura migrate apply --admin-secret $HASURA_GRAPHQL_ADMIN_SECRET 
-cd ..
 
+# Wait for Hasura to be ready
+while ! curl -s -o /dev/null -w "%{http_code}" http://localhost:$HASURA_PORT/healthz | grep -q "200"
+do
+  echo "Waiting for Hasura to be ready..."
+  sleep 5
+done
 
-echo "Database schema created successfully!"
+echo "Hasura is ready! Schema has been created."
 
 # Import course data from UW API
 echo "Importing course data from UW API..."
 echo "This may take several minutes..."
 $PREFIX docker-compose up -d --build uw
+
+# Wait for importer container to be ready
+sleep 5
+
 $PREFIX docker exec uw /app/uw hourly
 
 echo "Running vacuum to populate search indices..."
