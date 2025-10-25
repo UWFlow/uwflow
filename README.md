@@ -105,3 +105,5 @@ $ docker exec -it postgres sh
 (docker) # psql -U postgres flow 
 ```
 
+There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
+
