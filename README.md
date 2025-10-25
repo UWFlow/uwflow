@@ -45,53 +45,49 @@ for example, Ubuntu refers to `docker` as `docker.io`.
 The above list is intended as an unambiguous guideline for humans
 and is not necessarily consistent with any single distribution.
 
-## First-time setup
-
-To find out what is really expected, peruse `script/sanity-check.sh`
-and apply common sense, as the following docs may be outdated.
+## First-time setup (Maintainers)
+We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
 
 1. Ensure the required packages are installed (see above).
-2. Download and decrypt the database dump:
-  - Download the file located in Google Drive at `Flow/Data/pg_backup.gpg`.
-  - Run `gpg2 --decrypt pg_backup.gpg > pg_backup`.
-    Use the password from the shared Bitwarden vault.
+2. Obtain a postgres dump: We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
 3. Copy `.env.sample` to `.env` and edit the latter as needed. In particular:
   - `POSTGRES_DUMP_PATH` should point to `pg_backup` obtained at the end of (2)
   - `UW_API_KEY_V3` should be set as instructed in the
     [uwapi-importer README](uwapi-importer/README.md)
   - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems
     and `0.0.0.0` on Windows (which is incidentally otherwise unsupported)
-
-## How to run this
-
-If you have not run the backend before, refer to the preceding section first.
-That being done, **simply run `script/start.sh`**.
-
-As dependencies between containers exist that cannot be explicitly specified,
-the system will take a while to reach a stable (all services up) state.
-The script will wait as this happens, but it should not take more than a minute.
-If it does, then something went wrong. Ping `#backend-dev`.
-
-It is instructive to study the script, as it often does not need to be re-run
-in its entirety. For example, when developing `api`, it is
-not necessary clear database state, so the following command suffices:
-```sh
-docker-compose up -d --build
-```
+4. Run `make setup`, this will get your postgres volume ready. 
 
 ## Development
 
-For development, run `docker-compose.dev.yml` to build the `api`, `importer` and `email` images locally. 
+Make sure you have finished the above section first. 
+
+You can now start backend services locally, if you are working on the frontend, and just need the backend running but not making changes, you can choose to run it with images from Docker Hub: 
 
 ```sh
-docker-compose -f docker-compose.dev.yml up --build --detach
-```
+make start-public
+``` 
 
-After making local changes to the `api` image for instance, rebuild by running:
+If you are working with backend, run:
 
 ```sh
-docker-compose -f docker-compose.dev.yml up --build api --detach
+make start
+``` 
+
+Note `api` and `email` supports live reloading, supported by `Air`. `importer` does not support this, since it is a cron job. If you are working on it, after making your changes, run (depending on what you are working on): 
+
+```sh
+make import-course
+``` 
+
+or 
+
+```sh
+make import-vacuum
 ```
+This will rebuild your importer using your local code, and then run the import jobs
+
+Hasura supports live reloading as well, due to its configuration.
 
 ## Interacting with the backend
 
@@ -109,11 +105,3 @@ $ docker exec -it postgres sh
 (docker) # psql -U postgres flow 
 ```
 
-## Testing your changes 
-There is a `docker-compose.dev.yml` file to build and start all backend services using local repo (`docker-compose.yml` uses public images). 
-
-Run this command to apply your changes: 
-
-```
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
