@@ -26,7 +26,7 @@ start-public: ## Start all services using public images
 
 stop: ## Stop all running services
 	@echo "Stopping all services..."
-	docker-compose down
+	@docker-compose down
 
 setup: ## Initialize database with backup data (maintainers)
 	@echo "Starting setup..."
@@ -40,13 +40,13 @@ setup-contrib: ## Initialize database from scratch using migrations and UW API (
 import-course: ## Run UW course importer job (rebuilds importer service)
 	@echo "Rebuilding and running course import job..."
 	$(DOCKER_COMPOSE) up -d --build uw
-	docker exec uw /app/uw hourly
+	@docker exec uw /app/uw hourly
 	@echo "Course import complete!"
 
 import-vacuum: ## Run UW importer vacuum job (rebuilds importer service)
 	@echo "Rebuilding and running vacuum job..."
 	$(DOCKER_COMPOSE) up -d --build uw
-	docker exec uw /app/uw vacuum
+	@docker exec uw /app/uw vacuum
 	@echo "Vacuum complete!"
 
 migrate: ## Apply Hasura migrations
@@ -56,22 +56,21 @@ migrate: ## Apply Hasura migrations
 		echo "Visit: https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/"; \
 		exit 1; \
 	fi
-	cd hasura && hasura migrate apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
-	cd hasura && hasura metadata apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
-	@echo "Migrations applied!"
+	@cd hasura && hasura migrate apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
+	@cd hasura && hasura metadata apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
 
 migrate-status: ## Check Hasura migration status
 	@echo "Checking migration status..."
-	cd hasura && hasura migrate status --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
+	@cd hasura && hasura migrate status --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) 
 
 test: ## Run Go tests
 	@echo "Running Go tests..."
-	cd flow && go test ./...
+	@cd flow && go test ./...
 	@echo "Tests complete!"
 
 build-test: ## Test Go build compilation
 	@echo "Testing Go build..."
-	cd flow && go build ./...
+	@cd flow && go build ./...
 	@echo "Build test complete!"
 
 docker-build-test: ## Dry run Docker Compose build
@@ -80,24 +79,24 @@ docker-build-test: ## Dry run Docker Compose build
 	@echo "Docker build test complete!"
 
 logs: ## Tail logs from all services
-	docker-compose logs -f
+	@docker-compose logs -f
 
 logs-api: ## Tail logs from API service
-	docker logs -f api
+	@docker logs -f api
 
 logs-hasura: ## Tail logs from Hasura service
-	docker logs -f hasura
+	@docker logs -f hasura
 
 logs-uw: ## Tail logs from UW importer service
-	docker logs -f uw
+	@docker logs -f uw
 
 logs-email: ## Tail logs from email service
-	docker logs -f email
+	@docker logs -f email
 
 clean: ## Remove all containers, volumes, and reset environment
 	@echo "Cleaning up..."
-	docker-compose down --remove-orphans --volumes
+	@docker-compose down --remove-orphans --volumes
 	@echo "Clean complete!"
 
 ps: ## Show status of all services
-	docker-compose ps
+	@docker-compose ps
