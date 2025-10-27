@@ -7,6 +7,7 @@ select_permissions:
       columns:
         - prof_ids
         - terms
+        - terms_with_seats
         - course_id
         - ratings
         - easy
@@ -15,6 +16,7 @@ select_permissions:
         - code
         - name
         - has_prereqs
+        - terms_with_online_sections
       filter: {}
       allow_aggregations: true
   - role: user
@@ -22,6 +24,7 @@ select_permissions:
       columns:
         - prof_ids
         - terms
+        - terms_with_seats
         - course_id
         - ratings
         - easy
@@ -30,5 +33,6 @@ select_permissions:
         - code
         - name
         - has_prereqs
+        - terms_with_online_sections 
       filter: {}
       allow_aggregations: true

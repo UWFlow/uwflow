@@ -1,6 +1,6 @@
 ######## BUILD STAGE ########
 # Release image is alpine, so use alpine in builder also for ABI compatibility
-FROM golang:1.24-alpine as builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 
@@ -22,11 +22,33 @@ RUN cd api && go build
 RUN cd importer/uw && go build
 RUN cd email && go build
 
+######## DEV STAGE (for live reload with Air) ########
+FROM golang:1.25-alpine AS dev
+
+WORKDIR /build
+
+# Install build dependencies and Air
+RUN apk add --no-cache git g++ poppler-dev && \
+    go install github.com/air-verse/air@latest
+
+# Copy go.mod and go.sum for dependency caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy Air config
+COPY .air.toml ./
+
+# Source code will be mounted as volume in docker-compose.dev.yml
+# Air will watch for changes and rebuild automatically
+
+CMD ["air"]
+
 ######## RELEASE STAGE: API ########
 FROM alpine:latest AS api
 
 # parsing and webcal pull in these runtime dependencies
-RUN apk add --no-cache poppler
+RUN apk add --no-cache poppler && \
+    ln -s /usr/lib/libpoppler-cpp.so.2 /usr/lib/libpoppler-cpp.so.0
 
 COPY --from=builder /build/api/api /app/api
 

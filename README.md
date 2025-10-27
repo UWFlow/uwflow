@@ -47,7 +47,7 @@ and is not necessarily consistent with any single distribution.
 
 ## First-time setup
 
-To find out what is really expected, peruse `scripts/sanity-check.sh`
+To find out what is really expected, peruse `script/sanity-check.sh`
 and apply common sense, as the following docs may be outdated.
 
 1. Ensure the required packages are installed (see above).
@@ -79,6 +79,20 @@ not necessary clear database state, so the following command suffices:
 docker-compose up -d --build
 ```
 
+## Development
+
+For development, run `docker-compose.dev.yml` to build the `api`, `importer` and `email` images locally. 
+
+```sh
+docker-compose -f docker-compose.dev.yml up --build --detach
+```
+
+After making local changes to the `api` image for instance, rebuild by running:
+
+```sh
+docker-compose -f docker-compose.dev.yml up --build api --detach
+```
+
 ## Interacting with the backend
 
 When `docker-compose` is active, services may be accessed
@@ -92,5 +106,14 @@ will spawn a Postgres shell connected to the database container.
 If you do not happen to have `postgres-client` installed, this also works:
 ```sh
 $ docker exec -it postgres sh
-(docker) # psql -U postgres flow
+(docker) # psql -U postgres flow 
+```
+
+## Testing your changes 
+There is a `docker-compose.dev.yml` file to build and start all backend services using local repo (`docker-compose.yml` uses public images). 
+
+Run this command to apply your changes: 
+
+```
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
