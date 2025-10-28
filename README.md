@@ -48,7 +48,6 @@ and is not necessarily consistent with any single distribution.
 ## First-time setup 
 
 ### Maintainers
-We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
 
 1. Ensure the required packages are installed (see above).
 2. Obtain a postgres dump: We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
@@ -61,7 +60,7 @@ We have a pipeline to setup with a postgres dump file, this is great for testing
 4. Run `make setup`, this will get your postgres volume ready. Whenever you want to update your local DB, setup your postgres dump file and rerun `make setup`
 
 ### Contributors 
-Simply run:
+Step 1 and 3 as above, then run:
 ```sh
 make setup-contrib
 ```
