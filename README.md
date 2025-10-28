@@ -65,9 +65,9 @@ Simply run:
 ```sh
 make setup-contrib
 ```
-It will create a postgres container for you, with desired schema and course data. It won't contain user data or review data as in prod.
+It will create a postgres container for you, with desired schema and imports course data. It won't contain user data or review data as in prod.
 
-Also, it does not contain any prof data unfortunately since UW API is not providing this anymore :(
+For professor data, as UW API is no longer providing this, the setup involves adding some dummy professors for your development purpose. If you want the prof data as in prod, you can manually call our prod's `graphql` endpoint to retrieve them.
 
 We are looking into adding a new script to address this. 
 ## Development

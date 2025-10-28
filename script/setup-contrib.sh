@@ -96,8 +96,11 @@ $PREFIX docker exec uw /app/uw hourly
 echo "Running vacuum to populate search indices..."
 $PREFIX docker exec uw /app/uw vacuum
 
+# Import professor data from production
+echo "Adding some prof data for development purpose."
+"$DIR/import-profs.sh"
+
 echo "============================================"
 echo "Setup complete!"
-echo "Your database is now populated with course data from UW API."
 echo "Run 'make start' to start all backend services."
 echo "============================================"

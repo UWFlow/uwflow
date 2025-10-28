@@ -1,4 +1,4 @@
-.PHONY: help start start-public stop setup setup-contrib db-restore import-course import-vacuum migrate test build-test docker-build-test logs clean
+.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum migrate test build-test docker-build-test logs clean
 
 # Load environment variables
 include .env
@@ -16,13 +16,13 @@ help: ## Show this help message
 
 start: ## Start all backend services in development mode (without frontend)
 	@echo "Starting backend services in development mode..."
-	$(DOCKER_COMPOSE) up -d api postgres hasura uw email
+	@$(DOCKER_COMPOSE) up -d api postgres hasura uw email
 
 start-public: ## Start all services using public images
 	@echo "Pulling latest images..."
-	$(DOCKER_COMPOSE_PUBLIC) pull
+	@$(DOCKER_COMPOSE_PUBLIC) pull
 	@echo "Starting services with public images..."
-	$(DOCKER_COMPOSE_PUBLIC) up -d
+	@$(DOCKER_COMPOSE_PUBLIC) up -d
 
 stop: ## Stop all running services
 	@echo "Stopping all services..."
@@ -37,15 +37,19 @@ setup-contrib: ## Initialize database from scratch using migrations and UW API (
 	@echo "Starting contributor setup..."
 	@bash script/setup-contrib.sh
 
+import-profs: ## Import some dummy prof data
+	@echo "Importing professor data from production..."
+	@bash script/import-profs.sh
+
 import-course: ## Run UW course importer job (rebuilds importer service)
 	@echo "Rebuilding and running course import job..."
-	$(DOCKER_COMPOSE) up -d --build uw
+	@$(DOCKER_COMPOSE) up -d --build uw
 	@docker exec uw /app/uw hourly
 	@echo "Course import complete!"
 
 import-vacuum: ## Run UW importer vacuum job (rebuilds importer service)
 	@echo "Rebuilding and running vacuum job..."
-	$(DOCKER_COMPOSE) up -d --build uw
+	@$(DOCKER_COMPOSE) up -d --build uw
 	@docker exec uw /app/uw vacuum
 	@echo "Vacuum complete!"
 
