@@ -60,7 +60,7 @@ and is not necessarily consistent with any single distribution.
 4. Run `make setup`, this will get your postgres volume ready. Whenever you want to update your local DB, setup your postgres dump file and rerun `make setup`
 
 ### Contributors 
-Step 1 and 3 as above, then run:
+Step 1 and 3 as above, except no need for postgres dump, then run:
 ```sh
 make setup-contrib
 ```
