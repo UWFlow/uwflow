@@ -31,7 +31,7 @@ done
 $PREFIX docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $POSTGRES_DUMP_PATH
 $PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB -p $POSTGRES_PORT /pg_backup
 $PREFIX docker stop postgres_bootstrap
+$PREFIX docker rm postgres_bootstrap
 $PREFIX docker-compose down
 
-# Launch all containers
-$PREFIX docker-compose up -d
+
