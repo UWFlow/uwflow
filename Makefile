@@ -60,7 +60,7 @@ migrate: ## Apply Hasura migrations
 		echo "Visit: https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/"; \
 		exit 1; \
 	fi
-	@cd hasura && hasura migrate apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) --endpoint http://localhost:$(HASURA_PORT)
+	@cd hasura && hasura migrate apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
 	@cd hasura && hasura metadata apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
 
 migrate-status: ## Check Hasura migration status
@@ -68,13 +68,13 @@ migrate-status: ## Check Hasura migration status
 	@cd hasura && hasura migrate status --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET) 
 
 test: ## Run Go tests
-	@echo "Running Go tests..."
-	@cd flow && go test ./...
+	@echo "Running Go tests in container..."
+	@docker exec api go test ./...
 	@echo "Tests complete!"
 
 build-test: ## Test Go build compilation
-	@echo "Testing Go build..."
-	@cd flow && go build ./...
+	@echo "Testing Go build in container..."
+	@docker exec api go build ./...
 	@echo "Build test complete!"
 
 docker-build-test: ## Dry run Docker Compose build
