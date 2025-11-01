@@ -40,9 +40,12 @@ jobs:
       image: ubuntu-2204:2025.09.1
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - SHA256:ZOqAAuJGdjwsIoXyn6D5iW91Cz1fYkjCYwankk4zawA
       - run:
           name: copy Hasura files to staging
-          command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/hasura
+          command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/
 
 workflows:
   version: 2
