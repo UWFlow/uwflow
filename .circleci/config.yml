@@ -35,6 +35,15 @@ jobs:
             do
               docker push $image:latest
             done
+  deploy:
+    machine:
+      image: ubuntu-2204:2023.07.2
+    steps:
+      - checkout
+      - run:
+          name: copy Hasura files to staging
+          command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/hasura
+
 workflows:
   version: 2
   normal:
@@ -46,3 +55,4 @@ workflows:
           filters:
             branches:
               only: main
+      - deploy
