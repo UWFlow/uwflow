@@ -45,7 +45,7 @@ jobs:
           command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/
       - run:
           name: Deploy (Staging)
-          command: ssh $STAGING_USER@$STAGING_HOST " ./scripts/deploy.sh"
+          command: ssh $STAGING_USER@$STAGING_HOST " ./script/deploy.sh"
 workflows:
   version: 2
   normal:
