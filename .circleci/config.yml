@@ -41,9 +41,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: copy Hasura files to staging
+          name: Copy Hasura Files (Staging)
           command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/
-
+      - run:
+          name: Deploy (Staging)
+          command: ssh $STAGING_USER@$STAGING_HOST " ./scripts/deploy.sh"
 workflows:
   version: 2
   normal:
@@ -58,3 +60,4 @@ workflows:
       - deploy:
           requires:
             - build
+            - publish
