@@ -15,12 +15,12 @@ fi
 
 echo "Using: $DOCKER_COMPOSE"
 
-echo "Pulling latest images for api, email, and uw..."
-$DOCKER_COMPOSE pull api email uw
+echo "Pulling latest images for backend services"
+$DOCKER_COMPOSE pull api email uw hasura postgres
 
-echo "Restarting api, email, and uw containers..."
-$DOCKER_COMPOSE up -d --no-deps api email uw
+echo "Restarting backend containers"
+$DOCKER_COMPOSE up -d api email uw hasura postgres
 
 echo "Deployment complete!"
 echo "Container status:"
-$DOCKER_COMPOSE ps api email uw
+$DOCKER_COMPOSE ps api email uw hasura postgres
