@@ -19,6 +19,7 @@ echo "Pulling latest images for backend services"
 $DOCKER_COMPOSE pull api email uw hasura postgres
 
 echo "Restarting backend containers"
+$DOCKER_COMPOSE down api email uw hasura postgres
 $DOCKER_COMPOSE up -d api email uw hasura postgres
 
 echo "Deployment complete!"
