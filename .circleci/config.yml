@@ -54,13 +54,7 @@ workflows:
       - publish:
           requires:
             - build
-          filters:
-            branches:
-              only: main
       - deploy:
           requires:
             - build
             - publish
-          filters:
-            branches:
-              only: main
