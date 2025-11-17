@@ -98,7 +98,7 @@ $PREFIX docker exec uw /app/uw vacuum
 
 # Import professor data from production
 echo "Adding some prof data for development purpose."
-"$DIR/import-profs.sh"
+"$DIR/import-prof.sh"
 
 echo "============================================"
 echo "Setup complete!"
