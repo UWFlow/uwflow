@@ -5,3 +5,5 @@
 # Air tmp directory (generated during live reload)
 flow/api/tmp
 flow/email/tmp
+# PG Dump
+*.dump
