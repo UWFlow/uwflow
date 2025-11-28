@@ -1,5 +1,6 @@
 services:
   api:
+    image: null
     build:
       context: ./flow
       target: dev
@@ -8,11 +9,13 @@ services:
       - ./flow:/build
 
   uw:
+    image: null
     build:
       context: ./flow
       target: uw
 
   email:
+    image: null
     build:
       context: ./flow
       target: dev
