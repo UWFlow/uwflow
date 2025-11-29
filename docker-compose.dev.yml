@@ -1,5 +1,7 @@
 services:
   api:
+    image: uwflow-local/api:dev
+    pull_policy: never
     build:
       context: ./flow
       target: dev
@@ -8,11 +10,15 @@ services:
       - ./flow:/build
 
   uw:
+    image: uwflow-local/uw:dev
+    pull_policy: never
     build:
       context: ./flow
       target: uw
 
   email:
+    image: uwflow-local/email:dev
+    pull_policy: never
     build:
       context: ./flow
       target: dev
