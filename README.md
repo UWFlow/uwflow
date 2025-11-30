@@ -60,6 +60,8 @@ and is not necessarily consistent with any single distribution.
 4. Run `make setup`, this will get your postgres volume ready. Whenever you want to update your local DB, setup your postgres dump file and rerun `make setup`
 
 ### Contributors 
+
+** NOTE ** We noticed that UW API sometimes close registration, if this happens to you, please download our [public pg dump](https://drive.google.com/file/d/1gwz2RcJ2D77f-i3XLEmftJnqt-Ng8EwX/view) (This contains some course data and fake professors data, and no reviews and user data on production). Then, follow the ``Maintainers`` setup as above, since you are going with the option of a dump file. 
 Step 1 and 3 as above, except no need for postgres dump, then run:
 ```sh
 make setup-contrib
