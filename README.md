@@ -68,7 +68,7 @@ If this is not happening to you, please ignore above, and proceed to below:
 
 ---
 
-Step 1 and 3 as above, except no need for postgres dump, then run:
+Step 1 and 3 as in the `Maintainers` section, except no need for postgres dump, then run:
 ```sh
 make setup-contrib
 ```
