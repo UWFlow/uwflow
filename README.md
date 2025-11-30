@@ -61,18 +61,20 @@ and is not necessarily consistent with any single distribution.
 
 ### Contributors 
 
----
-**NOTE:** We noticed that UW API sometimes closes registration, if this happens to you, please download our [public pg dump](https://drive.google.com/file/d/1gwz2RcJ2D77f-i3XLEmftJnqt-Ng8EwX/view) (This contains some course data and fake professors data, and no reviews and user data on production). Then, follow the ``Maintainers`` setup as above, since you are going with the option of a dump file. 
-
-If this is not happening to you, please ignore above, and proceed to below:
+1. Follow Step 1 and 3 as in the `Maintainers` section, except no need for postgres dump.
 
 ---
+**NOTE:** We noticed that UW API sometimes closes registration, if this happens to you, please download our [public pg dump](https://drive.google.com/file/d/1gwz2RcJ2D77f-i3XLEmftJnqt-Ng8EwX/view) (This contains some course data and fake professors data, and no reviews and user data on production). Then, you can ignore this section and follow the ``Maintainers`` setup as above, since you are going with the option of a dump file. 
 
-Step 1 and 3 as in the `Maintainers` section, except no need for postgres dump, then run:
+If this is not happening to you, please ignore the above note, and proceed to below:
+
+---
+2. Run this:
+
 ```sh
 make setup-contrib
 ```
-It will create a postgres container for you, with desired schema and imports course data. It won't contain user data or review data as in prod.
+It will create a postgres container for you, with desired schema and imports course data (it will take some time). It won't contain user data or review data as in prod.
 
 For professor data, as UW API is no longer providing this, the setup involves adding some dummy professors for your development purpose. If you want the prof data as in prod, you can manually call our prod's `graphql` endpoint to retrieve them.
 
