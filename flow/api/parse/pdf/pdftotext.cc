@@ -1,13 +1,11 @@
 #include <cstring>
 #include <string>
-#include <vector>
 
 #include "poppler/cpp/poppler-document.h"
 #include "poppler/cpp/poppler-page.h"
 
 using String = std::string;
-template <typename T>
-using Vector = std::vector<T>;
+using ByteArray = poppler::byte_array;
 using Document = poppler::document;
 
 extern "C" {
@@ -31,7 +29,7 @@ extern "C" {
 
         String result;
         for (int i = 0; i < pageCount; ++i) {
-            Vector<char> pageText = doc->create_page(i)->text().to_utf8();
+            ByteArray pageText = doc->create_page(i)->text().to_utf8();
             result.append(pageText.begin(), pageText.end());
         }
 
