@@ -37,7 +37,7 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 			}
 
 			for _, class := range <-sema {
-				class.CourseCode = strings.ToLower(course.Subject + course.Number)
+				class.CourseCode = canonicalCourseCode(course.Subject, course.Number)
 				classes = append(classes, class)
 			}
 
@@ -88,7 +88,8 @@ func fetchCourses(client *api.Client, termIds []int) ([]apiCourse, error) {
 			return nil, fmt.Errorf("failed to fetch term %d: %w", termId, err)
 		}
 		for _, course := range termCourses {
-			courseCode := course.Subject + course.Number
+			course.Subject = canonicalSubject(course.Subject)
+			courseCode := canonicalCourseCode(course.Subject, course.Number)
 			if err != nil {
 				log.Warnf("skipping course with missing data")
 				continue
