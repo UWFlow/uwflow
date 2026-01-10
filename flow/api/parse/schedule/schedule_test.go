@@ -18,11 +18,12 @@ func TestParseSchedule(t *testing.T) {
 			"normal",
 			&Summary{
 				TermId: 1199,
-				ClassNumbers: []int{
-					4896, 4897, 4899, 4741, 4742, 5003, 4747, 4748, 7993, 7994, 7995, 4751, 4752,
-				},
-				Classrooms: []string{
-					"MC 2038", "MC 4064", "DWE 2527", "E3 2119", "CPH 3681", "CPH 3681", "CPH 3681", "CPH 3681", "CPH 3681", "MC 2034", "CPH 3681", "CPH 1346", "CPH 3681", "CPH 3681",
+				Classes: []Class{
+					{4896, "MC 2038"}, {4897, "MC 4064, DWE 2527"}, {4899, "E3 2119"},
+					{4741, "CPH 3681"}, {4742, "CPH 3681"}, {5003, "CPH 3681"},
+					{4747, "CPH 3681"}, {4748, "CPH 3681"}, {7993, "MC 2034"},
+					{7994, "CPH 3681"}, {7995, "CPH 1346"}, {4751, "CPH 3681"},
+					{4752, "CPH 3681"},
 				},
 			},
 		},
@@ -31,11 +32,10 @@ func TestParseSchedule(t *testing.T) {
 			"noparen",
 			&Summary{
 				TermId: 1199,
-				ClassNumbers: []int{
-					5211, 8052, 9289, 6394, 5867, 6321, 6205, 7253, 7254,
-				},
-				Classrooms: []string{
-					"E7 2317", "RCH 101", "MC 2034", "TBA", "MC 2017", "TBA", "AL 124", "DC 1351", "DC 1351",
+				Classes: []Class{
+					{5211, "E7 2317"}, {8052, "RCH 101"}, {9289, "MC 2034"},
+					{6394, "TBA"}, {5867, "MC 2017"}, {6321, "TBA"},
+					{6205, "AL 124"}, {7253, "DC 1351"}, {7254, "DC 1351"},
 				},
 			},
 		},
@@ -44,11 +44,11 @@ func TestParseSchedule(t *testing.T) {
 			"old",
 			&Summary{
 				TermId: 1135,
-				ClassNumbers: []int{
-					3370, 3077, 3078, 3166, 2446, 4106, 4107, 4108, 4111, 4117, 4118, 4110,
-				},
-				Classrooms: []string{
-					"MC   4040", "QNC 1502", "QNC 1502", "TBA", "STP 105", "RCH   307", "MC   2038", "MC   2038", "TBA", "TBA", "MC   2038", "TBA", "TBA", "TBA",
+				Classes: []Class{
+					{3370, "MC   4040"}, {3077, "QNC 1502"}, {3078, "QNC 1502"},
+					{3166, "TBA"}, {2446, "STP 105"}, {4106, "RCH   307"},
+					{4107, "MC   2038"}, {4108, "MC   2038"}, {4111, "TBA"},
+					{4117, "MC   2038"}, {4118, "TBA"}, {4110, "TBA"},
 				},
 			},
 		},
@@ -57,11 +57,12 @@ func TestParseSchedule(t *testing.T) {
 			"whitespace",
 			&Summary{
 				TermId: 1199,
-				ClassNumbers: []int{
-					4669, 4658, 4660, 4699, 4655, 4656, 4661, 4662, 4850, 4664, 4666, 4936, 4639, 4668, 7634,
-				},
-				Classrooms: []string{
-					"E5 3102", "E5 3102", "E5 3101", "E5 3101", "E5 3101", "E5 3101", "DWE 3518", "CPH 1346", "E5 3102", "E5 3101", "E5 3101", "MC 4063", "E5 3101", "E5 3102", "E5 3101", "E5 3101", "E3 3164", "E5 3101", "E5 3102", "MC 4060", "E2 2363", "E2 2363", "E2 2363", "E2 2363", "E2 2363", "E5 3101", "E5 3101", "E5 3101", "EV3 4412", "TBA",
+				Classes: []Class{
+					{4669, "E5 3102, E5 3101"}, {4658, "E5 3101"}, {4660, "DWE 3518"},
+					{4699, "CPH 1346"}, {4655, "E5 3102, E5 3101"}, {4656, "MC 4063"},
+					{4661, "E5 3101, E5 3102"}, {4662, "E5 3101"}, {4850, "E3 3164"},
+					{4664, "E5 3101, E5 3102"}, {4666, "MC 4060"}, {4936, "E2 2363"},
+					{4639, "E5 3101"}, {4668, "EV3 4412"}, {7634, "TBA"},
 				},
 			},
 		},
@@ -70,11 +71,10 @@ func TestParseSchedule(t *testing.T) {
 			"long-classnumber",
 			&Summary{
 				TermId: 1219,
-				ClassNumbers: []int{
-					4262, 11810, 9336, 6336, 6367, 10692, 10310, 8204, 10376,
-				},
-				Classrooms: []string{
-					"ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online",
+				Classes: []Class{
+					{4262, "ONLN - Online"}, {11810, "ONLN - Online"}, {9336, "ONLN - Online"},
+					{6336, "ONLN - Online"}, {6367, "ONLN - Online"}, {10692, "ONLN - Online"},
+					{10310, "ONLN - Online"}, {8204, "ONLN - Online"}, {10376, "ONLN - Online"},
 				},
 			},
 		},

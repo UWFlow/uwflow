@@ -1,0 +1,1 @@
+ALTER TABLE user_schedule ADD COLUMN location TEXT;

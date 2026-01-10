@@ -4,18 +4,21 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"flow/common/util"
 )
 
+type Class struct {
+	Number   int
+	Location string
+}
+
 type Summary struct {
 	// Term ids are numbers of the form 1189 (Fall 2018)
 	TermId int
-	// Class numbers are four digits (e.g. 4895)
-	// and uniquely identify a section of a course within a term.
-	ClassNumbers []int
-	// Classrooms identify the location of the class (e.g. DWE 3422, ONLN - Online)
-	Classrooms []string
+	// Classes contains the parsed sections and their locations
+	Classes []Class
 }
 
 var (
@@ -33,6 +36,11 @@ var (
 	classroomRegexp = regexp.MustCompile(`(?m)^([A-Z0-9]*[A-Z][A-Z0-9]*\s+\d+|TBA|ONLN - Online)$`)
 )
 
+type match struct {
+	pos int
+	val string
+}
+
 func extractTerm(text string) (int, error) {
 	submatches := termRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
@@ -48,29 +56,28 @@ func extractTerm(text string) (int, error) {
 	}
 }
 
-func extractClassNumbers(text string) ([]int, error) {
-	var err error
-	// -1 corresponds to no limit on the number of matches
+func extractClassNumbers(text string) ([]match, error) {
 	submatches := classNumberRegexp.FindAllStringSubmatchIndex(text, -1)
-	classNumbers := make([]int, len(submatches))
+	matches := make([]match, len(submatches))
 	for i, submatch := range submatches {
-		matchText := text[submatch[2]:submatch[3]]
-		classNumbers[i], err = strconv.Atoi(matchText)
-		if err != nil {
-			return nil, fmt.Errorf("%s is not a class number: %w", matchText, err)
+		matches[i] = match{
+			pos: submatch[0],
+			val: text[submatch[2]:submatch[3]],
 		}
 	}
-	return classNumbers, nil
+	return matches, nil
 }
 
-func extractClassrooms(text string) ([]string, error) {
+func extractClassrooms(text string) ([]match, error) {
 	submatches := classroomRegexp.FindAllStringSubmatchIndex(text, -1)
-	classrooms := make([]string, len(submatches))
+	matches := make([]match, len(submatches))
 	for i, submatch := range submatches {
-		matchText := text[submatch[2]:submatch[3]]
-		classrooms[i] = matchText
+		matches[i] = match{
+			pos: submatch[0],
+			val: text[submatch[2]:submatch[3]],
+		}
 	}
-	return classrooms, nil
+	return matches, nil
 }
 
 func Parse(text string) (*Summary, error) {
@@ -86,10 +93,57 @@ func Parse(text string) (*Summary, error) {
 	if err != nil {
 		return nil, fmt.Errorf("extracting classrooms: %w", err)
 	}
-	summary := &Summary{
-		TermId:       term,
-		ClassNumbers: classNumbers,
-		Classrooms:   classrooms,
+
+	var classes []Class
+	roomIdx := 0
+
+	for i, cnMatch := range classNumbers {
+		cn, err := strconv.Atoi(cnMatch.val)
+		if err != nil {
+			return nil, fmt.Errorf("%s is not a class number: %w", cnMatch.val, err)
+		}
+
+		// Determine the end position for this class's context.
+		// It ends where the NEXT class number begins.
+		// If this is the last class, the context goes to the end of the text.
+		nextPos := len(text)
+		if i+1 < len(classNumbers) {
+			nextPos = classNumbers[i+1].pos
+		}
+
+		// Collect all classrooms that fall within (cnMatch.pos, nextPos)
+		var locs []string
+		for roomIdx < len(classrooms) {
+			room := classrooms[roomIdx]
+			if room.pos > nextPos {
+				// This room belongs to a future class
+				break
+			}
+			if room.pos > cnMatch.pos {
+				// Only add if it appears *after* the current class number start
+				locs = append(locs, room.val)
+			}
+			roomIdx++
+		}
+
+		// Dedup locations
+		seen := make(map[string]bool)
+		var uniqueLocs []string
+		for _, l := range locs {
+			if !seen[l] {
+				seen[l] = true
+				uniqueLocs = append(uniqueLocs, l)
+			}
+		}
+
+		classes = append(classes, Class{
+			Number:   cn,
+			Location: strings.Join(uniqueLocs, ", "),
+		})
 	}
-	return summary, nil
+
+	return &Summary{
+		TermId:  term,
+		Classes: classes,
+	}, nil
 }
