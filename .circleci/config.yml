@@ -35,17 +35,6 @@ jobs:
             do
               docker push $image:latest
             done
-  deploy:
-    machine:
-      image: ubuntu-2204:2025.09.1
-    steps:
-      - checkout
-      - run:
-          name: Copy Hasura Files (Staging)
-          command: rsync -avz ./hasura $STAGING_USER@$STAGING_HOST:~/uwflow/
-      - run:
-          name: Deploy (Staging)
-          command: ssh $STAGING_USER@$STAGING_HOST "bash ~/uwflow/script/deploy.sh"
 workflows:
   version: 2
   normal:
@@ -54,13 +43,6 @@ workflows:
       - publish:
           requires:
             - build
-          filters:
-            branches:
-              only: main
-      - deploy:
-          requires:
-            - build
-            - publish
           filters:
             branches:
               only: main
