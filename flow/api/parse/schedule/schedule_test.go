@@ -21,6 +21,9 @@ func TestParseSchedule(t *testing.T) {
 				ClassNumbers: []int{
 					4896, 4897, 4899, 4741, 4742, 5003, 4747, 4748, 7993, 7994, 7995, 4751, 4752,
 				},
+				Classrooms: []string{
+					"MC 2038", "MC 4064", "DWE 2527", "E3 2119", "CPH 3681", "CPH 3681", "CPH 3681", "CPH 3681", "CPH 3681", "MC 2034", "CPH 3681", "CPH 1346", "CPH 3681", "CPH 3681",
+				},
 			},
 		},
 		// This schedule does not have parentheses around class numbers.
@@ -30,6 +33,9 @@ func TestParseSchedule(t *testing.T) {
 				TermId: 1199,
 				ClassNumbers: []int{
 					5211, 8052, 9289, 6394, 5867, 6321, 6205, 7253, 7254,
+				},
+				Classrooms: []string{
+					"E7 2317", "RCH 101", "MC 2034", "TBA", "MC 2017", "TBA", "AL 124", "DC 1351", "DC 1351",
 				},
 			},
 		},
@@ -41,6 +47,9 @@ func TestParseSchedule(t *testing.T) {
 				ClassNumbers: []int{
 					3370, 3077, 3078, 3166, 2446, 4106, 4107, 4108, 4111, 4117, 4118, 4110,
 				},
+				Classrooms: []string{
+					"MC   4040", "QNC 1502", "QNC 1502", "TBA", "STP 105", "RCH   307", "MC   2038", "MC   2038", "TBA", "TBA", "MC   2038", "TBA", "TBA", "TBA",
+				},
 			},
 		},
 		// This schedule has an abnormal amount of whitespace
@@ -51,6 +60,9 @@ func TestParseSchedule(t *testing.T) {
 				ClassNumbers: []int{
 					4669, 4658, 4660, 4699, 4655, 4656, 4661, 4662, 4850, 4664, 4666, 4936, 4639, 4668, 7634,
 				},
+				Classrooms: []string{
+					"E5 3102", "E5 3102", "E5 3101", "E5 3101", "E5 3101", "E5 3101", "DWE 3518", "CPH 1346", "E5 3102", "E5 3101", "E5 3101", "MC 4063", "E5 3101", "E5 3102", "E5 3101", "E5 3101", "E3 3164", "E5 3101", "E5 3102", "MC 4060", "E2 2363", "E2 2363", "E2 2363", "E2 2363", "E2 2363", "E5 3101", "E5 3101", "E5 3101", "EV3 4412", "TBA",
+				},
 			},
 		},
 		// This schedule has class codes longer than 4 digits
@@ -60,6 +72,9 @@ func TestParseSchedule(t *testing.T) {
 				TermId: 1219,
 				ClassNumbers: []int{
 					4262, 11810, 9336, 6336, 6367, 10692, 10310, 8204, 10376,
+				},
+				Classrooms: []string{
+					"ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online", "ONLN - Online",
 				},
 			},
 		},
