@@ -130,9 +130,11 @@ func Parse(text string) (*Summary, error) {
 		seen := make(map[string]bool)
 		var uniqueLocs []string
 		for _, l := range locs {
-			if !seen[l] {
-				seen[l] = true
-				uniqueLocs = append(uniqueLocs, l)
+			normalizedLoc := strings.TrimSpace(l)
+
+			if !seen[normalizedLoc] {
+				seen[normalizedLoc] = true
+				uniqueLocs = append(uniqueLocs, normalizedLoc)
 			}
 		}
 
