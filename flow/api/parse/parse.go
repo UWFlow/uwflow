@@ -132,8 +132,8 @@ WHERE user_id = $1
 `
 
 const insertScheduleQuery = `
-INSERT INTO user_schedule(user_id, section_id)
-SELECT $1, id FROM course_section
+INSERT INTO user_schedule(user_id, section_id, location)
+SELECT $1, id, $4 FROM course_section
 WHERE class_number = $2 AND term_id = $3
 `
 
@@ -147,7 +147,7 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 	}
 
 	// Refuse to import empty schedule: we probably failed to parse it
-	if len(summary.ClassNumbers) == 0 {
+	if len(summary.Classes) == 0 {
 		return nil, serde.WithStatus(
 			http.StatusBadRequest,
 			serde.WithEnum(serde.EmptySchedule, fmt.Errorf("empty schedule")),
@@ -165,8 +165,8 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 	}
 
 	var failedClasses []int
-	for _, classNumber := range summary.ClassNumbers {
-		tag, err := tx.Exec(insertScheduleQuery, userId, classNumber, summary.TermId)
+	for _, class := range summary.Classes {
+		tag, err := tx.Exec(insertScheduleQuery, userId, class.Number, summary.TermId, class.Location)
 		if err != nil {
 			return nil, fmt.Errorf("writing user_schedule: %w", err)
 		}
@@ -176,17 +176,17 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 		// Most likely UW API did not provide us with all of the available classes,
 		// or we misparsed the class.
 		if tag.RowsAffected() == 0 {
-			failedClasses = append(failedClasses, classNumber)
-			log.Printf("Schedule import failed for class number %d", classNumber)
+			failedClasses = append(failedClasses, class.Number)
+			log.Printf("Schedule import failed for class number %d", class.Number)
 		}
 
-		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, classNumber)
+		_, err = tx.Exec(insertCourseTakenQuery, userId, summary.TermId, class.Number)
 		if err != nil {
 			return nil, fmt.Errorf("writing user_course_taken: %w", err)
 		}
 	}
 
-	return &scheduleResponse{SectionsImported: len(summary.ClassNumbers), FailedClasses: failedClasses}, nil
+	return &scheduleResponse{SectionsImported: len(summary.Classes), FailedClasses: failedClasses}, nil
 }
 
 type scheduleRequest struct {

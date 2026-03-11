@@ -136,7 +136,7 @@ func writeCalendar(w io.Writer, secretId string, events []*webcalEvent) {
 
 const selectEventQuery = `
 SELECT
-  sm.section_id, c.code, cs.section_name, sm.location,
+  sm.section_id, c.code, cs.section_name, COALESCE(NULLIF(us.location, ''), sm.location),
   sm.start_date :: TEXT, sm.end_date :: TEXT,
   sm.start_seconds, sm.end_seconds, sm.days
 FROM
