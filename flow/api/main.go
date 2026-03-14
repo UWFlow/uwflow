@@ -101,6 +101,7 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 }
 
 func main() {
+	env.Init()
 	conn, err := db.ConnectPool(context.Background(), &env.Global)
 	if err != nil {
 		log.Fatalf("Error: %s", err)
