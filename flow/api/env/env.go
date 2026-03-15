@@ -8,7 +8,7 @@ import (
 
 var Global env.Environment
 
-func init() {
+func Init() {
 	if err := env.Get(&Global); err != nil {
 		log.Fatalf("Error: %s", err)
 	}
