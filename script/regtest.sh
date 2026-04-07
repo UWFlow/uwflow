@@ -13,4 +13,4 @@ $PREFIX docker run --rm -i \
   -e GODEBUG=tls13=1 \
   -v "$BACKEND_DIR/regtest":/src:ro \
   --network=host \
-  loadimpact/k6 run --insecure-skip-tls-verify /src/test.js
+  grafana/k6 run --insecure-skip-tls-verify /src/test.js

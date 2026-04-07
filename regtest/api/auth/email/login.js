@@ -27,8 +27,9 @@ export default function(data) {
     group("correct credentials", function() {
       check(login(data.email.email, data.email.password), withLog({
         "status": (r) => r.status == 200,
-        "keys": (r) => keysAre(r.json(), ["token", "user_id"]),
+        "keys": (r) => keysAre(r.json(), ["token", "user_id", "is_new"]),
         "user_id matches registration": (r) => r.json("user_id") == data.email.user_id,
+        "marks existing user": (r) => r.json("is_new") === false,
       }));
     });
   });
