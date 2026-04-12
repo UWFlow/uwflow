@@ -15,22 +15,26 @@ import (
 type ImportFunc func(*state.State, *api.Client) error
 type VacuumFunc func(*state.State) error
 
-func RunImport(state *state.State, client *api.Client, importers ...ImportFunc) {
+func RunImport(state *state.State, client *api.Client, importers ...ImportFunc) error {
 	for _, importer := range importers {
 		err := importer(state, client)
 		if err != nil {
-			log.Printf("API import failed: %v\n", err)
+			return err
 		}
 	}
+
+	return nil
 }
 
-func RunVacuum(state *state.State, vacuums ...VacuumFunc) {
+func RunVacuum(state *state.State, vacuums ...VacuumFunc) error {
 	for _, vacuum := range vacuums {
 		err := vacuum(state)
 		if err != nil {
-			log.Printf("Vacuum failed: %v\n", err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
@@ -51,14 +55,18 @@ func main() {
 
 	switch os.Args[1] {
 	case "courses":
-		RunImport(state, client, course.ImportAll)
+		err = RunImport(state, client, course.ImportAll)
 	case "hourly":
-		RunImport(state, client, HourlyFuncs...)
+		err = RunImport(state, client, HourlyFuncs...)
 	case "terms":
-		RunImport(state, client, term.ImportAll)
+		err = RunImport(state, client, term.ImportAll)
 	case "vacuum":
-		RunVacuum(state, VacuumFuncs...)
+		err = RunVacuum(state, VacuumFuncs...)
 	default:
 		log.Fatalf("Not an action: %s", os.Args[1])
+	}
+
+	if err != nil {
+		log.Fatalf("UW importer failed: %v\n", err)
 	}
 }

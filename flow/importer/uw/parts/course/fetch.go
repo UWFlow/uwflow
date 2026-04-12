@@ -8,11 +8,6 @@ import (
 	"flow/importer/uw/log"
 )
 
-type empty struct{}
-type semaphore chan []apiClass
-
-const rateLimit = 30
-
 func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error) {
 	// Fetch course data
 	courses, err := fetchCourses(client, termIds)
@@ -25,43 +20,26 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 	var numClasses = len(courses) * len(termIds)
 	var numFetched = 0
 
-	sema := make(semaphore, rateLimit)
-	errch := make(chan error, numClasses)
-
 	for _, course := range courses {
 		for _, termId := range termIds {
-			go asyncFetchClass(client, course, termId, sema, errch)
 			numFetched += 1
 			if numFetched%500 == 0 {
 				log.Warnf("fetched %d/%d courses", numFetched, numClasses)
 			}
 
-			for _, class := range <-sema {
-				class.CourseCode = strings.ToLower(course.Subject + course.Number)
-				classes = append(classes, class)
+			fetchedClasses, err := fetchClass(client, &course, termId)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to fetch class schedules for %s %s in term %d: %w", course.Subject, course.Number, termId, err)
 			}
 
-			err = <-errch
-			if err != nil {
-				log.Warnf("failed to fetch section with error %s, proceeding anyway", err)
-				continue
+			for _, class := range fetchedClasses {
+				class.CourseCode = strings.ToLower(course.Subject + course.Number)
+				classes = append(classes, class)
 			}
 		}
 	}
 
 	return courses, classes, nil
-}
-
-func asyncFetchClass(
-	client *api.Client,
-	course apiCourse,
-	termId int,
-	sema semaphore,
-	errch chan error,
-) {
-	classes, err := fetchClass(client, &course, termId)
-	sema <- classes
-	errch <- err
 }
 
 func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
@@ -70,7 +48,7 @@ func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, 
 	err := client.Getv3(endpoint, &classes)
 
 	// Many courses returned for each term may not have class schedules and return a 404
-	if err != nil && strings.Contains(err.Error(), "404") {
+	if api.IsNotFound(err) {
 		return classes, nil
 	}
 
