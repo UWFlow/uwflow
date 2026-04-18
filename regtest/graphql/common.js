@@ -3,6 +3,6 @@ import { GRAPHQL_URL } from "/src/const.js";
 
 export function graphql(mutation, variables, token) {
   const payload = {query: mutation, variables};
-  const headers = {"Authorization": `Bearer ${token}`};
+  const headers = token ? {"Authorization": `Bearer ${token}`} : {};
   return http.post(GRAPHQL_URL, JSON.stringify(payload), {headers});
 }

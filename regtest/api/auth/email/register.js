@@ -15,7 +15,7 @@ export default function(data) {
     group("empty fields", function() {
       [
         ["", "", "", ""], ["first", "", "", ""], ["", "last", "", ""],
-        ["first", "last", "", ""], ["first", "last", "email", ""], 
+        ["first", "last", "", ""], ["first", "last", "email", ""],
         ["", "", "email", ""], ["", "", "", "pass"],
       ].forEach(cred => check(register(...cred), withLog({
         "status": (r) => r.status == 400,
@@ -34,10 +34,11 @@ export default function(data) {
       }));
     });
 
+    const testRun = `${__VU}-${Date.now()}`;
     const testUser = {
       first: `Test`,
       last:  `User ${__VU}`,
-      email: `test+${__VU}@test.test`,
+      email: `test+${testRun}@test.test`,
       password: `password${__VU}`,
     };
     const res = register(testUser.first, testUser.last, testUser.email, testUser.password);
@@ -45,7 +46,8 @@ export default function(data) {
     group("valid registration", function() {
       check(res, withLog({
         "status": (r) => r.status == 200,
-        "fields": (r) => keysAre(r.json(), ["token", "user_id"]),
+        "fields": (r) => keysAre(r.json(), ["token", "user_id", "is_new"]),
+        "marks new user": (r) => r.json("is_new") === true,
       }));
     });
 
