@@ -211,7 +211,8 @@ func convertAll(
 }
 
 func convertCourse(dst *convertResult, apiCourse *apiCourse) error {
-	courseCode := strings.ToLower(apiCourse.Subject + apiCourse.Number)
+	courseCode := canonicalCourseCode(apiCourse.Subject, apiCourse.Number)
+	apiCourse.Subject = canonicalSubject(apiCourse.Subject)
 	newCourse := course{
 		Code: courseCode,
 		Name: apiCourse.Name,
