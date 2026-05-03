@@ -22,12 +22,18 @@ function getAccessToken(number) {
 
 export default function(data) {
   group("facebook login", function() {
+    if (!__ENV.FB_APP_ID || !__ENV.FB_APP_SECRET) {
+      console.log("[*] skipping facebook login: FB_APP_ID and FB_APP_SECRET are not set");
+      return;
+    }
+
     const token = getAccessToken(__VU);
     const first = login(token);
     group("valid token", function() {
       check(first, withLog({
         "status": (r) => r.status == 200,
-        "keys": (r) => keysAre(r.json(), ["token", "user_id"]),
+        "keys": (r) => keysAre(r.json(), ["token", "user_id", "is_new"]),
+        "marks new user": (r) => r.json("is_new") === true,
       }));
     });
     const second = login(token);
@@ -35,6 +41,7 @@ export default function(data) {
       check(second, withLog({
         "status": (r) => r.status == 200,
         "matches first login": (r) => r.json("user_id") == first.json("user_id"),
+        "marks existing user": (r) => r.json("is_new") === false,
       }));
     });
   });

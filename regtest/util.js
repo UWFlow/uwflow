@@ -1,7 +1,7 @@
 import { check, group } from "k6";
 
 export function keysAre(object, keys) {
-  const union = new Set(Object.keys(object), keys);
+  const union = new Set(Object.keys(object).concat(keys));
   return union.size == keys.length;
 }
 

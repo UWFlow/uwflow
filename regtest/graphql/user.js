@@ -1,5 +1,5 @@
 import { check, group } from "k6";
-import { graphql, AFFECTED_ROWS } from "/src/graphql/common.js";
+import { graphql } from "/src/graphql/common.js";
 import { withLog } from "/src/util.js";
 
 const DELETE_MUTATION = `
