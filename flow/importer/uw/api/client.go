@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"flow/common/env"
@@ -15,6 +17,13 @@ const ApiTimeout = time.Second * 10
 
 const (
 	BaseUrlv3 = "https://openapi.data.uwaterloo.ca/v3"
+)
+
+// Retry configuration for 429 responses.
+const (
+	maxRetries     = 5
+	retryBaseDelay = time.Second
+	retryMaxDelay  = 60 * time.Second
 )
 
 type Client struct {
@@ -44,27 +53,79 @@ func (api *Client) do(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
+// retryDelay returns the duration to wait before the next retry attempt.
+// It honours the Retry-After response header when present, otherwise uses
+// exponential backoff (base * 2^attempt) with up to 20% random jitter to
+// spread retries if multiple calls hit the limit simultaneously.
+func retryDelay(res *http.Response, attempt int) time.Duration {
+	if res != nil {
+		if val := res.Header.Get("Retry-After"); val != "" {
+			if secs, err := strconv.Atoi(val); err == nil && secs > 0 {
+				return time.Duration(secs) * time.Second
+			}
+		}
+	}
+	// Exponential backoff: 1s, 2s, 4s, 8s, 16s …
+	delay := retryBaseDelay * (1 << uint(attempt))
+	if delay > retryMaxDelay {
+		delay = retryMaxDelay
+	}
+	jitter := time.Duration(rand.Int63n(int64(delay / 5)))
+	return delay + jitter
+}
+
 // Issue a GET to a given UWAPIv3 endpoint and decode the response into dst
 func (api *Client) Getv3(endpoint string, dst interface{}) error {
 	url := fmt.Sprintf("%s/%s", BaseUrlv3, endpoint)
 	log.Printf("GET [v3] %s", url)
 
-	// We do not need to add .WithTimeout here: client.Timeout is respected
-	req, err := http.NewRequestWithContext(api.ctx, "GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to set up request: %w", err)
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// We do not need to add .WithTimeout here: client.Timeout is respected
+		req, err := http.NewRequestWithContext(api.ctx, "GET", url, nil)
+		if err != nil {
+			return fmt.Errorf("failed to set up request: %w", err)
+		}
+
+		req.Header.Add("X-Api-Key", api.keyv3)
+		res, err := api.do(req)
+
+		// Non-429 errors (including other 4xx/5xx) fail immediately.
+		if err != nil && (res == nil || res.StatusCode != http.StatusTooManyRequests) {
+			if res != nil && res.Body != nil {
+				res.Body.Close()
+			}
+			return fmt.Errorf("http request failed: %w", err)
+		}
+
+		if err == nil {
+			// Success — decode and return.
+			decErr := json.NewDecoder(res.Body).Decode(dst)
+			res.Body.Close()
+			if decErr != nil {
+				return fmt.Errorf("failed to parse JSON: %w", decErr)
+			}
+			return nil
+		}
+
+		// HTTP 429: rate limited.
+		if attempt == maxRetries {
+			return fmt.Errorf("http request failed after %d retries: %w", maxRetries, err)
+		}
+
+		wait := retryDelay(res, attempt)
+		log.Printf("WARNING: rate limited by UW API (429), retrying in %v (attempt %d/%d): %s",
+			wait.Round(time.Millisecond), attempt+1, maxRetries, url)
+
+		if res != nil && res.Body != nil {
+			res.Body.Close()
+		}
+
+		select {
+		case <-api.ctx.Done():
+			return fmt.Errorf("context cancelled while waiting to retry: %w", api.ctx.Err())
+		case <-time.After(wait):
+		}
 	}
 
-	req.Header.Add("X-Api-Key", api.keyv3)
-	res, err := api.do(req)
-	if err != nil {
-		return fmt.Errorf("http request failed: %w", err)
-	}
-	defer res.Body.Close()
-
-	err = json.NewDecoder(res.Body).Decode(dst)
-	if err != nil {
-		return fmt.Errorf("failed to parse JSON: %w", err)
-	}
-	return nil
+	return fmt.Errorf("http request failed: exceeded max retries")
 }
