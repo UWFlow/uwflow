@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -57,7 +56,7 @@ func (api *Client) do(req *http.Request) (*http.Response, error) {
 // It honours the Retry-After response header when present, otherwise uses
 // exponential backoff (base * 2^attempt) with up to 20% random jitter to
 // spread retries if multiple calls hit the limit simultaneously.
-func retryDelay(res *http.Response, attempt int) time.Duration {
+func retryDelay(res *http.Response) time.Duration {
 	if res != nil {
 		if val := res.Header.Get("Retry-After"); val != "" {
 			if secs, err := strconv.Atoi(val); err == nil && secs > 0 {
@@ -65,17 +64,12 @@ func retryDelay(res *http.Response, attempt int) time.Duration {
 			}
 		}
 	}
-	// Exponential backoff: 1s, 2s, 4s, 8s, 16s …
-	delay := retryBaseDelay * (1 << uint(attempt))
-	if delay > retryMaxDelay {
-		delay = retryMaxDelay
-	}
-	jitter := time.Duration(rand.Int63n(int64(delay / 5)))
-	return delay + jitter
+	// Wait long enough for the 60-second rate limit window to reset.
+	return retryMaxDelay + time.Second
 }
 
 // Issue a GET to a given UWAPIv3 endpoint and decode the response into dst
-func (api *Client) Getv3(endpoint string, dst interface{}) error {
+func (api *Client) Getv3(endpoint string, dst any) error {
 	url := fmt.Sprintf("%s/%s", BaseUrlv3, endpoint)
 	log.Printf("GET [v3] %s", url)
 
@@ -112,7 +106,7 @@ func (api *Client) Getv3(endpoint string, dst interface{}) error {
 			return fmt.Errorf("http request failed after %d retries: %w", maxRetries, err)
 		}
 
-		wait := retryDelay(res, attempt)
+		wait := retryDelay(res)
 		log.Printf("WARNING: rate limited by UW API (429), retrying in %v (attempt %d/%d): %s",
 			wait.Round(time.Millisecond), attempt+1, maxRetries, url)
 
