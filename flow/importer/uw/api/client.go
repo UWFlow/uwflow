@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -65,13 +64,8 @@ func retryDelay(res *http.Response, attempt int) time.Duration {
 			}
 		}
 	}
-	// Exponential backoff: 1s, 2s, 4s, 8s, 16s …
-	delay := retryBaseDelay * (1 << uint(attempt))
-	if delay > retryMaxDelay {
-		delay = retryMaxDelay
-	}
-	jitter := time.Duration(rand.Int63n(int64(delay / 5)))
-	return delay + jitter
+	// Wait long enough for the 60-second rate limit window to reset.
+	return retryMaxDelay + time.Second
 }
 
 // Issue a GET to a given UWAPIv3 endpoint and decode the response into dst
