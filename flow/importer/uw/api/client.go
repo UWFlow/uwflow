@@ -12,7 +12,7 @@ import (
 	"flow/common/env"
 )
 
-const ApiTimeout = time.Second * 10
+const ApiTimeout = time.Second * 30
 
 const (
 	BaseUrlv3 = "https://openapi.data.uwaterloo.ca/v3"

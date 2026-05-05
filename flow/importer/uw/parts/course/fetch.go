@@ -30,6 +30,10 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 	numFetched := 0
 
 	for _, course := range courses {
+		// DEBUG: only import PMATH 351 to test end-to-end
+		if course.Subject != "PMATH" || course.Number != "351" {
+			continue
+		}
 		for _, termId := range termIds {
 			fetched, err := fetchClass(client, &course, termId)
 			numFetched++
@@ -55,7 +59,7 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 
 func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
 	var classes []apiClass
-	endpoint := fmt.Sprintf("ClassSchedules/%d/%s/%s", termId, course.Subject, course.Number)
+	endpoint := fmt.Sprintf("ClassSchedules/%d/%s", termId, course.CourseId)
 	err := client.Getv3(endpoint, &classes)
 
 	// Many courses returned for each term may not have class schedules and return a 404.

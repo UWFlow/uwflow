@@ -64,6 +64,7 @@ type antireq struct {
 }
 
 type apiCourse struct {
+	CourseId     string  `json:"courseId"`
 	Subject      string  `json:"subjectCode"`
 	Number       string  `json:"catalogNumber"`
 	Name         string  `json:"title"`
