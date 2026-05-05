@@ -30,10 +30,6 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 	numFetched := 0
 
 	for _, course := range courses {
-		// DEBUG: only import PMATH 351 to test end-to-end
-		if course.Subject != "PMATH" || course.Number != "351" {
-			continue
-		}
 		for _, termId := range termIds {
 			fetched, err := fetchClass(client, &course, termId)
 			numFetched++
