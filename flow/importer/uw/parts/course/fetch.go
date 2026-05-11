@@ -10,11 +10,10 @@ import (
 )
 
 // classRequestDelay is the minimum pause between consecutive ClassSchedules
-// requests. The UW Open Data API enforces rate limits that return HTTP 429
-// when exceeded. 150ms keeps throughput reasonable while staying well under
-// the observed limit. Tune upward if 429s recur despite the retry logic in
-// api/client.go.
-const classRequestDelay = 150 * time.Millisecond
+// requests. The UW Open Data API enforces a limit of 120 req/min (0.5s/req).
+// 550ms gives ~109 req/min, leaving headroom for course-list calls that also
+// count against the same quota.
+const classRequestDelay = 550 * time.Millisecond
 
 func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error) {
 	// Fetch course data
@@ -56,7 +55,7 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 
 func fetchClass(client *api.Client, course *apiCourse, termId int) ([]apiClass, error) {
 	var classes []apiClass
-	endpoint := fmt.Sprintf("ClassSchedules/%d/%s/%s", termId, course.Subject, course.Number)
+	endpoint := fmt.Sprintf("ClassSchedules/%d/%s", termId, course.CourseId)
 	err := client.Getv3(endpoint, &classes)
 
 	// Many courses returned for each term may not have class schedules and return a 404.

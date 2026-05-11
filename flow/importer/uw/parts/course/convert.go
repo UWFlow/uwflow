@@ -350,17 +350,62 @@ func convertMeeting(
 		return nil
 	}
 
-	dst.Meetings = append(
-		dst.Meetings,
-		meeting{
-			ClassNumber: apiClass.ClassNumber,
-			TermId:      term.Id,
-			IsCancelled: false,
-			IsClosed:    false,
-			IsTba:       false,
-		},
-	)
-	meeting := &dst.Meetings[len(dst.Meetings)-1]
+	var err error
+	var startSeconds, endSeconds int
+	var startDate, endDate time.Time
+
+	// Handle null/empty times for online async courses
+	// Set them to 12:00 AM (0 seconds) as they have no scheduled meeting times
+	if apiClassSchedule.StartTime == "" || apiClassSchedule.EndTime == "" {
+		startSeconds = 0 // 12:00 AM
+		endSeconds = 0   // 12:00 AM
+	} else {
+		startSeconds, err = util.TimeStringToSeconds(apiClassSchedule.StartTime)
+		if err != nil {
+			return fmt.Errorf("failed to convert time: %w", err)
+		}
+
+		endSeconds, err = util.TimeStringToSeconds(apiClassSchedule.EndTime)
+		if err != nil {
+			return fmt.Errorf("failed to convert time: %w", err)
+		}
+	}
+
+	// Parse dates - these should always be present
+	if apiClassSchedule.StartDate == "" || apiClassSchedule.EndDate == "" {
+		return fmt.Errorf("missing start or end date")
+	}
+
+	startDate, err = time.Parse(util.ApiV3DateLayout, apiClassSchedule.StartDate)
+	if err != nil {
+		return fmt.Errorf("failed to convert date: %w", err)
+	}
+
+	endDate, err = time.Parse(util.ApiV3DateLayout, apiClassSchedule.EndDate)
+	if err != nil {
+		return fmt.Errorf("failed to convert date: %w", err)
+	}
+
+	var days []string
+	if apiClassSchedule.Weekdays != nil {
+		days = util.ParseWeekdayString(*apiClassSchedule.Weekdays)
+	} else {
+		days = make([]string, 0)
+	}
+
+	// Create meeting with all fields populated
+	newMeeting := meeting{
+		ClassNumber:  apiClass.ClassNumber,
+		TermId:       term.Id,
+		StartSeconds: pgtype.Int4{Int32: int32(startSeconds), Valid: true},
+		EndSeconds:   pgtype.Int4{Int32: int32(endSeconds), Valid: true},
+		StartDate:    startDate,
+		EndDate:      endDate,
+		Days:         days,
+		IsCancelled:  false,
+		IsClosed:     false,
+		IsTba:        false,
+	}
 
 	if len(apiClass.Instructors) > 0 {
 		if dst.Profs == nil {
@@ -376,7 +421,7 @@ func convertMeeting(
 		name := fmt.Sprintf("%s %s", instructor.FirstName, instructor.LastName)
 		code := util.ProfNameToCode(name)
 		dst.Profs[code] = name
-		meeting.ProfCode = pgtype.Text{String: code, Valid: true}
+		newMeeting.ProfCode = pgtype.Text{String: code, Valid: true}
 	}
 
 	if apiClassSchedule.Location != nil {
@@ -386,37 +431,9 @@ func convertMeeting(
 		if err == nil {
 			location = "Online"
 		}
-		meeting.Location = pgtype.Text{String: location, Valid: true}
+		newMeeting.Location = pgtype.Text{String: location, Valid: true}
 	}
 
-	var err error
-	startSeconds, err := util.TimeStringToSeconds(apiClassSchedule.StartTime)
-	if err != nil {
-		return fmt.Errorf("failed to convert time: %w", err)
-	}
-	meeting.StartSeconds = pgtype.Int4{Int32: int32(startSeconds), Valid: true}
-
-	endSeconds, err := util.TimeStringToSeconds(apiClassSchedule.EndTime)
-	if err != nil {
-		return fmt.Errorf("failed to convert time: %w", err)
-	}
-	meeting.EndSeconds = pgtype.Int4{Int32: int32(endSeconds), Valid: true}
-
-	meeting.StartDate, err = time.Parse(util.ApiV3DateLayout, apiClassSchedule.StartDate)
-	if err != nil {
-		return fmt.Errorf("failed to convert date: %w", err)
-	}
-
-	meeting.EndDate, err = time.Parse(util.ApiV3DateLayout, apiClassSchedule.EndDate)
-	if err != nil {
-		return fmt.Errorf("failed to convert date: %w", err)
-	}
-
-	if apiClassSchedule.Weekdays != nil {
-		meeting.Days = util.ParseWeekdayString(*apiClassSchedule.Weekdays)
-	} else {
-		meeting.Days = make([]string, 0)
-	}
-
+	dst.Meetings = append(dst.Meetings, newMeeting)
 	return nil
 }
