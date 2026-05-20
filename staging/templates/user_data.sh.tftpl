@@ -1,0 +1,79 @@
+#!/bin/bash
+# cloud-init for uwflow staging single-box deploy.
+# Runs once on first boot. Logs to /var/log/cloud-init-output.log.
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+# ---------------------------------------------------------------------------
+# Packages
+# ---------------------------------------------------------------------------
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y \
+  ca-certificates \
+  curl \
+  git \
+  make \
+  openssl \
+  docker.io
+
+systemctl enable --now docker
+usermod -aG docker ubuntu
+
+# Compose v2 as a standalone binary, exposed as `docker-compose` (hyphen)
+# so existing Makefiles/scripts that call v1 syntax keep working.
+# v1 (1.29.2) crashes on `KeyError: ContainerConfig` with modern BuildKit images.
+COMPOSE_VERSION=v2.29.7
+curl -fsSL -o /usr/local/bin/docker-compose \
+  "https://github.com/docker/compose/releases/download/$${COMPOSE_VERSION}/docker-compose-linux-x86_64"
+chmod +x /usr/local/bin/docker-compose
+
+# ---------------------------------------------------------------------------
+# Clone the app
+# ---------------------------------------------------------------------------
+APP_DIR=/home/ubuntu/uwflow
+if [ ! -d "$APP_DIR/.git" ]; then
+  sudo -u ubuntu git clone --branch main --depth 1 \
+    https://github.com/UWFlow/uwflow.git "$APP_DIR"
+fi
+chown -R ubuntu:ubuntu "$APP_DIR"
+
+# ---------------------------------------------------------------------------
+# Render .env from the app_env Terraform variable.
+# KEY=VALUE per line, no quoting (compose reads it as-is).
+# Secrets stay on the box; never commit the rendered file.
+# ---------------------------------------------------------------------------
+ENV_FILE="$APP_DIR/.env"
+cat > "$ENV_FILE" <<'UWFLOW_ENV_EOF'
+%{ for k, v in app_env ~}
+${k}=${v}
+%{ endfor ~}
+UWFLOW_ENV_EOF
+chown ubuntu:ubuntu "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+
+# ---------------------------------------------------------------------------
+# Self-signed TLS cert so nginx can start.
+# TODO: replace with certbot once DNS is pointed at the EIP, e.g.
+#   docker run --rm -v "$APP_DIR/.ssl:/etc/letsencrypt" certbot/certbot \
+#     certonly --standalone -d ${domain_name} ...
+# ---------------------------------------------------------------------------
+SSL_DIR="$APP_DIR/.ssl"
+mkdir -p "$SSL_DIR"
+if [ ! -f "$SSL_DIR/crt.pem" ] || [ ! -f "$SSL_DIR/key.pem" ]; then
+  openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+    -keyout "$SSL_DIR/key.pem" \
+    -out    "$SSL_DIR/crt.pem" \
+    -subj   "/CN=${domain_name}"
+fi
+chown -R ubuntu:ubuntu "$SSL_DIR"
+chmod 600 "$SSL_DIR/key.pem"
+
+# ---------------------------------------------------------------------------
+# Bring up the stack
+# ---------------------------------------------------------------------------
+cd "$APP_DIR"
+sudo make start-public
+
+echo "uwflow staging bootstrap complete: $(date -u +%FT%TZ)"
