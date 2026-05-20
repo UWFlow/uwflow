@@ -54,19 +54,29 @@ chown ubuntu:ubuntu "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
-# Self-signed TLS cert so nginx can start.
-# TODO: replace with certbot once DNS is pointed at the EIP, e.g.
-#   docker run --rm -v "$APP_DIR/.ssl:/etc/letsencrypt" certbot/certbot \
-#     certonly --standalone -d ${domain_name} ...
+# TLS cert. If ssl_cert_path / ssl_key_path were set in tfvars, their
+# contents are inlined below and written verbatim into .ssl/. Otherwise we
+# fall back to the same self-signed recipe `make setup` uses locally
+# (script/generate-ssl-cert.sh) so dev and staging stay in sync.
+# TODO: replace with certbot once DNS is pointed at the EIP.
 # ---------------------------------------------------------------------------
 SSL_DIR="$APP_DIR/.ssl"
 mkdir -p "$SSL_DIR"
+%{ if ssl_cert != "" && ssl_key != "" ~}
+cat > "$SSL_DIR/crt.pem" <<'UWFLOW_CRT_EOF'
+${ssl_cert}
+UWFLOW_CRT_EOF
+cat > "$SSL_DIR/key.pem" <<'UWFLOW_KEY_EOF'
+${ssl_key}
+UWFLOW_KEY_EOF
+%{ else ~}
 if [ ! -f "$SSL_DIR/crt.pem" ] || [ ! -f "$SSL_DIR/key.pem" ]; then
-  openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-    -keyout "$SSL_DIR/key.pem" \
-    -out    "$SSL_DIR/crt.pem" \
-    -subj   "/CN=${domain_name}"
+  # No cert provided — defer to `make setup`, which handles SSL cert
+  # generation (and the rest of first-boot init) as a unit.
+  cd "$APP_DIR"
+  sudo -u ubuntu make setup
 fi
+%{ endif ~}
 chown -R ubuntu:ubuntu "$SSL_DIR"
 chmod 600 "$SSL_DIR/key.pem"
 

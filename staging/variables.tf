@@ -20,10 +20,17 @@ variable "domain_name" {
   type        = string
 }
 
-variable "allowed_ssh_cidr" {
-  description = "CIDR allowed to SSH on port 22. WARNING: defaults to 0.0.0.0/0 for convenience. Lock this down to your IP (e.g. \"1.2.3.4/32\") for anything beyond throwaway staging."
+variable "ssl_cert_path" {
+  description = "Optional path to a PEM-encoded TLS cert. Relative paths resolve against the staging/ module dir (so \".ssl/crt.pem\" reads staging/.ssl/crt.pem); absolute paths pass through. If both this and ssl_key_path are set, the files are written to .ssl/ on the box. Otherwise a self-signed cert is generated via script/generate-ssl-cert.sh (same recipe `make setup` uses locally)."
   type        = string
-  default     = "0.0.0.0/0"
+  default     = ""
+}
+
+variable "ssl_key_path" {
+  description = "Optional path to a PEM-encoded TLS private key. Same path-resolution rules as ssl_cert_path."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "app_env" {

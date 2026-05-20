@@ -1,13 +1,13 @@
 locals {
   name = "uwflow-staging"
 
-  # Rough monthly cost on-demand pricing.
-  # t3.small:          ~$15.18
-  # Public IPv4:       ~$3.60  (AWS charges for ALL public IPs since Feb 2024)
-  # 10 GiB gp3:        ~$0.80  (3000 IOPS / 125 MB/s baseline included)
-  # Data transfer, SSM, CloudWatch basic metrics: negligible at this scale.
-  # Stopped: just ~$0.80/mo (disk only — auto-assigned IP released on stop).
-  estimated_monthly_cost = "~$19.50/mo running, ~$0.80/mo stopped: t3.small $15 + public IPv4 $3.6 + 10GB gp3 $0.8"
+  # Resolve cert/key paths against the module dir so they're stable no matter
+  # which directory terraform is invoked from. Absolute paths pass through.
+  # path.module is "" for root modules in modern terraform, so coalesce to "."
+  # to avoid producing a bogus "/cert.pem".
+  module_dir    = coalesce(path.module, ".")
+  ssl_cert_file = var.ssl_cert_path == "" ? "" : (startswith(var.ssl_cert_path, "/") ? var.ssl_cert_path : "${local.module_dir}/${var.ssl_cert_path}")
+  ssl_key_file  = var.ssl_key_path == "" ? "" : (startswith(var.ssl_key_path, "/") ? var.ssl_key_path : "${local.module_dir}/${var.ssl_key_path}")
 }
 
 # ---------------------------------------------------------------------------
@@ -56,7 +56,7 @@ data "aws_ami" "ubuntu" {
 
 resource "aws_security_group" "app" {
   name        = "${local.name}-sg"
-  description = "uwflow staging: SSH from allowed CIDR, HTTP/HTTPS from anywhere"
+  description = "uwflow staging: SSH/HTTP/HTTPS from anywhere"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -64,7 +64,7 @@ resource "aws_security_group" "app" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -161,6 +161,8 @@ resource "aws_instance" "app" {
   user_data = templatefile("${path.module}/templates/user_data.sh.tftpl", {
     domain_name = var.domain_name
     app_env     = var.app_env
+    ssl_cert    = local.ssl_cert_file != "" ? file(local.ssl_cert_file) : ""
+    ssl_key     = local.ssl_key_file != "" ? file(local.ssl_key_file) : ""
   })
 
   # Re-run cloud-init if the rendered user_data changes (e.g. .env update).

@@ -5,7 +5,7 @@ output "public_ip" {
 
 output "public_dns" {
   description = "AWS-assigned public DNS of the instance."
-  value       = aws_instance.app.public_dns
+  value       = "https://${aws_instance.app.public_dns}"
 }
 
 output "ssh_command" {
@@ -16,11 +16,6 @@ output "ssh_command" {
 output "ssm_command" {
   description = "Open a shell via SSM Session Manager (no SSH key, no inbound port needed). Requires AWS CLI + session-manager-plugin."
   value       = "aws ssm start-session --region ${var.aws_region} --target ${aws_instance.app.id}"
-}
-
-output "estimated_monthly_cost" {
-  description = "Back-of-envelope monthly cost, on-demand."
-  value       = local.estimated_monthly_cost
 }
 
 output "dns_reminder" {
