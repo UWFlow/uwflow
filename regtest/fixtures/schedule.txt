@@ -5,46 +5,46 @@ My Academics
 Course Selection (Undergrad only)
 Search for Classes
 Enroll
- 	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information	 
+ 	My Class Schedule	 	 	|	 	 	Shopping Cart	 	 	|	 	 	Add	 	 	|	 	 	Drop	 	 	|	 	 	Swap	 	 	|	 	 	Edit	 	 	|	 	 	Term Information	 	 	|	 	 	Exam Information
 My Class Schedule
 List View
 Weekly Calendar View
 Select Display Option
 L
-Winter 2020 | Undergraduate | University of Waterloo
+Spring 2026 | Undergraduate | University of Waterloo
 Group Box
-Collapse section Class Schedule Filter Options Class Schedule Filter Options 
+Collapse section Class Schedule Filter Options Class Schedule Filter Options
 Show Enrolled Classes
 Show Dropped Classes
 Show Waitlisted Classes
-CO 255 - Intro Optimization (Adv Level)
+CS 246 - Object-Oriented Software Development
 Status	Units	Grading	Deadlines
 Enrolled
 0.50
 Numeric Grading Basis
 Academic Calendar Deadlines
 Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-6169
+3715
 001
 LEC
-TTh 2:30PM - 3:50PM
-MC 4040
-Ricardo Fukasawa
-01/06/2020 - 04/03/2020
-CO 487 - Applied Cryptography
-Status	Units	Grading	Deadlines
-Enrolled
-0.50
-Numeric Grading Basis
-Academic Calendar Deadlines
-Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-6125
-001
-LEC
-MWF 11:30AM - 12:20PM
-RCH 101
-Alfred Menezes
-01/06/2020 - 04/03/2020
+TTh 10:00AM - 11:20AM
+DC 1350
+Staff
+05/11/2026 - 08/05/2026
+3731
+101
+TUT
+W 9:30AM - 10:20AM
+MC 4060
+Staff
+05/11/2026 - 08/05/2026
+4715
+201
+TST
+Th 4:30PM - 6:20PM
+TBA
+Staff
+06/25/2026 - 06/25/2026
 CS 341 - Algorithms
 Status	Units	Grading	Deadlines
 Enrolled
@@ -52,27 +52,27 @@ Enrolled
 Numeric Grading Basis
 Academic Calendar Deadlines
 Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-6448
-101
-TUT
-F 12:30PM - 1:20PM
-MC 2034
-Staff
-01/06/2020 - 04/03/2020
-5784
+3608
 001
 LEC
-MW 4:00PM - 5:20PM
-MC 2017
-Trevor Brown
-01/06/2020 - 04/03/2020
-6265
+TTh 11:30AM - 12:50PM
+MC 2038
+Staff
+05/11/2026 - 08/05/2026
+3657
+101
+TUT
+F 1:30PM - 2:20PM
+MC 2034
+Staff
+05/11/2026 - 08/05/2026
+4032
 201
 TST
-T 7:00PM - 8:50PM
+M 4:30PM - 6:20PM
 TBA
-Caroline Kierstead
-02/25/2020 - 02/25/2020
+Staff
+06/01/2026 - 06/01/2026
 CS 350 - Operating Systems
 Status	Units	Grading	Deadlines
 Enrolled
@@ -80,51 +80,61 @@ Enrolled
 Numeric Grading Basis
 Academic Calendar Deadlines
 Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-6355
-003
+3610
+001
 LEC
-MW 10:00AM - 11:20AM
-MC 2038
-Lesley Istead
-01/06/2020 - 04/03/2020
-6135
+TTh 2:30PM - 3:50PM
+DC 1350
+Staff
+05/11/2026 - 08/05/2026
+3673
 101
 TST
-Th 7:00PM - 8:50PM
+M 6:30PM - 8:20PM
 TBA
-Gustavo Fortes Tondello
-03/05/2020 - 03/05/2020
-CS 476 - Num Comp for Fin Modeling
+Staff
+06/22/2026 - 06/22/2026
+STAT 230 - Probability
 Status	Units	Grading	Deadlines
 Enrolled
 0.50
 Numeric Grading Basis
 Academic Calendar Deadlines
 Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-5949
+3637
 001
 LEC
-MW 2:30PM - 3:50PM
-E2 1732
-Yu Li
-01/06/2020 - 04/03/2020
-SYDE 556 - Simulating Neurobiological Sys
+MWF 11:30AM - 12:20PM
+MC 4021
+Staff
+05/11/2026 - 08/05/2026
+3714
+101
+TUT
+F 12:30PM - 1:20PM
+MC 4060
+Staff
+05/11/2026 - 08/05/2026
+3638
+201
+TST
+T 4:30PM - 6:20PM
+TBA
+Staff
+06/02/2026 - 06/02/2026
+CO 351 - Network Flow Theory
 Status	Units	Grading	Deadlines
 Enrolled
 0.50
 Numeric Grading Basis
 Academic Calendar Deadlines
 Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
-4595
+3639
 001
 LEC
-T 11:30AM - 12:50PM
-E5 4106
-Andreas Stoeckel
-01/06/2020 - 04/03/2020
-Th 9:00AM - 10:20AM
-E5 6004
-Andreas Stoeckel
-01/06/2020 - 04/03/2020
+TTh 2:30PM - 3:50PM
+MC 2035
+Staff
+05/11/2026 - 08/05/2026
 Printer Friendly Page
 Go to top iconGo to top

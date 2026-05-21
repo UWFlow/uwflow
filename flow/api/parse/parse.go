@@ -194,13 +194,8 @@ type scheduleRequest struct {
 }
 
 func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
-	}
-
 	var req scheduleRequest
-	err = json.NewDecoder(r.Body).Decode(&req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("malformed JSON: %w", err))
 	}
@@ -208,6 +203,15 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 	summary, err := schedule.Parse(req.Text)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
+	}
+
+	if r.URL.Query().Get("user_id") == "null" {
+		return summary, nil
+	}
+
+	userId, err := serde.UserIdFromRequest(r)
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
 	}
 
 	response, err := saveSchedule(tx, summary, userId)
