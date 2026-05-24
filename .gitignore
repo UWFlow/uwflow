@@ -7,3 +7,11 @@ flow/api/tmp
 flow/email/tmp
 # PG Dump
 *.dump
+# Terraform
+terraform.tfvars
+*.tfstate*
+.terraform/
+.terraform.lock.hcl
+# TLS certs/keys — never commit
+*.pem
+

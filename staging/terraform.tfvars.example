@@ -1,0 +1,51 @@
+key_name         = "uwflow-staging"
+domain_name      = "localhost"
+instance_type = "t3.small"
+
+# Optional: bring your own TLS cert/key. Relative paths resolve against the
+# staging/ module dir (e.g. ".ssl/crt.pem" reads staging/.ssl/crt.pem regardless
+# of where you invoke terraform from); absolute paths also work. Leave unset to
+# auto-generate a self-signed cert on the box via script/generate-ssl-cert.sh
+# (same path `make setup` takes locally).
+# ssl_cert_path = ".ssl/crt.pem"
+# ssl_key_path  = ".ssl/key.pem"
+
+app_env = {
+  # --- API ---
+  API_PORT    = "8081"
+  DOMAIN      = "localhost"
+  RUN_MODE    = "staging"
+
+  # --- Hasura ---
+  HASURA_GRAPHQL_ADMIN_SECRET      = "secretinprod"
+  HASURA_GRAPHQL_UNAUTHORIZED_ROLE = "public"
+  HASURA_GRAPHQL_JWT_KEY           = "secret"
+  HASURA_PORT                      = "8080"
+
+  # --- Sentry (leave empty to disable) ---
+  SENTRY_DSN                = ""
+  SENTRY_TRACES_SAMPLE_RATE = "0.1"
+  SENTRY_ERROR_SAMPLE_RATE  = "1.0"
+
+  # --- nginx ---
+  NGINX_HTTP_PORT  = "80"
+  NGINX_HTTPS_PORT = "443"
+
+  # --- Postgres ---
+  POSTGRES_DB       = "flow"
+  POSTGRES_HOST     = "postgres"
+  POSTGRES_PASSWORD = "secretinprod"
+  POSTGRES_PORT     = "5432"
+  POSTGRES_USER     = "postgres"
+
+  # --- UW open data API (get one from https://openapi.data.uwaterloo.ca/api-keys) ---
+  UW_API_KEY_V3 = ""
+
+  # --- Email (SMTP creds — SendGrid/Mailgun/etc.) ---
+  SMTP_SERVER   = "smtp.sendgrid.net"
+  SMTP_PORT     = "587"
+  SMTP_FROM     = "noreply@staging.uwflow.com"
+  SMTP_USERNAME = "apikey"
+  SMTP_PASSWORD = "Ignore"
+}
+
