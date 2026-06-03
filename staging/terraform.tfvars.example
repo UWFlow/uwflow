@@ -18,7 +18,7 @@ app_env = {
 
   # --- Hasura ---
   HASURA_GRAPHQL_ADMIN_SECRET      = "secretinprod"
-  HASURA_GRAPHQL_UNAUTHORIZED_ROLE = "public"
+  HASURA_GRAPHQL_UNAUTHORIZED_ROLE = "anonymous"
   HASURA_GRAPHQL_JWT_KEY           = "secret"
   HASURA_PORT                      = "8080"
 
@@ -48,4 +48,3 @@ app_env = {
   SMTP_USERNAME = "apikey"
   SMTP_PASSWORD = "Ignore"
 }
-
