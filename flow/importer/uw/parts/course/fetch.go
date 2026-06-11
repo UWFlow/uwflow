@@ -15,6 +15,13 @@ import (
 // count against the same quota.
 const classRequestDelay = 550 * time.Millisecond
 
+// courseOffer identifies one cross-listed code of a course: codes sharing a
+// courseId are distinguished by courseOfferNumber.
+type courseOffer struct {
+	courseId    string
+	offerNumber int
+}
+
 func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error) {
 	// Fetch course data
 	courses, err := fetchCourses(client, termIds)
@@ -22,14 +29,31 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 		return nil, nil, fmt.Errorf("failed to fetch courses: %w", err)
 	}
 
+	// Cross-listed codes (e.g. SOC 327 and LS 327) share a courseId, and
+	// ClassSchedules/{term}/{courseId} returns the sections of all of them.
+	// Fetch each courseId only once per term so the same section is never
+	// imported twice, and map each returned class back to its course code
+	// via its courseOfferNumber.
+	offerToCode := make(map[courseOffer]string)
+	seenCourseId := make(map[string]bool)
+	var uniqueCourses []apiCourse
+	for _, course := range courses {
+		offer := courseOffer{course.CourseId, course.CourseOfferNumber}
+		offerToCode[offer] = strings.ToLower(course.Subject + course.Number)
+		if !seenCourseId[course.CourseId] {
+			seenCourseId[course.CourseId] = true
+			uniqueCourses = append(uniqueCourses, course)
+		}
+	}
+
 	// Fetch class schedules for all returned courses, for upcoming terms.
 	// Requests are kept sequential (one at a time) with a small inter-request
 	// delay to avoid triggering API rate limits.
 	var classes []apiClass
-	numClasses := len(courses) * len(termIds)
+	numClasses := len(uniqueCourses) * len(termIds)
 	numFetched := 0
 
-	for _, course := range courses {
+	for _, course := range uniqueCourses {
 		for _, termId := range termIds {
 			fetched, err := fetchClass(client, &course, termId)
 			numFetched++
@@ -41,7 +65,12 @@ func fetchAll(client *api.Client, termIds []int) ([]apiCourse, []apiClass, error
 				log.Warnf("failed to fetch section with error %s, proceeding anyway", err)
 			} else {
 				for _, class := range fetched {
-					class.CourseCode = strings.ToLower(course.Subject + course.Number)
+					offer := courseOffer{class.CourseId, class.CourseOfferNumber}
+					if code, ok := offerToCode[offer]; ok {
+						class.CourseCode = code
+					} else {
+						class.CourseCode = strings.ToLower(course.Subject + course.Number)
+					}
 					classes = append(classes, class)
 				}
 			}

@@ -463,6 +463,62 @@ func TestConvertSection(t *testing.T) {
 	}
 }
 
+func TestConvertAllDedupesSections(t *testing.T) {
+	termCode := "1265"
+	component := "LEC"
+	idToTerm := map[int]*term.Term{
+		1265: {
+			Id:        1265,
+			StartDate: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC),
+		},
+	}
+
+	// The same class appearing twice in a batch, as happens when a
+	// cross-listed course is fetched under more than one course code.
+	classes := []apiClass{
+		{
+			CourseCode:      "soc327",
+			ClassNumber:     2383,
+			CourseComponent: &component,
+			SectionNumber:   81,
+			TermId:          &termCode,
+		},
+		{
+			CourseCode:      "ls327",
+			ClassNumber:     2383,
+			CourseComponent: &component,
+			SectionNumber:   81,
+			TermId:          &termCode,
+		},
+		{
+			CourseCode:      "ls327",
+			ClassNumber:     2387,
+			CourseComponent: &component,
+			SectionNumber:   81,
+			TermId:          &termCode,
+		},
+	}
+
+	var got convertResult
+	err := convertAll(&got, nil, classes, idToTerm)
+	if err != nil {
+		t.Errorf("error: %v", err)
+	}
+
+	if len(got.Sections) != 2 {
+		t.Fatalf("expected 2 sections after dedup, got %d", len(got.Sections))
+	}
+	if got.Sections[0].CourseCode != "soc327" || got.Sections[0].ClassNumber != 2383 {
+		t.Errorf("expected first section soc327/2383, got %s/%d",
+			got.Sections[0].CourseCode, got.Sections[0].ClassNumber)
+	}
+	if got.Sections[1].CourseCode != "ls327" || got.Sections[1].ClassNumber != 2387 {
+		t.Errorf("expected second section ls327/2387, got %s/%d",
+			got.Sections[1].CourseCode, got.Sections[1].ClassNumber)
+	}
+}
+
 func TestParsePrereqs(t *testing.T) {
 	tests := []struct {
 		name     string
