@@ -64,16 +64,19 @@ type antireq struct {
 }
 
 type apiCourse struct {
-	CourseId     string  `json:"courseId"`
-	Subject      string  `json:"subjectCode"`
-	Number       string  `json:"catalogNumber"`
-	Name         string  `json:"title"`
-	Description  *string `json:"description"`
-	Requirements *string `json:"requirementsDescription"`
+	CourseId          string  `json:"courseId"`
+	CourseOfferNumber int     `json:"courseOfferNumber"`
+	Subject           string  `json:"subjectCode"`
+	Number            string  `json:"catalogNumber"`
+	Name              string  `json:"title"`
+	Description       *string `json:"description"`
+	Requirements      *string `json:"requirementsDescription"`
 }
 
 type apiClass struct {
 	CourseCode         string               // Must be populated manually
+	CourseId           string               `json:"courseId"`
+	CourseOfferNumber  int                  `json:"courseOfferNumber"`
 	ClassNumber        int                  `json:"classNumber"`
 	CourseComponent    *string              `json:"courseComponent"`
 	SectionNumber      int                  `json:"classSection"`

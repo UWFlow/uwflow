@@ -190,6 +190,14 @@ func convertAll(
 		convertCourse(dst, &apiCourse)
 	}
 
+	// The DB enforces (class_number, term_id) uniqueness; a duplicate in the
+	// batch would abort the entire section import, so drop it here instead.
+	type sectionKey struct {
+		classNumber int
+		termId      int
+	}
+	seenSections := make(map[sectionKey]bool)
+
 	for _, apiClass := range apiClasses {
 		if apiClass.TermId == nil {
 			continue
@@ -199,6 +207,16 @@ func convertAll(
 		if err != nil {
 			continue
 		}
+
+		key := sectionKey{apiClass.ClassNumber, termId}
+		if seenSections[key] {
+			log.Warnf(
+				"skipping duplicate section: class %d in term %d (course %s)",
+				apiClass.ClassNumber, termId, apiClass.CourseCode,
+			)
+			continue
+		}
+		seenSections[key] = true
 
 		term := idToTerm[termId]
 		err = convertSection(dst, &apiClass, term)
