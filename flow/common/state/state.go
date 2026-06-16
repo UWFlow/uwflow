@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"flow/common/clickhouse"
 	"flow/common/db"
 	"flow/common/env"
 )
@@ -13,9 +14,11 @@ import (
 // As such, it must only contain thread-safe entities.
 // - env.Environment is read-only after initialization, thus thread-safe.
 // - db.Conn is documented as thread-safe in db.go
+// - clickhouse.Writer is an async, concurrency-safe event sink.
 type State struct {
-	Db  *db.Conn
-	Env *env.Environment
+	Db         *db.Conn
+	Clickhouse *clickhouse.Writer
+	Env        *env.Environment
 }
 
 func New(ctx context.Context, serviceName string) (*State, error) {
@@ -29,5 +32,10 @@ func New(ctx context.Context, serviceName string) (*State, error) {
 		return nil, fmt.Errorf("connecting to database failed: %w", err)
 	}
 
-	return &State{Db: db, Env: stenv}, nil
+	ch, err := clickhouse.Connect(ctx, stenv)
+	if err != nil {
+		return nil, fmt.Errorf("connecting to clickhouse failed: %w", err)
+	}
+
+	return &State{Db: db, Clickhouse: ch, Env: stenv}, nil
 }

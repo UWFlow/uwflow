@@ -2,6 +2,18 @@ key_name         = "uwflow-staging"
 domain_name      = "localhost"
 instance_type = "t3.small"
 
+# --- Events-analytics archival ---
+# S3 bucket names are GLOBALLY unique — change this to something unclaimed.
+events_archive_bucket       = "uwflow-events-archive"
+events_archive_glacier_days = 30
+
+# --- CloudWatch alarms (optional) ---
+# Set an email to receive alarm notifications; you must click the confirmation
+# link AWS sends to the SNS subscription. Leave empty to skip notifications.
+alarm_email                       = ""
+cpu_alarm_threshold               = 80
+disk_free_alarm_threshold_percent = 15
+
 # Optional: bring your own TLS cert/key. Relative paths resolve against the
 # staging/ module dir (e.g. ".ssl/crt.pem" reads staging/.ssl/crt.pem regardless
 # of where you invoke terraform from); absolute paths also work. Leave unset to
@@ -37,6 +49,15 @@ app_env = {
   POSTGRES_PASSWORD = "secretinprod"
   POSTGRES_PORT     = "5432"
   POSTGRES_USER     = "postgres"
+
+  # --- ClickHouse (events analytics store; internal-only container) ---
+  CLICKHOUSE_HOST     = "clickhouse"
+  CLICKHOUSE_PORT     = "9000"
+  CLICKHOUSE_DB       = "analytics"
+  CLICKHOUSE_USER     = "flow_events"
+  CLICKHOUSE_PASSWORD = "secretinprod"
+  # MUST be a long random string in real deploys; never store raw IPs.
+  EVENTS_IP_HASH_SALT = "change-me-to-a-long-random-string"
 
   # --- UW open data API (get one from https://openapi.data.uwaterloo.ca/api-keys) ---
   UW_API_KEY_V3 = ""

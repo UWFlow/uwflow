@@ -34,7 +34,45 @@ variable "ssl_key_path" {
 }
 
 variable "app_env" {
-  description = "Key/value pairs rendered verbatim into /home/ubuntu/uwflow/.env (KEY=VALUE per line, no quoting). Holds Hasura admin secret, Postgres creds, SMTP creds, UW API key, etc. See README for the full list."
+  description = "Key/value pairs rendered verbatim into /home/ubuntu/uwflow/.env (KEY=VALUE per line, no quoting). Holds Hasura admin secret, Postgres creds, SMTP creds, UW API key, ClickHouse creds, EVENTS_IP_HASH_SALT, etc. See README for the full list."
   type        = map(string)
   sensitive   = true
+}
+
+# ---------------------------------------------------------------------------
+# Events-analytics archival
+# ---------------------------------------------------------------------------
+
+variable "events_archive_bucket" {
+  description = "Globally-unique S3 bucket name for the daily Parquet events archive. The instance role is granted s3:PutObject to events/* in this bucket."
+  type        = string
+  default     = "uwflow-events-archive"
+}
+
+variable "events_archive_glacier_days" {
+  description = "Days after upload before archived event objects transition to Glacier Deep Archive."
+  type        = number
+  default     = 30
+}
+
+# ---------------------------------------------------------------------------
+# CloudWatch monitoring / alerting
+# ---------------------------------------------------------------------------
+
+variable "alarm_email" {
+  description = "Optional email address to subscribe to the CloudWatch alarm SNS topic. Leave empty to skip alarm notifications (alarms still fire, just no email). You must confirm the SNS subscription via the email AWS sends."
+  type        = string
+  default     = ""
+}
+
+variable "cpu_alarm_threshold" {
+  description = "CPUUtilization percent that, when sustained, trips the high-CPU alarm. Useful to spot analytics traffic burning CPU."
+  type        = number
+  default     = 80
+}
+
+variable "disk_free_alarm_threshold_percent" {
+  description = "Root-disk free-space percent below which the low-disk alarm trips. ClickHouse + Parquet exports live on the root volume."
+  type        = number
+  default     = 15
 }

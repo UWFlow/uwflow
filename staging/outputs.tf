@@ -22,3 +22,13 @@ output "dns_reminder" {
   description = "Manual DNS step. NOTE: the IP changes on stop/start — update the A record each time you restart the instance."
   value       = "Create an A record: ${var.domain_name} -> ${aws_instance.app.public_ip}"
 }
+
+output "events_archive_bucket" {
+  description = "S3 bucket holding the daily Parquet events archive (transitions to Glacier Deep Archive)."
+  value       = aws_s3_bucket.events_archive.bucket
+}
+
+output "alarm_topic_arn" {
+  description = "SNS topic ARN for CloudWatch alarms (empty if no alarm_email was configured)."
+  value       = var.alarm_email == "" ? "" : aws_sns_topic.alarms[0].arn
+}

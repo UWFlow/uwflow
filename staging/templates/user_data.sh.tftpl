@@ -81,6 +81,68 @@ chown -R ubuntu:ubuntu "$SSL_DIR"
 chmod 600 "$SSL_DIR/key.pem"
 
 # ---------------------------------------------------------------------------
+# CloudWatch Agent — CPU / memory / disk / swap metrics so we can see whether
+# analytics traffic is burning CPU or filling the root disk (ClickHouse data
+# and the daily Parquet exports both live there). Alarms are defined in
+# cloudwatch.tf; this just installs and configures the agent.
+# ---------------------------------------------------------------------------
+CWA_DEB=/tmp/amazon-cloudwatch-agent.deb
+curl -fsSL -o "$CWA_DEB" \
+  "https://s3.${aws_region}.amazonaws.com/amazoncloudwatch-agent-${aws_region}/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb"
+dpkg -i -E "$CWA_DEB" || apt-get install -y -f
+
+mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'CWA_CFG_EOF'
+{
+  "agent": {
+    "metrics_collection_interval": 300,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "$${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "cpu": {
+        "measurement": ["cpu_usage_idle", "cpu_usage_iowait"],
+        "totalcpu": true
+      },
+      "mem": {
+        "measurement": ["mem_used_percent"]
+      },
+      "swap": {
+        "measurement": ["swap_used_percent"]
+      },
+      "disk": {
+        "measurement": ["disk_used_percent"],
+        "resources": ["/"]
+      }
+    }
+  }
+}
+CWA_CFG_EOF
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# ---------------------------------------------------------------------------
+# Events-analytics daily archive cron.
+# Exports the previous day's ClickHouse events partition to Parquet and uploads
+# it to S3 (script/etl-events-archive.sh). Runs at 03:15 UTC, after the day has
+# fully closed. Sources the app .env for ClickHouse creds; the bucket name is
+# injected here from Terraform.
+# ---------------------------------------------------------------------------
+ETL_LOG=/var/log/uwflow-events-archive.log
+cat > /etc/cron.d/uwflow-events-archive <<EVENTS_CRON_EOF
+SHELL=/bin/bash
+# m h dom mon dow user command
+15 3 * * * root set -a; . $APP_DIR/.env; set +a; EVENTS_ARCHIVE_BUCKET=${events_archive_bucket} $APP_DIR/script/etl-events-archive.sh >> $ETL_LOG 2>&1
+EVENTS_CRON_EOF
+chmod 644 /etc/cron.d/uwflow-events-archive
+
+# ---------------------------------------------------------------------------
 # Bring up the stack
 # ---------------------------------------------------------------------------
 cd "$APP_DIR"

@@ -16,7 +16,7 @@ help: ## Show this help message
 
 start: ## Start all backend services in development mode (without frontend)
 	@echo "Starting backend services in development mode..."
-	@$(DOCKER_COMPOSE) up -d api postgres hasura uw email
+	@$(DOCKER_COMPOSE) up -d api postgres hasura uw email clickhouse
 
 start-public: ## Start all services using public images
 	@echo "Pulling latest images..."

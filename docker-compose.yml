@@ -62,6 +62,37 @@ services:
     env_file: .env
     image: neuwflow/email:latest
     restart: always
+  clickhouse:
+    container_name: clickhouse
+    image: clickhouse/clickhouse-server:24
+    restart: always
+    environment:
+      CLICKHOUSE_DB: $CLICKHOUSE_DB
+      CLICKHOUSE_USER: $CLICKHOUSE_USER
+      CLICKHOUSE_PASSWORD: $CLICKHOUSE_PASSWORD
+      # Lets the configured user connect without IP allowlisting hassle on the
+      # internal compose network. The container is NOT published to the host.
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    # Deliberately NO `ports:` — ClickHouse stays on the internal compose
+    # network only, reachable by the api container as host `clickhouse`.
+    # Never expose 8123/9000 to the host or the public internet.
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    # Cap memory so a flood of analytics traffic can't OOM the single box.
+    # ~10k events/day is tiny; 1 GiB is plenty of headroom.
+    mem_limit: 1g
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    volumes:
+      - clickhouse:/var/lib/clickhouse
+      # Init SQL runs once on an empty data dir (creates analytics.events).
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
 volumes:
   postgres:
     name: backend_postgres
+  clickhouse:
+    name: backend_clickhouse

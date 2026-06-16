@@ -25,3 +25,9 @@ services:
     command: sh -c "cd email && air"
     volumes:
       - ./flow:/build
+
+  # ClickHouse needs no local build override — it runs the public image as-is
+  # from docker-compose.yml. Declared here only to document that local dev
+  # (make start, which merges this file) includes it. The api container reaches
+  # it on the internal network as host `clickhouse`.
+  clickhouse: {}

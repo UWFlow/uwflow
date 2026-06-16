@@ -11,17 +11,19 @@ import (
 	"flow/api/calendar"
 	"flow/api/data"
 	"flow/api/env"
+	"flow/api/events"
 	"flow/api/middleware"
 	"flow/api/parse"
 	"flow/api/serde"
 
+	"flow/common/clickhouse"
 	"flow/common/db"
 
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
-func setupRouter(conn *db.Conn) *chi.Mux {
+func setupRouter(conn *db.Conn, collector *events.Collector) *chi.Mux {
 	router := chi.NewRouter()
 
 	if env.Global.RunMode == "dev" {
@@ -97,6 +99,14 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
 	)
 
+	// Analytics ingestion. Reachable behind nginx at /api/events (the /api/
+	// location strips the prefix), and directly at /events on the API.
+	// Fire-and-forget: never 500s the page. Has its own CORS allowlist and
+	// per-IP rate limit inside the events package.
+	eventsHandler := collector.Handler()
+	router.Post("/events", eventsHandler)
+	router.Options("/events", eventsHandler)
+
 	return router
 }
 
@@ -107,7 +117,13 @@ func main() {
 		log.Fatalf("Error: %s", err)
 	}
 
-	router := setupRouter(conn)
+	chWriter, err := clickhouse.Connect(context.Background(), &env.Global)
+	if err != nil {
+		log.Fatalf("Error: %s", err)
+	}
+	collector := events.NewCollector(chWriter, []byte(env.Global.EventsIpHashSalt))
+
+	router := setupRouter(conn, collector)
 	socket := ":" + env.Global.ApiPort
 
 	err = http.ListenAndServe(socket, router)

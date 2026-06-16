@@ -97,8 +97,10 @@ resource "aws_security_group" "app" {
 }
 
 # ---------------------------------------------------------------------------
-# IAM — SSM only, so we can use Session Manager without a bastion.
-# TODO: add CloudWatch Agent policy if/when we want app log shipping.
+# IAM — SSM for Session Manager (no bastion), CloudWatch Agent for metrics,
+# and S3 PutObject for the events archive. The CloudWatch Agent attachment and
+# the S3 archive policy live in cloudwatch.tf and s3-events-archive.tf
+# respectively; they attach to aws_iam_role.instance defined here.
 # ---------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "ec2_assume" {
@@ -148,7 +150,7 @@ resource "aws_instance" "app" {
 
   root_block_device {
     volume_type           = "gp3"
-    volume_size           = 10 
+    volume_size           = 10
     encrypted             = true
     delete_on_termination = true
   }
@@ -159,10 +161,12 @@ resource "aws_instance" "app" {
   }
 
   user_data = templatefile("${path.module}/templates/user_data.sh.tftpl", {
-    domain_name = var.domain_name
-    app_env     = var.app_env
-    ssl_cert    = local.ssl_cert_file != "" ? file(local.ssl_cert_file) : ""
-    ssl_key     = local.ssl_key_file != "" ? file(local.ssl_key_file) : ""
+    domain_name           = var.domain_name
+    app_env               = var.app_env
+    ssl_cert              = local.ssl_cert_file != "" ? file(local.ssl_cert_file) : ""
+    ssl_key               = local.ssl_key_file != "" ? file(local.ssl_key_file) : ""
+    events_archive_bucket = var.events_archive_bucket
+    aws_region            = var.aws_region
   })
 
   # Re-run cloud-init if the rendered user_data changes (e.g. .env update).
@@ -186,4 +190,5 @@ resource "aws_instance" "app" {
 #   - ACM cert + certbot/cron OR ALB+ACM termination        (ALB ~$16/mo)
 #   - RDS db.t4g.micro for Postgres                         (~$13/mo)
 #   - Separate EBS volume for /var/lib/docker/volumes       (~$2/mo per 25GB)
-#   - CloudWatch Agent for app log shipping
+# Done: CloudWatch Agent (CPU/mem/disk/swap) + alarms — see cloudwatch.tf.
+#   - Next: ship app/container logs to CloudWatch Logs via the agent.
