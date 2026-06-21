@@ -7,6 +7,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"flow/api/admin"
 	"flow/api/auth"
 	"flow/api/calendar"
 	"flow/api/data"
@@ -95,6 +96,18 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Delete(
 		"/user",
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+	)
+
+	profTeachesIngest := http.MaxBytesHandler(
+		serde.WithDbResponse(conn, admin.IngestProfTeaches, "professor teaching ingestion"),
+		10<<20,
+	)
+	router.With(
+		middleware.RequireAdminSecret(env.Global.HasuraAdminSecret),
+	).Method(
+		http.MethodPost,
+		"/admin/prof-teaches/ingest",
+		profTeachesIngest,
 	)
 
 	return router

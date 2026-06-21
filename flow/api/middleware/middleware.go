@@ -1,10 +1,37 @@
 package middleware
 
 import (
+	"crypto/subtle"
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/url"
 )
+
+type authError struct {
+	Error string `json:"error"`
+}
+
+// RequireAdminSecret protects server-to-server endpoints with the same secret
+// used for Hasura administrative requests.
+func RequireAdminSecret(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			provided := r.Header.Get("X-Hasura-Admin-Secret")
+			valid := secret != "" && provided != "" &&
+				subtle.ConstantTimeCompare([]byte(provided), []byte(secret)) == 1
+			if !valid {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Cache-Control", "no-store")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(authError{Error: "unauthorized"})
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // CORS middleware for localhost environments
 func CorsLocalhostMiddleware() func(http.Handler) http.Handler {
