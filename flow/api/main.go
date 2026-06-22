@@ -47,6 +47,14 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbResponse(conn, auth.RegisterEmail, "email register"),
 	)
 	router.Post(
+		"/auth/email/verify/send",
+		serde.WithDbNoResponse(conn, auth.SendVerifyEmail, "email verification initiation"),
+	)
+	router.Post(
+		"/auth/email/verify",
+		serde.WithDbResponse(conn, auth.VerifyEmail, "email verification"),
+	)
+	router.Post(
 		"/auth/facebook/login",
 		serde.WithDbResponse(conn, auth.LoginFacebook, "facebook login"),
 	)
