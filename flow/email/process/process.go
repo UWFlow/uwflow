@@ -40,6 +40,11 @@ func Reset(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, resetInfo)
 }
 
+// Verify processes all unseen items in queue.email_verify.
+func Verify(ctx context.Context, tx pgx.Tx) error {
+	return process(ctx, tx, verifyInfo)
+}
+
 // Subscribed processes all unseen items in queue.section_subscribed.
 func Subscribed(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, subscribedInfo)

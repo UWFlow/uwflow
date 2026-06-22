@@ -27,6 +27,12 @@ const (
 	EmailNotRegistered = "email_not_registered"
 	// There is a user with given email, but the given password is incorrect
 	EmailWrongPassword = "email_wrong_password"
+	// Account exists but the email has not been verified yet
+	EmailNotVerified = "email_not_verified"
+
+	//// Email verification
+	// Email verification code is invalid or expired
+	InvalidVerifyKey = "invalid_verify_key"
 
 	//// Password reset
 	// Password reset key is invalid or expired

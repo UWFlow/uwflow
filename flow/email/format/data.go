@@ -30,6 +30,17 @@ type ResetItem struct {
 // RowID implements QueueItem.
 func (it *ResetItem) RowID() int { return it.ID }
 
+// VerifyItem is a row of queue.email_verify.
+type VerifyItem struct {
+	ID        int
+	Email     string
+	UserName  string
+	SecretKey string
+}
+
+// RowID implements QueueItem.
+func (it *VerifyItem) RowID() int { return it.ID }
+
 // SubscribedItem is a row of queue.section_subscribed.
 type SubscribedItem struct {
 	ID         int

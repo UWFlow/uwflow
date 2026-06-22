@@ -14,6 +14,8 @@ func dispatch(ctx context.Context, tx pgx.Tx, source string) error {
 	switch source {
 	case "password_reset":
 		return process.Reset(ctx, tx)
+	case "email_verify":
+		return process.Verify(ctx, tx)
 	case "section_subscribed":
 		return process.Subscribed(ctx, tx)
 	case "section_vacated":

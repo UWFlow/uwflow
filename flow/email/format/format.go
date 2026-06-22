@@ -27,6 +27,25 @@ func (item *ResetItem) Message() (Message, error) {
 }
 
 // Message implements QueueItem.
+func (item *VerifyItem) Message() (Message, error) {
+	var (
+		buf bytes.Buffer
+		msg Message
+	)
+
+	if err := verifyTemplate.Execute(&buf, item); err != nil {
+		return msg, err
+	}
+
+	msg = Message{
+		Body:    buf.Bytes(),
+		Subject: "Verify your email on UW Flow",
+		To:      item.Email,
+	}
+	return msg, nil
+}
+
+// Message implements QueueItem.
 func (item *SubscribedItem) Message() (Message, error) {
 	var (
 		buf bytes.Buffer

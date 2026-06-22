@@ -37,6 +37,33 @@ WHERE pr.seen_at is NULL
 	return items, nil
 }
 
+func scanVerify(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
+	var items []format.QueueItem
+
+	const query = `
+SELECT ev.user_id, u.email, u.first_name, ev.secret_key
+FROM queue.email_verify ev
+  JOIN "user" u ON u.id = ev.user_id
+WHERE ev.seen_at is NULL
+`
+
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("loading rows: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		item := new(format.VerifyItem)
+		if err := rows.Scan(&item.ID, &item.Email, &item.UserName, &item.SecretKey); err != nil {
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
 func scanSubscribed(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
 	var items []format.QueueItem
 
