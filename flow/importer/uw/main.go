@@ -11,6 +11,7 @@ import (
 
 	"flow/common/state"
 	"flow/importer/uw/api"
+	"flow/importer/uw/cron"
 	"flow/importer/uw/parts/course"
 	"flow/importer/uw/parts/term"
 )
@@ -51,21 +52,22 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) bool {
 var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
 var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum}
 
-// monitorSpec describes the Sentry Cron Monitor for a scheduled action.
+// monitorSpec holds the Sentry-specific tuning for a scheduled action. The
+// schedule itself is not stored here: it is read from the crontab at runtime
+// (see scheduleForAction) so the crontab stays the single source of truth and
+// the Sentry monitor cannot drift from what actually runs. Only values that
+// have no cron equivalent live here.
 type monitorSpec struct {
-	// schedule is the crontab expression, mirroring crontab.
-	schedule string
 	// maxRuntime is how long (in minutes) the job may run before Sentry
 	// considers it stuck. Tune if a run legitimately takes longer.
 	maxRuntime int64
 }
 
-// monitorSchedules maps each scheduled action to its monitor config. Only
-// actions listed here report to Sentry Crons; manual runs ("courses",
-// "terms") are intentionally omitted.
-var monitorSchedules = map[string]monitorSpec{
-	"hourly": {schedule: "20 6 * * *", maxRuntime: 360},
-	"vacuum": {schedule: "30 5 * * *", maxRuntime: 30},
+// monitors lists the scheduled actions that report to Sentry Crons. Manual
+// runs ("courses", "terms") are intentionally omitted.
+var monitors = map[string]monitorSpec{
+	"hourly": {maxRuntime: 360},
+	"vacuum": {maxRuntime: 30},
 }
 
 // checkInMargin is the grace period (in minutes) for the start check-in before
@@ -76,15 +78,25 @@ const checkInMargin = 30
 // check-in before, and an OK/error check-in after based on run's result. If the
 // action has no schedule or Sentry is disabled, run executes without reporting.
 func withMonitor(action string, run func() bool) {
-	spec, monitored := monitorSchedules[action]
+	spec, monitored := monitors[action]
 	if !monitored || sentry.CurrentHub().Client() == nil {
+		run()
+		return
+	}
+
+	schedule, err := cron.ScheduleForAction(action)
+	if err != nil {
+		// Without a schedule we cannot configure missed-run detection, so skip
+		// monitoring rather than upsert a misconfigured monitor. The job still
+		// runs, and errors are still captured via CaptureException.
+		log.Printf("cron monitoring disabled for %q: %v", action, err)
 		run()
 		return
 	}
 
 	slug := "uwflow-importer-" + action
 	config := &sentry.MonitorConfig{
-		Schedule:      sentry.CrontabSchedule(spec.schedule),
+		Schedule:      sentry.CrontabSchedule(schedule),
 		MaxRuntime:    spec.maxRuntime,
 		CheckInMargin: checkInMargin,
 		Timezone:      "UTC",
