@@ -14,7 +14,6 @@ DROP VIEW prof_teaches_course;
 DROP MATERIALIZED VIEW materialized.prof_teaches_course;
 
 DROP TABLE scraped_prof_teaches_course;
-DROP INDEX IF EXISTS idx_prof_name_trgm;
 
 CREATE MATERIALIZED VIEW materialized.prof_teaches_course AS
 SELECT DISTINCT cs.course_id, sm.prof_id

@@ -32,6 +32,7 @@ curl \
 ```
 
 The endpoint also accepts a raw JSON request body. It normalizes and deduplicates
-rows, validates courses, fuzzy-matches instructor names against `prof.name`, and
-upserts accepted links into `scraped_prof_teaches_course`. Ambiguous matches are
-returned in the response for manual review rather than inserted.
+rows, resolves each course by code and each instructor to a prof by code (the
+same identity the importer uses, creating the prof if missing), then upserts the
+links into `scraped_prof_teaches_course`. Rows whose course code isn't found are
+counted as `unmatched_courses` and skipped.

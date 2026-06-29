@@ -1,8 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
-CREATE INDEX IF NOT EXISTS idx_prof_name_trgm
-  ON prof USING GIN (name gin_trgm_ops);
-
 DROP TRIGGER refresh_section_meeting ON section_meeting;
 DROP TRIGGER IF EXISTS refresh_course_section ON course_section;
 
@@ -29,20 +24,14 @@ CREATE TABLE scraped_prof_teaches_course (
   term_id INT NOT NULL,
   source TEXT NOT NULL DEFAULT 'quest_scraper'
     CONSTRAINT scraped_prof_teaches_course_source_length CHECK (LENGTH(source) <= 64),
-  scraped_prof_name TEXT NOT NULL
-    CONSTRAINT scraped_prof_teaches_course_prof_name_length CHECK (LENGTH(scraped_prof_name) <= 256),
-  fuzzy_match_score REAL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT scraped_prof_teaches_course_unique UNIQUE(course_id, prof_id, term_id, source)
 );
 
-CREATE INDEX scraped_prof_teaches_course_course_id_fkey
-  ON scraped_prof_teaches_course(course_id);
+-- course_id is already covered by the leading column of the UNIQUE index above.
 CREATE INDEX scraped_prof_teaches_course_prof_id_fkey
   ON scraped_prof_teaches_course(prof_id);
-CREATE INDEX scraped_prof_teaches_course_term_id
-  ON scraped_prof_teaches_course(term_id);
 
 CREATE MATERIALIZED VIEW materialized.prof_teaches_course AS
 SELECT DISTINCT course_id, prof_id
