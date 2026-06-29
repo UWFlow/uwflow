@@ -1,3 +1,14 @@
+-- Goal: surface scraped (Quest) prof->course associations in search by
+--   (1) adding the scraped_prof_teaches_course table, and
+--   (2) folding it into the prof_teaches_course materialized view via UNION.
+--
+-- prof_teaches_course can't be redefined in place: course_search_index,
+-- prof_search_index, search_courses, and search_profs all depend on it. So we
+-- drop that whole dependent chain, redefine prof_teaches_course, then recreate
+-- the dependents VERBATIM. Only the three blocks marked CHANGED below are new;
+-- everything marked UNCHANGED is an identical rebuild of the current schema.
+
+-- Tear down the dependent chain (recreated unchanged near the bottom).
 DROP TRIGGER refresh_section_meeting ON section_meeting;
 DROP TRIGGER IF EXISTS refresh_course_section ON course_section;
 
@@ -12,6 +23,7 @@ DROP MATERIALIZED VIEW materialized.prof_search_index;
 DROP VIEW prof_teaches_course;
 DROP MATERIALIZED VIEW materialized.prof_teaches_course;
 
+-- === CHANGED: new table holding scraped associations ===
 CREATE TABLE scraped_prof_teaches_course (
   course_id INT NOT NULL
     REFERENCES course(id)
@@ -33,6 +45,7 @@ CREATE TABLE scraped_prof_teaches_course (
 CREATE INDEX scraped_prof_teaches_course_prof_id_fkey
   ON scraped_prof_teaches_course(prof_id);
 
+-- === CHANGED: was section_meeting only; now UNIONs in the scraped table ===
 CREATE MATERIALIZED VIEW materialized.prof_teaches_course AS
 SELECT DISTINCT course_id, prof_id
 FROM (
@@ -50,6 +63,7 @@ FROM (
 CREATE VIEW prof_teaches_course AS
 SELECT * FROM materialized.prof_teaches_course;
 
+-- === UNCHANGED below: dependents recreated verbatim from the current schema ===
 CREATE MATERIALIZED VIEW materialized.course_search_index AS
 SELECT
   course.id                                   AS course_id,
@@ -196,6 +210,7 @@ AFTER INSERT OR UPDATE OR DELETE ON course_section
 FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_section_meeting_views();
 
+-- === CHANGED: refresh the views when scraped rows change ===
 CREATE TRIGGER refresh_scraped_prof_teaches_course
 AFTER INSERT OR UPDATE OR DELETE ON scraped_prof_teaches_course
 FOR EACH STATEMENT

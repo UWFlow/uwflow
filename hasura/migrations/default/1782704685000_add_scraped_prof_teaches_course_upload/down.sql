@@ -1,3 +1,6 @@
+-- Revert: drop the scraped table and its trigger, then restore
+-- prof_teaches_course to its section_meeting-only definition. The dependent
+-- chain (search views/functions/triggers) is recreated verbatim, same as up.sql.
 DROP TRIGGER refresh_section_meeting ON section_meeting;
 DROP TRIGGER IF EXISTS refresh_course_section ON course_section;
 DROP TRIGGER IF EXISTS refresh_scraped_prof_teaches_course ON scraped_prof_teaches_course;
