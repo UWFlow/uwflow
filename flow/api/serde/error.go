@@ -42,6 +42,10 @@ const (
 	// Transcript contains no terms
 	EmptyTranscript = "empty_transcript"
 
+	//// Administrative ingestion
+	// Administrative ingestion payload failed validation
+	ValidationFailed = "validation_failed"
+
 	//// Fallbacks
 	// These do not map exactly to 400 and 500 status codes respectively:
 	// - BadRequest represents all otherwise unidentified client errors
@@ -92,9 +96,31 @@ func WithStatus(status int, err error) error {
 	return statusErr{err: err, status: status}
 }
 
+type detailsErr struct {
+	details interface{}
+	err     error
+}
+
+func (e detailsErr) Details() interface{} {
+	return e.details
+}
+
+func (e detailsErr) Error() string {
+	return e.err.Error()
+}
+
+func (e detailsErr) Unwrap() error {
+	return e.err
+}
+
+func WithDetails(details interface{}, err error) error {
+	return detailsErr{details: details, err: err}
+}
+
 type errorPayload struct {
-	Enum      string `json:"error"`
-	RequestId string `json:"request_id"`
+	Enum      string      `json:"error"`
+	RequestId string      `json:"request_id"`
+	Details   interface{} `json:"details,omitempty"`
 }
 
 func Error(w http.ResponseWriter, r *http.Request, err error) {
@@ -120,6 +146,11 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 		} else {
 			payload.Enum = BadRequest
 		}
+	}
+
+	var de detailsErr
+	if ok := errors.As(err, &de); ok && status < 500 {
+		payload.Details = de.Details()
 	}
 
 	w.WriteHeader(status)
