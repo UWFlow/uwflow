@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/getsentry/sentry-go v0.47.0
-	github.com/go-chi/chi/v5 v5.2.3
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/jackc/pgx/v5 v5.9.2
