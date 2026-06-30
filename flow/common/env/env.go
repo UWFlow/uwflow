@@ -12,7 +12,8 @@ import (
 type Environment struct {
 	ApiPort string `from:"API_PORT"`
 
-	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
+	HasuraAdminSecret string `from:"HASURA_GRAPHQL_ADMIN_SECRET"`
+	JwtKey            []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
 
 	PostgresDatabase string `from:"POSTGRES_DB"`
 	PostgresHost     string `from:"POSTGRES_HOST"`
@@ -20,9 +21,9 @@ type Environment struct {
 	PostgresPort     string `from:"POSTGRES_PORT"`
 	PostgresUser     string `from:"POSTGRES_USER"`
 
-	RunMode		string `from:"RUN_MODE"`
+	RunMode string `from:"RUN_MODE"`
 
-	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
+	UWApiKeyv3 string `from:"UW_API_KEY_V3"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.

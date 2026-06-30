@@ -7,6 +7,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"flow/api/admin"
 	"flow/api/auth"
 	"flow/api/calendar"
 	"flow/api/data"
@@ -80,6 +81,10 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Post(
 		"/parse/schedule",
 		serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
+	)
+	router.Post(
+		"/admin/course-professors/upload",
+		serde.WithDbResponse(conn, admin.HandleCourseProfessorsUpload, "course professor upload"),
 	)
 
 	router.Get(
