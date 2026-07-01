@@ -17,6 +17,10 @@ import (
 
 type transcriptResponse struct {
 	CoursesImported int `json:"courses_imported"`
+	// Per-term course details (units, grades) parsed from the transcript.
+	// Returned to the client for its local GPA calculator; grades are
+	// deliberately never written to the database (see privacy policy).
+	Terms []transcript.TermSummary `json:"terms"`
 }
 
 const updateProgramQuery = `
@@ -59,11 +63,11 @@ func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transc
 		return nil, fmt.Errorf("deleting old courses: %w", err)
 	}
 
-	var response transcriptResponse
+	response := transcriptResponse{Terms: summary.TermSummaries}
 	for _, termSummary := range summary.TermSummaries {
 		response.CoursesImported += len(termSummary.Courses)
 		for _, course := range termSummary.Courses {
-			_, err = tx.Exec(insertTranscriptQuery, course, userId, termSummary.TermId, termSummary.Level)
+			_, err = tx.Exec(insertTranscriptQuery, course.Code, userId, termSummary.TermId, termSummary.Level)
 			if err != nil {
 				return nil, fmt.Errorf("updating user_course_taken: %w", err)
 			}
