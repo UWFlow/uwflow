@@ -32,9 +32,15 @@ DELETE FROM user_course_taken
 WHERE term_id <= $1 AND user_id = $2
 `
 
+// One INSERT for the whole transcript: user_course_taken carries a
+// per-statement trigger in prod that refreshes a materialized view, so
+// per-course INSERTs turn one upload into dozens of refreshes and blow the
+// request deadline.
 const insertTranscriptQuery = `
 INSERT INTO user_course_taken(course_id, user_id, term_id, level)
-SELECT id, $2, $3, $4 FROM course WHERE code = $1
+SELECT course.id, $1, input.term_id, input.level
+FROM unnest($2::text[], $3::int[], $4::text[]) AS input(code, term_id, level)
+JOIN course ON course.code = input.code
 `
 
 func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transcriptResponse, error) {
@@ -63,18 +69,26 @@ func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transc
 		return nil, fmt.Errorf("deleting old courses: %w", err)
 	}
 
-	response := transcriptResponse{Terms: summary.TermSummaries}
+	var codes []string
+	var termIds []int32
+	var levels []string
 	for _, termSummary := range summary.TermSummaries {
-		response.CoursesImported += len(termSummary.Courses)
 		for _, course := range termSummary.Courses {
-			_, err = tx.Exec(insertTranscriptQuery, course.Code, userId, termSummary.TermId, termSummary.Level)
-			if err != nil {
-				return nil, fmt.Errorf("updating user_course_taken: %w", err)
-			}
+			codes = append(codes, course.Code)
+			termIds = append(termIds, int32(termSummary.TermId))
+			levels = append(levels, termSummary.Level)
 		}
 	}
 
-	return &response, nil
+	tag, err := tx.Exec(insertTranscriptQuery, userId, codes, termIds, levels)
+	if err != nil {
+		return nil, fmt.Errorf("updating user_course_taken: %w", err)
+	}
+
+	return &transcriptResponse{
+		CoursesImported: int(tag.RowsAffected()),
+		Terms:           summary.TermSummaries,
+	}, nil
 }
 
 func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
