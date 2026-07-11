@@ -124,7 +124,7 @@ func main() {
 		log.Fatalf("Usage: %s ACTION", os.Args[0])
 	}
 
-	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+	if dsn := os.Getenv("SENTRY_DSN_UW"); dsn != "" {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn:         dsn,
 			Environment: os.Getenv("RUN_MODE"),

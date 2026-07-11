@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 	_ "time/tzdata"
 
@@ -17,6 +18,7 @@ import (
 
 	"flow/common/db"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
@@ -102,6 +104,17 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 
 func main() {
 	env.Init()
+
+	if dsn := os.Getenv("SENTRY_DSN_API"); dsn != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:         dsn,
+			Environment: env.Global.RunMode,
+		})
+		if err != nil {
+			log.Printf("sentry.Init: %s", err)
+		}
+	}
+
 	conn, err := db.ConnectPool(context.Background(), &env.Global)
 	if err != nil {
 		log.Fatalf("Error: %s", err)
@@ -111,5 +124,10 @@ func main() {
 	socket := ":" + env.Global.ApiPort
 
 	err = http.ListenAndServe(socket, router)
+	// The server is not expected to return: report this as a fatal event.
+	// log.Fatalf calls os.Exit, which skips deferred calls, so flush here
+	// synchronously rather than deferring it.
+	sentry.CaptureException(err)
+	sentry.Flush(2 * time.Second)
 	log.Fatalf("Error: %s", err)
 }
