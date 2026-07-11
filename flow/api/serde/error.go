@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
@@ -109,6 +110,15 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 		status = st.status
 	} else {
 		status = http.StatusInternalServerError
+	}
+
+	// Only report server faults: expected client errors (bad password, taken
+	// email, etc.) are routine and would otherwise drown out real bugs.
+	if status >= 500 {
+		sentry.WithScope(func(scope *sentry.Scope) {
+			scope.SetTag("request_id", payload.RequestId)
+			sentry.CaptureException(err)
+		})
 	}
 
 	var en enumErr
