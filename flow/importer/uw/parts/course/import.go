@@ -30,7 +30,7 @@ func ImportAll(state *state.State, client *api.Client) error {
 			}
 		}
 		idToTerm[termId] = term_object
-		
+
 	}
 
 	courses, classes, err := fetchAll(client, termIds)
