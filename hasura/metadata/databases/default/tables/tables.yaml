@@ -25,5 +25,6 @@
 - "!include public_user.yaml"
 - "!include public_user_course_taken.yaml"
 - "!include public_user_schedule.yaml"
+- "!include public_user_schedule_swap.yaml"
 - "!include public_user_shortlist.yaml"
 - "!include queue_section_subscribed.yaml"
