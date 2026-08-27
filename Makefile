@@ -60,7 +60,7 @@ migrate: ## Apply Hasura migrations
 		echo "Visit: https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/"; \
 		exit 1; \
 	fi
-	@cd hasura && hasura migrate apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
+	@cd hasura && hasura migrate apply --database-name default --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
 	@cd hasura && hasura metadata apply --admin-secret $(HASURA_GRAPHQL_ADMIN_SECRET)
 
 migrate-status: ## Check Hasura migration status
