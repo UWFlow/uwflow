@@ -13,6 +13,17 @@ select_permissions:
         - day
         - is_tba
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - section_id
+        - start_seconds
+        - end_seconds
+        - date
+        - location
+        - day
+        - is_tba
+      filter: {}
   - role: user
     permission:
       columns:

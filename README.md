@@ -109,6 +109,47 @@ This will rebuild your importer using your local code, and then run the import j
 
 Hasura supports live reloading as well, due to its configuration.
 
+## Admin console
+
+Staff accounts can search users and open a **read-only** session as one of them,
+to see the site as that person sees it. The console lives at `/admin` in the
+frontend and is served by `/api/admin/*`.
+
+### Granting admin access
+
+Admin is a column on `"user"`; there is no self-service path to it:
+
+```sh
+$ docker exec postgres psql -U postgres -d $POSTGRES_DB \
+    -c "UPDATE \"user\" SET is_admin = TRUE WHERE email = 'you@uwflow.com';"
+```
+
+### How impersonation is contained
+
+- **Read-only.** The session's JWT carries the `impersonated_user` Hasura role,
+  which has select permissions only, so Hasura exposes no mutation root to it.
+  `impersonated_user` is also the *only* role in `x-hasura-allowed-roles` on
+  that token — clients may choose any allowed role via `x-hasura-role`, so
+  listing `user` there would hand the session write access on request.
+- **API routes too.** Handlers that write to Postgres directly never pass
+  through Hasura, so the write endpoints (`/parse/*`, `DELETE /user`) are
+  wrapped in `middleware.RejectImpersonation`. Any new route that writes on
+  behalf of the caller belongs in that group in `api/main.go`.
+- **Short-lived.** Impersonation tokens expire after an hour and
+  `/auth/refresh` refuses to renew them, so the cap cannot be extended by
+  staying logged in.
+- **Audited.** Every session inserts a row into `admin_impersonation_log`
+  before the token is minted, so a session cannot exist unrecorded. The console
+  shows the log to all admins, not just its author.
+- **Not chainable, not reflexive.** An impersonation token cannot open the
+  console, and admins may impersonate neither themselves nor each other.
+
+One caveat worth knowing: JWTs are stateless, so "Exit" closes out the audit
+record and returns the admin's own token, but the impersonation token it
+replaces stays cryptographically valid until it expires. The one-hour lifetime
+is what bounds that window — genuine revocation would mean moving Hasura from
+JWT auth to webhook auth.
+
 ## Interacting with the backend
 
 When `docker-compose` is active, services may be accessed

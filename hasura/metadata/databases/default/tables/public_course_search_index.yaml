@@ -19,6 +19,23 @@ select_permissions:
         - terms_with_online_sections
       filter: {}
       allow_aggregations: true
+  - role: impersonated_user
+    permission:
+      columns:
+        - prof_ids
+        - terms
+        - terms_with_seats
+        - course_id
+        - ratings
+        - easy
+        - liked
+        - useful
+        - code
+        - name
+        - has_prereqs
+        - terms_with_online_sections 
+      filter: {}
+      allow_aggregations: true
   - role: user
     permission:
       columns:

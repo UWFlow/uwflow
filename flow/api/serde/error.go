@@ -43,6 +43,14 @@ const (
 	// Transcript contains no terms
 	EmptyTranscript = "empty_transcript"
 
+	//// Admin console
+	// Caller is authenticated but is not an admin
+	NotAdmin = "not_admin"
+	// Action is not allowed while impersonating another user
+	ImpersonationForbidden = "impersonation_forbidden"
+	// Impersonation target does not exist, or is an admin
+	InvalidImpersonationTarget = "invalid_impersonation_target"
+
 	//// Fallbacks
 	// These do not map exactly to 400 and 500 status codes respectively:
 	// - BadRequest represents all otherwise unidentified client errors

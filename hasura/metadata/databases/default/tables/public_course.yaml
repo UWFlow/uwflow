@@ -88,6 +88,17 @@ select_permissions:
         - coreqs
         - antireqs
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - id
+        - antireqs
+        - code
+        - coreqs
+        - description
+        - name
+        - prereqs
+      filter: {}
   - role: user
     permission:
       columns:

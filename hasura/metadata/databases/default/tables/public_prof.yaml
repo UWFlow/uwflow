@@ -55,6 +55,14 @@ select_permissions:
         - name
         - picture_url
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - id
+        - code
+        - name
+        - picture_url
+      filter: {}
   - role: user
     permission:
       columns:

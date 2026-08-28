@@ -21,6 +21,21 @@ select_permissions:
         - is_closed
         - is_tba
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - section_id
+        - prof_id
+        - start_seconds
+        - end_seconds
+        - start_date
+        - end_date
+        - location
+        - days
+        - is_cancelled
+        - is_closed
+        - is_tba
+      filter: {}
   - role: user
     permission:
       columns:

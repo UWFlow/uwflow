@@ -31,6 +31,20 @@ array_relationships:
           name: user_shortlist
           schema: public
 select_permissions:
+  - role: impersonated_user
+    permission:
+      columns:
+        - id
+        - secret_id
+        - email
+        - first_name
+        - last_name
+        - full_name
+        - picture_url
+        - program
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
   - role: user
     permission:
       columns:

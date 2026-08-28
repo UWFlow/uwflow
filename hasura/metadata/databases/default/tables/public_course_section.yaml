@@ -33,6 +33,18 @@ select_permissions:
         - term_id
         - updated_at
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - class_number
+        - course_id
+        - enrollment_capacity
+        - enrollment_total
+        - id
+        - section_name
+        - term_id
+        - updated_at
+      filter: {}
   - role: user
     permission:
       columns:

@@ -27,6 +27,12 @@ select_permissions:
         - prof_id
         - course_id
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - prof_id
+        - course_id
+      filter: {}
   - role: user
     permission:
       columns:

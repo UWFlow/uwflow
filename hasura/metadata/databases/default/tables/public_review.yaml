@@ -95,6 +95,23 @@ select_permissions:
         - created_at
         - updated_at
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - id
+        - course_id
+        - prof_id
+        - liked
+        - course_easy
+        - course_useful
+        - course_comment
+        - prof_clear
+        - prof_engaging
+        - prof_comment
+        - public
+        - created_at
+        - updated_at
+      filter: {}
   - role: user
     permission:
       columns:

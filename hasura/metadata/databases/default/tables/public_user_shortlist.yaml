@@ -15,6 +15,14 @@ insert_permissions:
         - course_id
         - user_id
 select_permissions:
+  - role: impersonated_user
+    permission:
+      columns:
+        - course_id
+        - user_id
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
   - role: user
     permission:
       columns:

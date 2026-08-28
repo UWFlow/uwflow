@@ -13,6 +13,17 @@ select_permissions:
         - useful
       filter: {}
       allow_aggregations: true
+  - role: impersonated_user
+    permission:
+      columns:
+        - course_id
+        - filled_count
+        - comment_count
+        - liked
+        - easy
+        - useful
+      filter: {}
+      allow_aggregations: true
   - role: user
     permission:
       columns:

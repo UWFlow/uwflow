@@ -16,6 +16,13 @@ select_permissions:
         - prerequisite_id
         - is_corequisite
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - course_id
+        - prerequisite_id
+        - is_corequisite
+      filter: {}
   - role: user
     permission:
       columns:

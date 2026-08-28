@@ -10,6 +10,14 @@ select_permissions:
         - program
         - picture_url
       filter: {}
+  - role: impersonated_user
+    permission:
+      columns:
+        - review_id
+        - full_name
+        - program
+        - picture_url
+      filter: {}
   - role: user
     permission:
       columns:

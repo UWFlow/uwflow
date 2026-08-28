@@ -18,6 +18,14 @@ insert_permissions:
         - user_id
         - section_id
 select_permissions:
+  - role: impersonated_user
+    permission:
+      columns:
+        - user_id
+        - section_id
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
   - role: user
     permission:
       columns:

@@ -8,6 +8,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"flow/api/admin"
 	"flow/api/auth"
 	"flow/api/calendar"
 	"flow/api/data"
@@ -75,14 +76,27 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbNoResponse(conn, auth.ResetPassword, "password reset completion"),
 	)
 
-	router.Post(
-		"/parse/transcript",
-		serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
-	)
-	router.Post(
-		"/parse/schedule",
-		serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
-	)
+	// Routes that write to the caller's account go through the DB directly
+	// rather than through Hasura, so the `impersonated_user` role's select-only
+	// permissions do not cover them. RejectImpersonation is what makes an
+	// impersonation session read-only here too; any future route that writes on
+	// behalf of the caller belongs in this group.
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.RejectImpersonation())
+
+		r.Post(
+			"/parse/transcript",
+			serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
+		)
+		r.Post(
+			"/parse/schedule",
+			serde.WithDbResponse(conn, parse.HandleSchedule, "schedule upload"),
+		)
+		r.Delete(
+			"/user",
+			serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+		)
+	})
 
 	router.Get(
 		"/data/search",
@@ -94,9 +108,27 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbDirect(conn, calendar.HandleCalendar, "calendar generation"),
 	)
 
-	router.Delete(
-		"/user",
-		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+	// Admin console. Each handler asserts the caller is an admin itself, so
+	// these are safe to mount without further gating here.
+	router.Get(
+		"/admin/me",
+		serde.WithDbResponse(conn, admin.HandleWhoAmI, "admin identity check"),
+	)
+	router.Get(
+		"/admin/users",
+		serde.WithDbResponse(conn, admin.HandleSearchUsers, "admin user search"),
+	)
+	router.Get(
+		"/admin/impersonation-log",
+		serde.WithDbResponse(conn, admin.HandleImpersonationLog, "impersonation log"),
+	)
+	router.Post(
+		"/admin/impersonate",
+		serde.WithDbResponse(conn, admin.HandleImpersonate, "impersonation start"),
+	)
+	router.Post(
+		"/admin/impersonate/stop",
+		serde.WithDbResponse(conn, admin.HandleStopImpersonating, "impersonation stop"),
 	)
 
 	return router

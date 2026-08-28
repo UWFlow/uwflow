@@ -1,10 +1,46 @@
 package middleware
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+
+	"flow/api/serde"
 )
+
+// RejectImpersonation blocks a route for admin impersonation sessions.
+//
+// The read-only guarantee for impersonation is enforced by Hasura, via the
+// `impersonated_user` role's select-only permissions. Handlers in this API,
+// however, talk to Postgres directly and never pass through Hasura, so a
+// route that writes on behalf of the caller has to opt into this middleware
+// or an impersonating admin would be able to modify the account after all.
+//
+// Requests with no token, or an invalid one, are passed through untouched:
+// deciding what to do about those is the handler's job, and it already does
+// it. This middleware only ever answers one question — is this a valid token
+// that happens to be impersonating.
+func RejectImpersonation() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims, err := serde.ClaimsFromRequest(r)
+			if err == nil && claims.Impersonating() {
+				serde.Error(w, r, serde.WithStatus(
+					http.StatusForbidden,
+					serde.WithEnum(
+						serde.ImpersonationForbidden,
+						fmt.Errorf("admin %d may not write to user %s while impersonating",
+							claims.Impersonator, claims.Hasura.UserId),
+					),
+				))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // CORS middleware for localhost environments
 func CorsLocalhostMiddleware() func(http.Handler) http.Handler {

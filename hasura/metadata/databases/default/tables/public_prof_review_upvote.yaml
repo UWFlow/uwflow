@@ -11,6 +11,14 @@ insert_permissions:
         - review_id
         - user_id
 select_permissions:
+  - role: impersonated_user
+    permission:
+      columns:
+        - review_id
+        - user_id
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
   - role: user
     permission:
       columns:
