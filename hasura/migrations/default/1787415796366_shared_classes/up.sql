@@ -32,3 +32,44 @@ CREATE TABLE shared_group_member (
 );
 
 CREATE INDEX shared_group_member_user_id_idx ON shared_group_member(user_id);
+
+-- A pending shared_group_member row can only represent an invite to someone
+-- who already has an account, since it is keyed by user id. This table covers
+-- the other case: an invite addressed to an email with no account behind it.
+-- The row is deleted once it is converted into a shared_group_member on
+-- sign-up, or on decline, the same way a pending member row is.
+CREATE TABLE shared_group_invite (
+  id SERIAL PRIMARY KEY,
+  group_id INT NOT NULL
+    REFERENCES shared_group(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  invited_email TEXT NOT NULL
+    CONSTRAINT shared_group_invite_email_length CHECK (LENGTH(invited_email) <= 256)
+    CONSTRAINT shared_group_invite_email_format
+      CHECK (invited_email ~* '^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$'),
+  invited_by INT NOT NULL
+    REFERENCES "user"(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  -- The token in the emailed link. It is what lets the recipient act on the
+  -- invite: they have no session to be identified by until they sign up.
+  secret_key TEXT NOT NULL
+    CONSTRAINT shared_group_invite_secret_key_unique UNIQUE
+    DEFAULT REPLACE(GEN_RANDOM_UUID()::TEXT, '-', ''),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- The mail service scans for a NULL here and stamps it once the invite has
+  -- been sent. Without it every notification would re-mail every outstanding
+  -- invite, since a scan reads all unsent rows rather than the one that fired.
+  mailed_at TIMESTAMPTZ DEFAULT NULL,
+  CONSTRAINT shared_group_invite_unique UNIQUE (group_id, invited_email)
+);
+
+CREATE INDEX shared_group_invite_group_id_idx ON shared_group_invite(group_id);
+
+-- The queue tables the mail service reads all name a "user" row it takes the
+-- recipient address off, which is what limits mail to people who already have
+-- an account. An invite carries its own address, so it is notified on directly
+-- and needs no queue table standing in front of it.
+CREATE TRIGGER notify_shared_group_invite AFTER INSERT ON shared_group_invite
+FOR EACH STATEMENT EXECUTE PROCEDURE sendmail_notify('shared_group_invite');
