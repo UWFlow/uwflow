@@ -393,8 +393,7 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	return sent, nil
 }
 
-// Respond accepts or declines a pending invite. A decline can also block the
-// inviter from sending future invites.
+// Respond accepts or declines a pending invite.
 func Respond(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -407,7 +406,6 @@ func Respond(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	var body struct {
 		Accept bool `json:"accept"`
-		Block  bool `json:"block"`
 	}
 	if err := decode(r, &body); err != nil {
 		return nil, err
@@ -424,43 +422,15 @@ func Respond(tx *db.Tx, r *http.Request) (interface{}, error) {
 		if tag.RowsAffected() == 0 {
 			return nil, serde.WithStatus(http.StatusNotFound, fmt.Errorf("no pending invite for this group"))
 		}
-		_, err = tx.Exec(`
-			UPDATE shared_group_invite SET status = 'accepted'
-			WHERE group_id = $1 AND LOWER(invited_email) =
-				(SELECT LOWER(email) FROM "user" WHERE id = $2)
-		`, gid, userId)
-		if err != nil {
-			return nil, fmt.Errorf("marking invite accepted: %w", err)
-		}
 		return map[string]interface{}{"status": "member"}, nil
 	}
 
-	// Decline: drop any membership row and mark the invite declined.
-	if body.Block {
-		_, err = tx.Exec(`
-			INSERT INTO shared_group_block (user_id, blocked_user_id)
-			SELECT $2, invited_by FROM shared_group_invite
-			WHERE group_id = $1 AND LOWER(invited_email) =
-				(SELECT LOWER(email) FROM "user" WHERE id = $2)
-			ON CONFLICT DO NOTHING
-		`, gid, userId)
-		if err != nil {
-			return nil, fmt.Errorf("blocking inviter: %w", err)
-		}
-	}
+	// Decline: just drop the pending membership row.
 	_, err = tx.Exec(`
 		DELETE FROM shared_group_member WHERE group_id = $1 AND user_id = $2 AND status = 'pending'
 	`, gid, userId)
 	if err != nil {
 		return nil, fmt.Errorf("declining invite: %w", err)
-	}
-	_, err = tx.Exec(`
-		UPDATE shared_group_invite SET status = 'declined'
-		WHERE group_id = $1 AND LOWER(invited_email) =
-			(SELECT LOWER(email) FROM "user" WHERE id = $2)
-	`, gid, userId)
-	if err != nil {
-		return nil, fmt.Errorf("marking invite declined: %w", err)
 	}
 	return map[string]interface{}{"status": "declined"}, nil
 }
