@@ -202,7 +202,7 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 		FROM shared_group_member m
 		JOIN "user" u ON u.id = m.user_id
 		WHERE m.group_id = $1
-		ORDER BY m.joined_at
+		ORDER BY m.created_at
 	`, gid)
 	if err != nil {
 		return nil, fmt.Errorf("loading members: %w", err)
