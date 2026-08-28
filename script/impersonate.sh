@@ -151,12 +151,18 @@ fi
 pick_user() {
   command -v fzf >/dev/null 2>&1 \
     || fail "Interactive pick needs fzf (brew install fzf); or name a user by id/email/name"
-  [ -t 1 ] \
+  # Test the controlling terminal, not stdout: this function runs inside a
+  # $(...) capture, so fd 1 is a pipe even in a real terminal. fzf draws its UI
+  # on /dev/tty regardless of where stdout goes, so /dev/tty is what has to
+  # exist. (This is also what correctly rejects non-interactive runners.)
+  { : >/dev/tty; } 2>/dev/null \
     || fail "Interactive pick needs a terminal; name a user by id/email/name instead"
 
   local chosen
   # ON_ERROR_STOP won't survive the pipe (fzf's exit status is what $? sees), so
   # guard the empty result afterwards rather than trusting the pipeline status.
+  # fzf reads the candidate list from the pipe on stdin and takes keystrokes
+  # from /dev/tty on its own; only the picked line comes back out on stdout.
   chosen="$(
     psql_do "
       SELECT id, full_name, coalesce(email, '<no email>'), join_source, join_date::date
