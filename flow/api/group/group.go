@@ -7,6 +7,7 @@ package group
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	"flow/common/db"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 // groupId reads and validates the {id} path parameter.
@@ -359,8 +361,11 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	// built here.
 	var targetId int
 	err = tx.QueryRow(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email).Scan(&targetId)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return map[string]interface{}{"status": "not_found"}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("looking up invited account: %w", err)
 	}
 
 	// A pending shared_group_member row is the invite: the person accepts by
