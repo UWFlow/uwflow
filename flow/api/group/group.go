@@ -352,36 +352,18 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	sent := map[string]interface{}{"status": "sent"}
 
-	// Record the invite regardless; it waits for the account if there is none.
-	_, err = tx.Exec(`
-		INSERT INTO shared_group_invite (group_id, invited_email, invited_by)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (group_id, invited_email) DO NOTHING
-	`, gid, email, userId)
-	if err != nil {
-		return nil, fmt.Errorf("recording invite: %w", err)
-	}
-
 	// Resolve the email to an account. Nothing about the outcome is returned.
 	var targetId int
 	err = tx.QueryRow(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email).Scan(&targetId)
 	if err != nil {
-		// No account (or lookup miss): invite row waits for signup. Email
-		// delivery to non-users is not wired up yet.
-		// ponytail: skipped outbound email, add when signup->invite match lands.
+		// No account (or lookup miss): nothing to add yet. Email delivery to
+		// non-users is not wired up; that is possible future work.
 		return sent, nil
 	}
 
-	// Silently drop if the target blocked the inviter.
-	var blocked int
-	if tx.QueryRow(`
-		SELECT 1 FROM shared_group_block WHERE user_id = $1 AND blocked_user_id = $2
-	`, targetId, userId).Scan(&blocked) == nil {
-		return sent, nil
-	}
-
-	// Add as pending so they can accept in-app. Existing membership is left as
-	// is (never demotes a confirmed member back to pending).
+	// A pending shared_group_member row is the invite: the person accepts by
+	// becoming 'member', or the row is deleted on decline. Existing membership
+	// is left as is (never demotes a confirmed member back to pending).
 	_, err = tx.Exec(`
 		INSERT INTO shared_group_member (group_id, user_id, status)
 		VALUES ($1, $2, 'pending')
