@@ -42,6 +42,21 @@ type SubscribedItem struct {
 // RowID implements QueueItem.
 func (it *SubscribedItem) RowID() int { return it.ID }
 
+// InviteItem is a row of shared_group_invite.
+// Unlike every other queue item, Email is the address the invite was addressed
+// to rather than one read off a "user" row, so the recipient of an InviteItem
+// need not have a flow account.
+type InviteItem struct {
+	ID          int
+	Email       string
+	InviterName string
+	GroupName   string
+	InviteURL   string
+}
+
+// RowID implements QueueItem.
+func (it *InviteItem) RowID() int { return it.ID }
+
 // VacatedItem is a row of queue.section_vacated.
 type VacatedItem struct {
 	ID           int

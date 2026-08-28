@@ -46,6 +46,17 @@ const subscribedText = `
 				UW Flow
 `
 
+// inviteText greets nobody by name: an invite may be the first time we mail
+// this address, so there is no account to read a first name from.
+const inviteText = `
+				Hi there,<br /><br />
+				{{.InviterName}} invited you to join {{.GroupName}} on UW Flow, where you can see which classes you and your friends have in common.<br /><br />
+				Accept the invite here: {{.InviteURL}}<br /><br />
+				You don’t need an account yet — the link will walk you through making one.<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
 const oneVacatedText = `
 				Hi {{.UserName}},<br /><br />
 				{{index .SectionNames 0}} in {{.CourseCode}} has open seats!<br /><br />
@@ -68,6 +79,7 @@ var manyVacatedText = `
 var (
 	resetTemplate       = template.New("reset")
 	subscribedTemplate  = template.New("subscribed")
+	inviteTemplate      = template.New("invite")
 	oneVacatedTemplate  = template.New("one_vacated")
 	manyVacatedTemplate = template.New("many_vacated")
 )
@@ -78,6 +90,9 @@ func init() {
 	}
 	if _, err := subscribedTemplate.Parse(prologue + subscribedText + epilogue); err != nil {
 		log.Fatalf("Error: parse subscribed template: %v", err)
+	}
+	if _, err := inviteTemplate.Parse(prologue + inviteText + epilogue); err != nil {
+		log.Fatalf("Error: parse invite template: %v", err)
 	}
 	if _, err := oneVacatedTemplate.Parse(prologue + oneVacatedText + epilogue); err != nil {
 		log.Fatalf("Error: parse one-vacated template: %v", err)
