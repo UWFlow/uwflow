@@ -27,7 +27,7 @@ CREATE TABLE shared_group_member (
     ON UPDATE CASCADE,
   status TEXT NOT NULL DEFAULT 'pending'
     CONSTRAINT shared_group_member_status CHECK (status IN ('pending', 'member')),
-  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT shared_group_member_pkey PRIMARY KEY (group_id, user_id)
 );
 
