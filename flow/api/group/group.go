@@ -133,8 +133,8 @@ type sharedClass struct {
 	Meetings    []meetingInfo `json:"meetings"`
 }
 
-// Get returns a group's members, its pending invites, and the classes shared by
-// two or more confirmed members. Only members may read a group.
+// Get returns a group's members (pending members included) and the classes
+// shared by two or more confirmed members. Only members may read a group.
 func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -162,10 +162,6 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	invites, err := groupInvites(tx, gid)
-	if err != nil {
-		return nil, err
-	}
 	classes, err := sharedClasses(tx, gid)
 	if err != nil {
 		return nil, err
@@ -176,7 +172,6 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 		"name":           name,
 		"is_creator":     isCreator,
 		"members":        members,
-		"invited_emails": invites,
 		"shared_classes": classes,
 	}, nil
 }
@@ -225,28 +220,6 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 		members = append(members, m)
 	}
 	return members, rows.Err()
-}
-
-func groupInvites(tx *db.Tx, gid int) ([]string, error) {
-	rows, err := tx.Query(`
-		SELECT invited_email FROM shared_group_invite
-		WHERE group_id = $1 AND status = 'invited'
-		ORDER BY created_at
-	`, gid)
-	if err != nil {
-		return nil, fmt.Errorf("loading invites: %w", err)
-	}
-	defer rows.Close()
-
-	emails := []string{}
-	for rows.Next() {
-		var e string
-		if err := rows.Scan(&e); err != nil {
-			return nil, fmt.Errorf("scanning invite: %w", err)
-		}
-		emails = append(emails, e)
-	}
-	return emails, rows.Err()
 }
 
 // sharedClasses computes, for a group, each section held by two or more
