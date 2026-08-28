@@ -10,6 +10,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func grade(n int) *int {
+	return &n
+}
+
 func TestParseTranscript(t *testing.T) {
 	tests := []struct {
 		name string
@@ -22,34 +26,68 @@ func TestParseTranscript(t *testing.T) {
 				ProgramName:   "Computer Science/Digital Hardware Option",
 				TermSummaries: []TermSummary{
 					{
-						TermId:  1179,
-						Level:   "1A",
-						Courses: []string{"cs145", "math145", "math147", "psych101", "spcom223"},
+						TermId: 1179,
+						Level:  "1A",
+						Courses: []TermCourse{
+							{Code: "cs145", Units: 0.5, Grade: grade(97)},
+							{Code: "math145", Units: 0.5, Grade: grade(95)},
+							{Code: "math147", Units: 0.5, Grade: grade(97)},
+							{Code: "psych101", Units: 0.5, Grade: grade(84)},
+							{Code: "spcom223", Units: 0.5, Grade: grade(85)},
+						},
 					},
 					{
-						TermId:  1181,
-						Level:   "1B",
-						Courses: []string{"cs146", "ece124", "engl306a", "math146", "math148", "pd1", "stat230"},
+						TermId: 1181,
+						Level:  "1B",
+						Courses: []TermCourse{
+							{Code: "cs146", Units: 0.5, Grade: grade(100)},
+							{Code: "ece124", Units: 0.5, Grade: grade(95)},
+							{Code: "engl306a", Units: 0.5, Grade: grade(93)},
+							{Code: "math146", Units: 0.5, Grade: grade(100)},
+							{Code: "math148", Units: 0.5, Grade: grade(92)},
+							{Code: "pd1", Units: 0.5}, // CR
+							{Code: "stat230", Units: 0.5, Grade: grade(90)},
+						},
 					},
 					{
-						TermId:  1185,
-						Level:   "2A",
-						Courses: []string{"coop1", "pd11"},
+						TermId: 1185,
+						Level:  "2A",
+						Courses: []TermCourse{
+							{Code: "coop1", Units: 0.5},
+							{Code: "pd11", Units: 0.5},
+						},
 					},
 					{
-						TermId:  1189,
-						Level:   "2A",
-						Courses: []string{"cs241e", "cs245", "cs246e", "ece222", "math249"},
+						TermId: 1189,
+						Level:  "2A",
+						Courses: []TermCourse{
+							{Code: "cs241e", Units: 0.5, Grade: grade(100)},
+							{Code: "cs245", Units: 0.5, Grade: grade(91)},
+							{Code: "cs246e", Units: 0.5, Grade: grade(100)},
+							{Code: "ece222", Units: 0.5, Grade: grade(100)},
+							{Code: "math249", Units: 0.5, Grade: grade(81)},
+						},
 					},
 					{
-						TermId:  1191,
-						Level:   "2B",
-						Courses: []string{"coop2", "pd10", "wkrpt200m"},
+						TermId: 1191,
+						Level:  "2B",
+						Courses: []TermCourse{
+							{Code: "coop2", Units: 0.5},
+							{Code: "pd10", Units: 0.5},
+							{Code: "wkrpt200m", Units: 0.13}, // NG
+						},
 					},
 					{
-						TermId:  1195,
-						Level:   "2B",
-						Courses: []string{"cs240e", "cs370", "math245", "math247", "stat231"},
+						TermId: 1195,
+						Level:  "2B",
+						// Current term at time of export: no units/grades listed.
+						Courses: []TermCourse{
+							{Code: "cs240e"},
+							{Code: "cs370"},
+							{Code: "math245"},
+							{Code: "math247"},
+							{Code: "stat231"},
+						},
 					},
 				},
 			},
@@ -61,44 +99,88 @@ func TestParseTranscript(t *testing.T) {
 				ProgramName:   "Computer Science",
 				TermSummaries: []TermSummary{
 					{
-						TermId:  1179,
-						Level:   "1A",
-						Courses: []string{"cs137", "ece105", "math115", "math117", "math135", "se101"},
+						TermId: 1179,
+						Level:  "1A",
+						Courses: []TermCourse{
+							{Code: "cs137", Units: 0.5, Grade: grade(86)},
+							{Code: "ece105", Units: 0.5, Grade: grade(75)},
+							{Code: "math115", Units: 0.5, Grade: grade(90)},
+							{Code: "math117", Units: 0.5, Grade: grade(93)},
+							{Code: "math135", Units: 0.5, Grade: grade(87)},
+							{Code: "se101", Units: 0.25, Grade: grade(98)},
+						},
 					},
 					{
-						TermId:  1181,
-						Level:   "1B",
-						Courses: []string{"cs138", "ece106", "ece124", "ece140", "math119"},
+						TermId: 1181,
+						Level:  "1B",
+						Courses: []TermCourse{
+							{Code: "cs138", Units: 0.5, Grade: grade(89)},
+							{Code: "ece106", Units: 0.5, Grade: grade(72)},
+							{Code: "ece124", Units: 0.5, Grade: grade(84)},
+							{Code: "ece140", Units: 0.5, Grade: grade(75)},
+							{Code: "math119", Units: 0.5, Grade: grade(87)},
+						},
 					},
 					{
-						TermId:  1185,
-						Level:   "1B",
-						Courses: []string{"coop1", "pd20"},
+						TermId: 1185,
+						Level:  "1B",
+						Courses: []TermCourse{
+							{Code: "coop1", Units: 0.5},
+							{Code: "pd20", Units: 0.5},
+						},
 					},
 					{
-						TermId:  1189,
-						Level:   "2A",
-						Courses: []string{"che102", "cs241e", "ece222", "se212", "smf213", "spcom223", "stat206"},
+						TermId: 1189,
+						Level:  "2A",
+						Courses: []TermCourse{
+							{Code: "che102", Units: 0.5, Grade: grade(84)},
+							{Code: "cs241e", Units: 0.5, Grade: grade(78)},
+							{Code: "ece222", Units: 0.5, Grade: grade(89)},
+							{Code: "se212", Units: 0.5, Grade: grade(73)},
+							{Code: "smf213", Units: 0.5, Grade: grade(83)},
+							{Code: "spcom223", Units: 0.5, Grade: grade(85)},
+							{Code: "stat206", Units: 0.5, Grade: grade(86)},
+						},
 					},
 					{
-						TermId:  1191,
-						Level:   "2A",
-						Courses: []string{"coop2", "pd21"},
+						TermId: 1191,
+						Level:  "2A",
+						Courses: []TermCourse{
+							{Code: "coop2", Units: 0.5},
+							{Code: "pd21", Units: 0.5},
+						},
 					},
 					{
-						TermId:  1195,
-						Level:   "2B",
-						Courses: []string{"cs240", "cs247", "earth121", "ece358", "math239", "msci261", "wkrpt200"},
+						TermId: 1195,
+						Level:  "2B",
+						Courses: []TermCourse{
+							{Code: "cs240", Units: 0.5, Grade: grade(85)},
+							{Code: "cs247", Units: 0.5, Grade: grade(89)},
+							{Code: "earth121", Units: 0.5, Grade: grade(83)},
+							{Code: "ece358", Units: 0.5, Grade: grade(80)},
+							{Code: "math239", Units: 0.5, Grade: grade(74)},
+							{Code: "msci261", Units: 0.5, Grade: grade(87)},
+							{Code: "wkrpt200", Units: 0.13, Grade: grade(95)},
+						},
 					},
 					{
-						TermId:  1199,
-						Level:   "2B",
-						Courses: []string{"coop3", "pd10"},
+						TermId: 1199,
+						Level:  "2B",
+						Courses: []TermCourse{
+							{Code: "coop3", Units: 0.5},
+							{Code: "pd10", Units: 0.5},
+						},
 					},
 					{
-						TermId:  1201,
-						Level:   "4A",
-						Courses: []string{"cs341", "cs350", "cs370", "phil256", "syde552"},
+						TermId: 1201,
+						Level:  "4A",
+						Courses: []TermCourse{
+							{Code: "cs341"},
+							{Code: "cs350"},
+							{Code: "cs370"},
+							{Code: "phil256"},
+							{Code: "syde552"},
+						},
 					},
 				},
 			},
