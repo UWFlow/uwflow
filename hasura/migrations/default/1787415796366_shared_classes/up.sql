@@ -13,6 +13,39 @@ CREATE TABLE shared_group (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX shared_group_created_by_idx ON shared_group(created_by);
+
+CREATE FUNCTION enforce_shared_group_owner_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+  owned_group_count INT;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.created_by = OLD.created_by THEN
+    RETURN NEW;
+  END IF;
+
+  -- Serialize ownership checks for this user so concurrent inserts cannot
+  -- both observe fewer than five groups and exceed the limit.
+  PERFORM 1 FROM "user" WHERE id = NEW.created_by FOR UPDATE;
+
+  SELECT COUNT(*)
+  INTO owned_group_count
+  FROM shared_group
+  WHERE created_by = NEW.created_by;
+
+  IF owned_group_count >= 5 THEN
+    RAISE EXCEPTION 'A user cannot own more than 5 shared groups'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER enforce_shared_group_owner_limit
+BEFORE INSERT OR UPDATE OF created_by ON shared_group
+FOR EACH ROW EXECUTE FUNCTION enforce_shared_group_owner_limit();
+
 -- One row per person in a group. A 'pending' row is how an invite is
 -- represented: it is created on invite, flips to 'member' on accept, and is
 -- deleted on decline. Only 'member' rows contribute to shared-class results.
