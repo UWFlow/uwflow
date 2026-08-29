@@ -1,36 +1,103 @@
 package format
 
 import (
-	"embed"
 	"html/template"
 	"log"
 )
 
-// Message bodies live in templates/ so they can be restyled and edited without
-// touching Go. Each defines a "content" block that layout.html wraps in the
-// Flow header and footer.
-//
-// invite.html greets nobody by name: an invite may be the first time we mail
-// an address, so there is no account to read a first name from.
-//
-//go:embed templates/*.html
-var templateFS embed.FS
+const prologue = `<html>
+<head>
+	<title></title>
+	<link href="https://svc.webspellchecker.net/spellcheck31/lf/scayt3/ckscayt/css/wsc.css" rel="stylesheet" type="text/css" />
+</head>
+<body aria-readonly="false" style="cursor: auto;">
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:250px">
+	<tbody>
+		<tr>
+			<td><a href="#"><img src="https://uwflow.com/title.png" style="width:100%" /></a></td>
+		</tr>
+	</tbody>
+</table>
+<table align="center" border="0" cellpadding="1" cellspacing="1" style="width:600px">
+	<tbody>
+		<tr>
+			<td><span style="font-size:14px;font-family:arial,helvetica,sans-serif;">`
+
+const epilogue = `</span></td>
+		</tr>
+	</tbody>
+</table>
+</body>
+</html>`
+
+const resetText = `
+				Hi {{.UserName}},<br /><br />
+				Your one-time reset code is {{.SecretKey}}. Follow the instructions back on Flow and we will have you course-surfing in no time!<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
+const subscribedText = `
+				Hi {{.UserName}},<br /><br />
+				You subscribed to one or more sections in {{.CourseCode}}.<br /><br />
+				We’ll notify you when a spot opens in a section you subscribed to.<br /><br />
+				If you’d like to unsubscribe, navigate to {{.CourseURL}}, sign in, and click the blue bell icon on sections you don’t want to hear about.<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
+// inviteText greets nobody by name: an invite may be the first time we mail
+// this address, so there is no account to read a first name from.
+const inviteText = `
+				Hi there,<br /><br />
+				{{.InviterName}} invited you to join {{.GroupName}} on UW Flow, where you can see which classes you and your friends have in common.<br /><br />
+				Accept the invite here: {{.InviteURL}}<br /><br />
+				You don’t need an account yet — the link will walk you through making one.<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
+const oneVacatedText = `
+				Hi {{.UserName}},<br /><br />
+				{{index .SectionNames 0}} in {{.CourseCode}} has open seats!<br /><br />
+				Take a look at {{.CourseURL}}<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
+var manyVacatedText = `
+				Hi {{.UserName}},
+
+				The following sections in {{.CourseCode}} have open seats:
+				{{block "list" .SectionNames}}{{range .}}{{print " - " . "\n"}}{{end}}{{end}}
+				Take a look at {{.CourseURL}}
+
+				Cheers,
+				UW Flow
+`
 
 var (
-	resetTemplate       = parseTemplate("reset")
-	subscribedTemplate  = parseTemplate("subscribed")
-	inviteTemplate      = parseTemplate("invite")
-	oneVacatedTemplate  = parseTemplate("one_vacated")
-	manyVacatedTemplate = parseTemplate("many_vacated")
+	resetTemplate       = template.New("reset")
+	subscribedTemplate  = template.New("subscribed")
+	inviteTemplate      = template.New("invite")
+	oneVacatedTemplate  = template.New("one_vacated")
+	manyVacatedTemplate = template.New("many_vacated")
 )
 
-// parseTemplate builds the named body into the shared layout. A template that
-// does not parse is a mistake in the tree, not a runtime condition, so it is
-// fatal here rather than an error every Message call would have to carry.
-func parseTemplate(name string) *template.Template {
-	t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
-	if err != nil {
-		log.Fatalf("Error: parse %s template: %v", name, err)
+func init() {
+	if _, err := resetTemplate.Parse(prologue + resetText + epilogue); err != nil {
+		log.Fatalf("Error: parse reset template: %v", err)
 	}
-	return t
+	if _, err := subscribedTemplate.Parse(prologue + subscribedText + epilogue); err != nil {
+		log.Fatalf("Error: parse subscribed template: %v", err)
+	}
+	if _, err := inviteTemplate.Parse(prologue + inviteText + epilogue); err != nil {
+		log.Fatalf("Error: parse invite template: %v", err)
+	}
+	if _, err := oneVacatedTemplate.Parse(prologue + oneVacatedText + epilogue); err != nil {
+		log.Fatalf("Error: parse one-vacated template: %v", err)
+	}
+	if _, err := manyVacatedTemplate.Parse(prologue + manyVacatedText + epilogue); err != nil {
+		log.Fatalf("Error: parse many-vacated template: %v", err)
+	}
 }
