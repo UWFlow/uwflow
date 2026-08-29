@@ -37,6 +37,13 @@ const resetText = `
 				UW Flow
 `
 
+const verifyText = `
+				Hi {{.UserName}},<br /><br />
+				Welcome to UW Flow! Your email verification code is {{.SecretKey}}. Enter it back on Flow to finish setting up your account.<br /><br />
+				Cheers,<br />
+				UW Flow
+`
+
 const subscribedText = `
 				Hi {{.UserName}},<br /><br />
 				You subscribed to one or more sections in {{.CourseCode}}.<br /><br />
@@ -67,6 +74,7 @@ var manyVacatedText = `
 
 var (
 	resetTemplate       = template.New("reset")
+	verifyTemplate      = template.New("verify")
 	subscribedTemplate  = template.New("subscribed")
 	oneVacatedTemplate  = template.New("one_vacated")
 	manyVacatedTemplate = template.New("many_vacated")
@@ -75,6 +83,9 @@ var (
 func init() {
 	if _, err := resetTemplate.Parse(prologue + resetText + epilogue); err != nil {
 		log.Fatalf("Error: parse reset template: %v", err)
+	}
+	if _, err := verifyTemplate.Parse(prologue + verifyText + epilogue); err != nil {
+		log.Fatalf("Error: parse verify template: %v", err)
 	}
 	if _, err := subscribedTemplate.Parse(prologue + subscribedText + epilogue); err != nil {
 		log.Fatalf("Error: parse subscribed template: %v", err)
