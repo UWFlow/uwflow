@@ -5,9 +5,6 @@ object_relationships:
   - name: group
     using:
       foreign_key_constraint_on: group_id
-  - name: user
-    using:
-      foreign_key_constraint_on: user_id
 insert_permissions:
   # Yourself only, as a confirmed member, and only into a group you created.
   # That is exactly the nested insert that creates a group, and nothing else:
@@ -18,8 +15,6 @@ insert_permissions:
     permission:
       check:
         _and:
-          - user_id:
-              _eq: X-Hasura-User-Id
           - status:
               _eq: member
           - group:
@@ -31,9 +26,10 @@ insert_permissions:
         - group_id
         - status
 select_permissions:
-  # Member rows carry ids and status, never names: the "user" table is
-  # select-your-own-row-only, so a co-member resolves to null here. Names come
-  # from GET /group/{id}, which requires confirmed membership.
+  # Ids and status only; names are not reachable from here, and come from
+  # GET /group/{id}, which requires confirmed membership. Visible for any group
+  # you have a row in, invites included, so an invite can show its member count
+  # before you accept.
   - role: user
     permission:
       columns:

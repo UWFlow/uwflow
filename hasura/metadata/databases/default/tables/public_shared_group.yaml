@@ -15,9 +15,7 @@ insert_permissions:
   # caller cannot attribute a group to somebody else.
   - role: user
     permission:
-      check:
-        created_by:
-          _eq: X-Hasura-User-Id
+      check: {}
       set:
         created_by: X-Hasura-User-Id
       columns:
