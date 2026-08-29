@@ -15,6 +15,9 @@ CREATE TABLE shared_group (
 
 CREATE INDEX shared_group_created_by_idx ON shared_group(created_by);
 
+-- PostgreSQL cannot express cross-row count limits with a CHECK constraint, so
+-- the ownership and pending-invite limits use triggers. See:
+-- https://stackoverflow.com/questions/1743439/how-to-write-a-constraint-concerning-a-max-number-of-rows-in-postgresql
 CREATE FUNCTION enforce_shared_group_owner_limit()
 RETURNS TRIGGER AS $$
 BEGIN
