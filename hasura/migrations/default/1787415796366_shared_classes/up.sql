@@ -27,8 +27,8 @@ BEGIN
     SELECT COUNT(*)
     FROM shared_group
     WHERE created_by = NEW.created_by
-  ) > 5 THEN
-    RAISE EXCEPTION 'A user cannot own more than 5 shared groups'
+  ) > 10 THEN
+    RAISE EXCEPTION 'A user cannot own more than 10 shared groups'
       USING ERRCODE = 'check_violation';
   END IF;
 
@@ -72,8 +72,8 @@ BEGIN
     SELECT COUNT(*)
     FROM shared_group_member
     WHERE user_id = NEW.user_id AND status = 'pending'
-  ) > 10 THEN
-    RAISE EXCEPTION 'A user cannot have more than 10 pending shared group invites'
+  ) > 20 THEN
+    RAISE EXCEPTION 'A user cannot have more than 20 pending shared group invites'
       USING ERRCODE = 'check_violation';
   END IF;
 
