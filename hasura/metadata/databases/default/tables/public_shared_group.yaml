@@ -11,11 +11,15 @@ array_relationships:
           schema: public
 insert_permissions:
   # Creating a group is a nested insert: the group, with the creator as its
-  # first member (see shared_group_member below). created_by is a preset so a
-  # caller cannot attribute a group to somebody else.
+  # first member (see shared_group_member below). created_by is a preset, so it
+  # is not in the input type and cannot be supplied at all; the check restates
+  # that independently of the preset, and is what still holds if the preset is
+  # ever removed or the column is made insertable.
   - role: user
     permission:
-      check: {}
+      check:
+        created_by:
+          _eq: X-Hasura-User-Id
       set:
         created_by: X-Hasura-User-Id
       columns:
