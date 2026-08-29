@@ -66,6 +66,53 @@ CREATE TABLE shared_group_member (
 
 CREATE INDEX shared_group_member_user_id_idx ON shared_group_member(user_id);
 
+CREATE FUNCTION enforce_shared_group_member_invite_limit()
+RETURNS TRIGGER AS $$
+DECLARE
+  pending_invite_count INT;
+BEGIN
+  IF NEW.status <> 'pending' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE'
+    AND OLD.status = 'pending'
+    AND NEW.user_id = OLD.user_id THEN
+    RETURN NEW;
+  END IF;
+
+  -- Serialize invite checks for this recipient so concurrent inserts cannot
+  -- both observe fewer than ten pending invitations and exceed the limit.
+  PERFORM 1 FROM "user" WHERE id = NEW.user_id FOR UPDATE;
+
+  -- Invite creation uses ON CONFLICT DO NOTHING. Let an existing membership
+  -- reach that conflict handler even when the recipient is already at the cap.
+  IF TG_OP = 'INSERT' AND EXISTS (
+    SELECT 1
+    FROM shared_group_member
+    WHERE group_id = NEW.group_id AND user_id = NEW.user_id
+  ) THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT COUNT(*)
+  INTO pending_invite_count
+  FROM shared_group_member
+  WHERE user_id = NEW.user_id AND status = 'pending';
+
+  IF pending_invite_count >= 10 THEN
+    RAISE EXCEPTION 'A user cannot have more than 10 pending shared group invites'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER enforce_shared_group_member_invite_limit
+BEFORE INSERT OR UPDATE OF user_id, status ON shared_group_member
+FOR EACH ROW EXECUTE FUNCTION enforce_shared_group_member_invite_limit();
+
 -- A pending shared_group_member row can only represent an invite to someone
 -- who already has an account, since it is keyed by user id. This table covers
 -- the other case: an invite addressed to an email with no account behind it.
