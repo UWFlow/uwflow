@@ -13,6 +13,36 @@ CREATE TABLE shared_group (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX shared_group_created_by_idx ON shared_group(created_by);
+
+-- PostgreSQL cannot express cross-row count limits with a CHECK constraint, so
+-- the ownership and pending-invite limits use triggers. See:
+-- https://stackoverflow.com/questions/1743439/how-to-write-a-constraint-concerning-a-max-number-of-rows-in-postgresql
+CREATE FUNCTION enforce_shared_group_owner_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Serialize concurrent group creation for this owner.
+  PERFORM 1 FROM "user"
+  WHERE id = NEW.created_by
+  FOR NO KEY UPDATE;
+
+  IF (
+    SELECT COUNT(*)
+    FROM shared_group
+    WHERE created_by = NEW.created_by
+  ) > 10 THEN
+    RAISE EXCEPTION 'A user cannot own more than 10 shared groups'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER enforce_shared_group_owner_limit
+AFTER INSERT OR UPDATE OF created_by ON shared_group
+FOR EACH ROW EXECUTE FUNCTION enforce_shared_group_owner_limit();
+
 -- One row per person in a group. A 'pending' row is how an invite is
 -- represented: it is created on invite, flips to 'member' on accept, and is
 -- deleted on decline. Only 'member' rows contribute to shared-class results.
@@ -32,6 +62,33 @@ CREATE TABLE shared_group_member (
 );
 
 CREATE INDEX shared_group_member_user_id_idx ON shared_group_member(user_id);
+
+CREATE FUNCTION enforce_shared_group_member_invite_limit()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Serialize concurrent invitations for this recipient.
+  PERFORM 1 FROM "user"
+  WHERE id = NEW.user_id
+  FOR NO KEY UPDATE;
+
+  IF (
+    SELECT COUNT(*)
+    FROM shared_group_member
+    WHERE user_id = NEW.user_id AND status = 'pending'
+  ) > 20 THEN
+    RAISE EXCEPTION 'A user cannot have more than 20 pending shared group invites'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER enforce_shared_group_member_invite_limit
+AFTER INSERT OR UPDATE OF user_id, status ON shared_group_member
+FOR EACH ROW
+WHEN (NEW.status = 'pending')
+EXECUTE FUNCTION enforce_shared_group_member_invite_limit();
 
 -- A pending shared_group_member row can only represent an invite to someone
 -- who already has an account, since it is keyed by user id. This table covers
