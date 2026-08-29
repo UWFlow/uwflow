@@ -100,10 +100,6 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
 	)
 
-	// Shared Classes. Creating, listing, joining, leaving and deleting a group
-	// are plain CRUD on shared_group and shared_group_member, so they go
-	// through Hasura under the permissions in the metadata for those tables.
-	// Only the two operations Hasura cannot express live here.
 	router.Get(
 		"/group/{id}",
 		serde.WithDbResponse(conn, group.Get, "get group"),

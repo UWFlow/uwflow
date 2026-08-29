@@ -1,0 +1,10 @@
+{{define "content"}}
+				Hi {{.UserName}},
+
+				The following sections in {{.CourseCode}} have open seats:
+				{{block "list" .SectionNames}}{{range .}}{{print " - " . "\n"}}{{end}}{{end}}
+				Take a look at {{.CourseURL}}
+
+				Cheers,
+				UW Flow
+{{end}}
