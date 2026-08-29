@@ -1,0 +1,45 @@
+table:
+  name: shared_group
+  schema: public
+array_relationships:
+  - name: members
+    using:
+      foreign_key_constraint_on:
+        column: group_id
+        table:
+          name: shared_group_member
+          schema: public
+insert_permissions:
+  # Creating a group is a nested insert: the group, with the creator as its
+  # first member (see shared_group_member below). created_by is a preset so a
+  # caller cannot attribute a group to somebody else.
+  - role: user
+    permission:
+      check:
+        created_by:
+          _eq: X-Hasura-User-Id
+      set:
+        created_by: X-Hasura-User-Id
+      columns:
+        - name
+select_permissions:
+  # Every group you are in, invites included: a pending invite has to show the
+  # group's name to be worth responding to.
+  - role: user
+    permission:
+      columns:
+        - id
+        - name
+        - created_by
+        - created_at
+      filter:
+        members:
+          user_id:
+            _eq: X-Hasura-User-Id
+delete_permissions:
+  # Only the creator, and the members cascade with it.
+  - role: user
+    permission:
+      filter:
+        created_by:
+          _eq: X-Hasura-User-Id
