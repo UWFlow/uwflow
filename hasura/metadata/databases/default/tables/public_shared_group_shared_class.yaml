@@ -1,0 +1,40 @@
+table:
+  name: shared_group_shared_class
+  schema: public
+object_relationships:
+  - name: group
+    using:
+      manual_configuration:
+        remote_table:
+          name: shared_group
+          schema: public
+        column_mapping:
+          group_id: id
+  # course_section already carries course, meetings and exams, so a client
+  # reads the whole shared class from here without any of it being restated.
+  - name: section
+    using:
+      manual_configuration:
+        remote_table:
+          name: course_section
+          schema: public
+        column_mapping:
+          section_id: id
+select_permissions:
+  # Confirmed members only. The view is already limited to sections two or more
+  # members hold, so this never exposes the rest of anyone's schedule.
+  - role: user
+    permission:
+      columns:
+        - group_id
+        - section_id
+        - user_id
+      filter:
+        group:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - status:
+                  _eq: member
+      allow_aggregations: true

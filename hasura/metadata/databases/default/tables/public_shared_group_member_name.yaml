@@ -1,0 +1,38 @@
+table:
+  name: shared_group_member_name
+  schema: public
+object_relationships:
+  # A view has no foreign keys, so the relationship the permission below
+  # traverses has to be spelled out.
+  - name: group
+    using:
+      manual_configuration:
+        remote_table:
+          name: shared_group
+          schema: public
+        column_mapping:
+          group_id: id
+select_permissions:
+  # Your own row always, so a pending invite can be seen and answered. Everyone
+  # else's only once you have joined: this view carries names, so it stays shut
+  # to someone who has merely been invited.
+  - role: user
+    permission:
+      columns:
+        - group_id
+        - user_id
+        - status
+        - created_at
+        - first_name
+        - last_name
+      filter:
+        _or:
+          - user_id:
+              _eq: X-Hasura-User-Id
+          - group:
+              members:
+                _and:
+                  - user_id:
+                      _eq: X-Hasura-User-Id
+                  - status:
+                      _eq: member

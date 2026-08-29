@@ -1,0 +1,74 @@
+table:
+  name: shared_group_member
+  schema: public
+object_relationships:
+  - name: group
+    using:
+      foreign_key_constraint_on: group_id
+insert_permissions:
+  # Yourself only, as a confirmed member, and only into a group you created.
+  # That is exactly the nested insert that creates a group, and nothing else:
+  # it cannot add anyone to a group, and cannot join a group you did not make.
+  # Invites are issued by POST /group/{id}/invite, which resolves the address
+  # server-side so the caller never learns whether an account exists.
+  - role: user
+    permission:
+      check:
+        _and:
+          - user_id:
+              _eq: X-Hasura-User-Id
+          - status:
+              _eq: member
+          - group:
+              created_by:
+                _eq: X-Hasura-User-Id
+      set:
+        user_id: X-Hasura-User-Id
+      columns:
+        - group_id
+        - status
+select_permissions:
+  # Scoped exactly as shared_group_member_name, which is the view that adds the
+  # two name columns on top of these. This permission is not really a second
+  # read path: without it the bool_exp for this table is empty, and the update
+  # and delete below have no way to name the row they act on.
+  - role: user
+    permission:
+      columns:
+        - group_id
+        - user_id
+        - status
+        - created_at
+      filter:
+        _or:
+          - user_id:
+              _eq: X-Hasura-User-Id
+          - group:
+              members:
+                _and:
+                  - user_id:
+                      _eq: X-Hasura-User-Id
+                  - status:
+                      _eq: member
+update_permissions:
+  # Accepting an invite, and only that: your own pending row, moved to member.
+  - role: user
+    permission:
+      columns:
+        - status
+      filter:
+        _and:
+          - user_id:
+              _eq: X-Hasura-User-Id
+          - status:
+              _eq: pending
+      check:
+        status:
+          _eq: member
+delete_permissions:
+  # Declining an invite and leaving a group are the same row deletion.
+  - role: user
+    permission:
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
