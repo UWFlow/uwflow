@@ -286,9 +286,9 @@ func attachMeetings(tx *db.Tx, sectionIds []int, byId map[int]*sharedClass) erro
 	return rows.Err()
 }
 
-// Invite resolves an email to a Flow account server-side and, when possible,
-// adds them as a pending member. The response is always "sent" so the endpoint
-// cannot be used to probe which emails have accounts.
+// Invite resolves an email to a Flow account and adds that person as a pending
+// member. It returns "sent" on success and "not_found" when no account uses
+// that email, so the inviter learns whether the invite reached anyone.
 func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -319,13 +319,18 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	sent := map[string]interface{}{"status": "sent"}
 
-	// Resolve the email to an account. Nothing about the outcome is returned.
+	// Resolve the email to an account first. Invites only go to people who
+	// already have a Flow account, so if there is no match we report it back
+	// instead of creating a pending member for no one. Inviting an email with
+	// no account (and emailing them to sign up) is possible future work, not
+	// built here.
 	var targetId int
 	err = tx.QueryRow(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email).Scan(&targetId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return map[string]interface{}{"status": "not_found"}, nil
+	}
 	if err != nil {
-		// No account (or lookup miss): nothing to add yet. Email delivery to
-		// non-users is not wired up; that is possible future work.
-		return sent, nil
+		return nil, fmt.Errorf("looking up invited account: %w", err)
 	}
 
 	// A pending shared_group_member row is the invite: the person accepts by
