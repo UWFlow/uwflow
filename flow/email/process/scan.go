@@ -91,6 +91,41 @@ WHERE ss.seen_at IS NULL
 	return items, nil
 }
 
+// scanInvite loads shared-group invites. It is the one scan that does not read
+// the recipient's address off a "user" row: the invite carries the address, so
+// invites can go to people who have not signed up yet. That is also why it
+// reads shared_group_invite directly rather than a queue table standing in
+// front of one -- there is no user row for a queue table to point at.
+func scanInvite(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
+	var items []format.QueueItem
+
+	const query = `
+SELECT i.id, i.invited_email, u.first_name, g.name, i.secret_key
+FROM shared_group_invite i
+  JOIN shared_group g ON g.id = i.group_id
+  JOIN "user" u ON u.id = i.invited_by
+WHERE i.mailed_at is NULL
+`
+
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("loading rows: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		item := new(format.InviteItem)
+		var secretKey string
+		if err := rows.Scan(&item.ID, &item.Email, &item.InviterName, &item.GroupName, &secretKey); err != nil {
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		item.InviteURL = "https://uwflow.com/invite/" + secretKey
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
 func scanVacated(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
 	var items []format.QueueItem
 

@@ -45,6 +45,11 @@ func Subscribed(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, subscribedInfo)
 }
 
+// Invite processes all unmailed rows of shared_group_invite.
+func Invite(ctx context.Context, tx pgx.Tx) error {
+	return process(ctx, tx, inviteInfo)
+}
+
 // Vacated processes all unseen items in queue.section_vacated.
 func Vacated(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, vacatedInfo)

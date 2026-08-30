@@ -100,15 +100,6 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
 	)
 
-	// Shared Classes
-	router.Post(
-		"/group",
-		serde.WithDbResponse(conn, group.Create, "create group"),
-	)
-	router.Get(
-		"/group",
-		serde.WithDbResponse(conn, group.List, "list groups"),
-	)
 	router.Get(
 		"/group/{id}",
 		serde.WithDbResponse(conn, group.Get, "get group"),
@@ -116,18 +107,6 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Post(
 		"/group/{id}/invite",
 		serde.WithDbResponse(conn, group.Invite, "invite to group"),
-	)
-	router.Post(
-		"/group/{id}/respond",
-		serde.WithDbResponse(conn, group.Respond, "respond to invite"),
-	)
-	router.Post(
-		"/group/{id}/leave",
-		serde.WithDbResponse(conn, group.Leave, "leave group"),
-	)
-	router.Delete(
-		"/group/{id}",
-		serde.WithDbResponse(conn, group.Delete, "delete group"),
 	)
 
 	return router

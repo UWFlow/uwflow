@@ -1,8 +1,18 @@
 // Package group backs the Shared Classes feature: small groups whose members
 // compare the schedules Flow already stores and see which sections they share.
-// Reads and writes go through these REST endpoints (like auth and parse) rather
-// than Hasura, so the privacy rules (server-side email resolution, no account
-// enumeration) live in one place.
+//
+// Group CRUD -- create, list, accept, decline, leave, delete -- is row-level
+// work on shared_group and shared_group_member, and lives in Hasura under the
+// permissions in that metadata. Only the two operations Hasura cannot express
+// are served here:
+//
+//   - Get, because it reads other members' names and the sections they share.
+//     Hasura's "user" select permission is self-only, and widening it, or
+//     exposing other members' user_schedule, would hand out every class a
+//     member takes rather than the ones the group has in common.
+//   - Invite, because resolving an email to an account is the one thing that
+//     must not be a query: the lookup happens server-side and the response is
+//     uniform, so the endpoint cannot be used to probe which emails exist.
 package group
 
 import (
@@ -15,6 +25,7 @@ import (
 
 	"flow/api/serde"
 	"flow/common/db"
+	"flow/common/util"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -27,89 +38,6 @@ func groupId(r *http.Request) (int, error) {
 		return 0, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid group id: %w", err))
 	}
 	return id, nil
-}
-
-// decode reads a JSON request body into dst, returning a 400 on malformed input.
-func decode(r *http.Request, dst interface{}) error {
-	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
-		return serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid request body: %w", err))
-	}
-	return nil
-}
-
-// Create makes a new group with the caller as its first member.
-func Create(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
-	}
-
-	var body struct {
-		Name string `json:"name"`
-	}
-	if err := decode(r, &body); err != nil {
-		return nil, err
-	}
-	name := strings.TrimSpace(body.Name)
-	if name == "" || len(name) > 80 {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("group name must be 1 to 80 characters"))
-	}
-
-	var id int
-	err = tx.QueryRow(`
-		INSERT INTO shared_group (name, created_by) VALUES ($1, $2) RETURNING id
-	`, name, userId).Scan(&id)
-	if err != nil {
-		return nil, fmt.Errorf("creating group: %w", err)
-	}
-	_, err = tx.Exec(`
-		INSERT INTO shared_group_member (group_id, user_id, status)
-		VALUES ($1, $2, 'member')
-	`, id, userId)
-	if err != nil {
-		return nil, fmt.Errorf("adding creator as member: %w", err)
-	}
-
-	return map[string]interface{}{"id": id, "name": name}, nil
-}
-
-type groupSummary struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	Status      string `json:"status"`
-	MemberCount int    `json:"member_count"`
-}
-
-// List returns every group the caller belongs to or has been invited into.
-func List(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
-	}
-
-	rows, err := tx.Query(`
-		SELECT g.id, g.name, m.status,
-			(SELECT COUNT(*) FROM shared_group_member mm
-			 WHERE mm.group_id = g.id AND mm.status = 'member') AS member_count
-		FROM shared_group g
-		JOIN shared_group_member m ON m.group_id = g.id
-		WHERE m.user_id = $1
-		ORDER BY g.created_at DESC
-	`, userId)
-	if err != nil {
-		return nil, fmt.Errorf("listing groups: %w", err)
-	}
-	defer rows.Close()
-
-	groups := []groupSummary{}
-	for rows.Next() {
-		var g groupSummary
-		if err := rows.Scan(&g.Id, &g.Name, &g.Status, &g.MemberCount); err != nil {
-			return nil, fmt.Errorf("scanning group: %w", err)
-		}
-		groups = append(groups, g)
-	}
-	return map[string]interface{}{"groups": groups}, rows.Err()
 }
 
 type memberInfo struct {
@@ -131,7 +59,7 @@ type sharedClass struct {
 	CourseName  string        `json:"course_name"`
 	SectionName string        `json:"section_name"`
 	TermId      int           `json:"term_id"`
-	Members     []memberInfo  `json:"members"`
+	MemberIds   []int         `json:"member_ids"`
 	Meetings    []meetingInfo `json:"meetings"`
 }
 
@@ -147,7 +75,7 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	isMember, isCreator, err := isGroupMember(tx, gid, userId)
+	name, isMember, isCreator, err := loadGroup(tx, gid, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +83,11 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusForbidden, fmt.Errorf("not a member of this group"))
 	}
 
-	var name string
-	if err := tx.QueryRow(`SELECT name FROM shared_group WHERE id = $1`, gid).Scan(&name); err != nil {
-		return nil, fmt.Errorf("loading group: %w", err)
-	}
-
 	members, err := groupMembers(tx, gid)
+	if err != nil {
+		return nil, err
+	}
+	invited, err := invitedEmails(tx, gid)
 	if err != nil {
 		return nil, err
 	}
@@ -174,28 +101,35 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 		"name":           name,
 		"is_creator":     isCreator,
 		"members":        members,
+		"invited_emails": invited,
 		"shared_classes": classes,
 	}, nil
 }
 
-// isGroupMember reports confirmed membership and whether the user created the
-// group. Used as the read/write gate for a group.
-func isGroupMember(tx *db.Tx, gid, userId int) (isMember, isCreator bool, err error) {
+// loadGroup reads a group and the caller's standing in it: the read/write gate
+// for every handler here, and the group's name for the one that reports it.
+func loadGroup(tx *db.Tx, gid, userId int) (name string, isMember, isCreator bool, err error) {
 	var createdBy int
 	var status *string
 	err = tx.QueryRow(`
-		SELECT g.created_by, m.status
+		SELECT g.name, g.created_by, m.status
 		FROM shared_group g
 		LEFT JOIN shared_group_member m
 			ON m.group_id = g.id AND m.user_id = $2
 		WHERE g.id = $1
-	`, gid, userId).Scan(&createdBy, &status)
+	`, gid, userId).Scan(&name, &createdBy, &status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// No such group. Answer exactly as we do for a group the caller is not
+		// in: a 404 here would tell anyone which group ids exist, which is the
+		// enumeration this package exists to avoid.
+		return "", false, false, nil
+	}
 	if err != nil {
-		return false, false, fmt.Errorf("checking membership: %w", err)
+		return "", false, false, fmt.Errorf("loading group: %w", err)
 	}
 	isMember = status != nil && *status == "member"
 	isCreator = createdBy == userId
-	return isMember, isCreator, nil
+	return name, isMember, isCreator, nil
 }
 
 func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
@@ -224,30 +158,62 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	return members, rows.Err()
 }
 
+// invitedEmails lists addresses invited to a group that have no account behind
+// them yet, so members can see an invite is outstanding. Invites to addresses
+// that do resolve to an account become pending shared_group_member rows and
+// show up in the member list instead.
+func invitedEmails(tx *db.Tx, gid int) ([]string, error) {
+	rows, err := tx.Query(`
+		SELECT invited_email FROM shared_group_invite
+		WHERE group_id = $1
+		ORDER BY created_at
+	`, gid)
+	if err != nil {
+		return nil, fmt.Errorf("loading invited emails: %w", err)
+	}
+	defer rows.Close()
+
+	emails := []string{}
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			return nil, fmt.Errorf("scanning invited email: %w", err)
+		}
+		emails = append(emails, email)
+	}
+	return emails, rows.Err()
+}
+
 // sharedClasses computes, for a group, each section held by two or more
-// confirmed members, with the members in it and its meeting times.
+// confirmed members, with its meeting times and the ids of the members in it.
+// Ids rather than names: the caller already has the names, from "members".
 func sharedClasses(tx *db.Tx, gid int) ([]sharedClass, error) {
+	// user_schedule is only pruned for the term being imported, so it keeps
+	// every schedule a member has ever uploaded. Without a term bound a group
+	// would see classes shared two years ago alongside this term's. Bound at
+	// the current term rather than equal to it because parse accepts schedules
+	// for the next term too, and those should show as soon as they are in.
 	rows, err := tx.Query(`
 		WITH member_sections AS (
-			SELECT us.section_id, us.user_id, u.first_name, u.last_name
+			SELECT us.section_id, us.user_id,
+				cs.course_id, cs.section_name, cs.term_id
 			FROM shared_group_member m
 			JOIN user_schedule us ON us.user_id = m.user_id
-			JOIN "user" u ON u.id = us.user_id
-			WHERE m.group_id = $1 AND m.status = 'member'
+			JOIN course_section cs ON cs.id = us.section_id
+			WHERE m.group_id = $1 AND m.status = 'member' AND cs.term_id >= $2
 		),
 		shared AS (
 			SELECT section_id FROM member_sections
 			GROUP BY section_id
 			HAVING COUNT(DISTINCT user_id) >= 2
 		)
-		SELECT ms.section_id, c.code, c.name, cs.section_name, cs.term_id,
-			ms.user_id, ms.first_name, ms.last_name
+		SELECT ms.section_id, c.code, c.name, ms.section_name, ms.term_id,
+			ms.user_id
 		FROM member_sections ms
 		JOIN shared s ON s.section_id = ms.section_id
-		JOIN course_section cs ON cs.id = ms.section_id
-		JOIN course c ON c.id = cs.course_id
-		ORDER BY c.code, cs.section_name, ms.user_id
-	`, gid)
+		JOIN course c ON c.id = ms.course_id
+		ORDER BY ms.term_id, c.code, ms.section_name, ms.user_id
+	`, gid, util.CurrentTermId())
 	if err != nil {
 		return nil, fmt.Errorf("computing shared classes: %w", err)
 	}
@@ -258,8 +224,7 @@ func sharedClasses(tx *db.Tx, gid int) ([]sharedClass, error) {
 	for rows.Next() {
 		var sectionId, termId, memberId int
 		var code, name, sectionName string
-		var first, last *string
-		if err := rows.Scan(&sectionId, &code, &name, &sectionName, &termId, &memberId, &first, &last); err != nil {
+		if err := rows.Scan(&sectionId, &code, &name, &sectionName, &termId, &memberId); err != nil {
 			return nil, fmt.Errorf("scanning shared class: %w", err)
 		}
 		sc, ok := byId[sectionId]
@@ -270,13 +235,13 @@ func sharedClasses(tx *db.Tx, gid int) ([]sharedClass, error) {
 				CourseName:  name,
 				SectionName: sectionName,
 				TermId:      termId,
-				Members:     []memberInfo{},
+				MemberIds:   []int{},
 				Meetings:    []meetingInfo{},
 			}
 			byId[sectionId] = sc
 			order = append(order, sectionId)
 		}
-		sc.Members = append(sc.Members, memberInfo{UserId: memberId, Name: fullName(first, last), Status: "member"})
+		sc.MemberIds = append(sc.MemberIds, memberId)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -333,7 +298,7 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	isMember, _, err := isGroupMember(tx, gid, userId)
+	_, isMember, _, err := loadGroup(tx, gid, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -344,8 +309,8 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var body struct {
 		Email string `json:"email"`
 	}
-	if err := decode(r, &body); err != nil {
-		return nil, err
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid request body: %w", err))
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	if email == "" || !strings.Contains(email, "@") {
@@ -380,89 +345,6 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, fmt.Errorf("adding pending member: %w", err)
 	}
 	return sent, nil
-}
-
-// Respond accepts or declines a pending invite.
-func Respond(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
-	}
-	gid, err := groupId(r)
-	if err != nil {
-		return nil, err
-	}
-
-	var body struct {
-		Accept bool `json:"accept"`
-	}
-	if err := decode(r, &body); err != nil {
-		return nil, err
-	}
-
-	if body.Accept {
-		tag, err := tx.Exec(`
-			UPDATE shared_group_member SET status = 'member'
-			WHERE group_id = $1 AND user_id = $2 AND status = 'pending'
-		`, gid, userId)
-		if err != nil {
-			return nil, fmt.Errorf("accepting invite: %w", err)
-		}
-		if tag.RowsAffected() == 0 {
-			return nil, serde.WithStatus(http.StatusNotFound, fmt.Errorf("no pending invite for this group"))
-		}
-		return map[string]interface{}{"status": "member"}, nil
-	}
-
-	// Decline: just drop the pending membership row.
-	_, err = tx.Exec(`
-		DELETE FROM shared_group_member WHERE group_id = $1 AND user_id = $2 AND status = 'pending'
-	`, gid, userId)
-	if err != nil {
-		return nil, fmt.Errorf("declining invite: %w", err)
-	}
-	return map[string]interface{}{"status": "declined"}, nil
-}
-
-// Leave removes the caller from a group.
-func Leave(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
-	}
-	gid, err := groupId(r)
-	if err != nil {
-		return nil, err
-	}
-	_, err = tx.Exec(`
-		DELETE FROM shared_group_member WHERE group_id = $1 AND user_id = $2
-	`, gid, userId)
-	if err != nil {
-		return nil, fmt.Errorf("leaving group: %w", err)
-	}
-	return map[string]interface{}{"status": "left"}, nil
-}
-
-// Delete removes a group entirely. Only its creator may do this.
-func Delete(tx *db.Tx, r *http.Request) (interface{}, error) {
-	userId, err := serde.UserIdFromRequest(r)
-	if err != nil {
-		return nil, serde.WithStatus(http.StatusUnauthorized, err)
-	}
-	gid, err := groupId(r)
-	if err != nil {
-		return nil, err
-	}
-	tag, err := tx.Exec(`
-		DELETE FROM shared_group WHERE id = $1 AND created_by = $2
-	`, gid, userId)
-	if err != nil {
-		return nil, fmt.Errorf("deleting group: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return nil, serde.WithStatus(http.StatusForbidden, fmt.Errorf("only the creator can delete this group"))
-	}
-	return map[string]interface{}{"status": "deleted"}, nil
 }
 
 func fullName(first, last *string) string {
