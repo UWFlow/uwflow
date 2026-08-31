@@ -12,6 +12,7 @@ import (
 	"flow/api/calendar"
 	"flow/api/data"
 	"flow/api/env"
+	"flow/api/group"
 	"flow/api/middleware"
 	"flow/api/parse"
 	"flow/api/serde"
@@ -97,6 +98,19 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Delete(
 		"/user",
 		serde.WithDbDirect(conn, auth.DeleteAccount, "account deletion"),
+	)
+
+	router.Get(
+		"/group/{id}",
+		serde.WithDbResponse(conn, group.Get, "get group"),
+	)
+	router.Post(
+		"/group/{id}/invite",
+		serde.WithDbResponse(conn, group.Invite, "invite to group"),
+	)
+	router.Post(
+		"/group/invite/{secret}/accept",
+		serde.WithDbResponse(conn, group.AcceptEmailInvite, "accept emailed group invite"),
 	)
 
 	return router
