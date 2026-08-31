@@ -132,9 +132,16 @@ func loadGroup(tx *db.Tx, gid, userId int) (name string, isMember, isCreator boo
 	return name, isMember, isCreator, nil
 }
 
+// groupMembers returns one entry per member or pending row, deduped by the
+// account's email. Two rows sharing an email is a pre-existing state (see
+// Invite): this collapses them back to a single entry, preferring a
+// confirmed member over a pending one, so a person with two accounts shows
+// up once. The email itself is only a grouping key here and never reaches
+// the response. Interim measure, to be removed once duplicate accounts are
+// consolidated.
 func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	rows, err := tx.Query(`
-		SELECT m.user_id, u.first_name, u.last_name, m.status
+		SELECT m.user_id, u.first_name, u.last_name, m.status, u.email
 		FROM shared_group_member m
 		JOIN "user" u ON u.id = m.user_id
 		WHERE m.group_id = $1
@@ -145,17 +152,37 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	}
 	defer rows.Close()
 
-	members := []memberInfo{}
+	order := []string{}
+	byEmail := map[string]memberInfo{}
 	for rows.Next() {
 		var m memberInfo
 		var first, last *string
-		if err := rows.Scan(&m.UserId, &first, &last, &m.Status); err != nil {
+		var email string
+		if err := rows.Scan(&m.UserId, &first, &last, &m.Status, &email); err != nil {
 			return nil, fmt.Errorf("scanning member: %w", err)
 		}
 		m.Name = fullName(first, last)
-		members = append(members, m)
+		email = strings.ToLower(email)
+
+		existing, seen := byEmail[email]
+		if !seen {
+			order = append(order, email)
+			byEmail[email] = m
+			continue
+		}
+		if existing.Status != "member" && m.Status == "member" {
+			byEmail[email] = m
+		}
 	}
-	return members, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	members := make([]memberInfo, 0, len(order))
+	for _, email := range order {
+		members = append(members, byEmail[email])
+	}
+	return members, nil
 }
 
 // invitedEmails lists addresses invited to a group that have no account behind
