@@ -108,6 +108,10 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		"/group/{id}/invite",
 		serde.WithDbResponse(conn, group.Invite, "invite to group"),
 	)
+	router.Post(
+		"/group/invite/{secret}/accept",
+		serde.WithDbResponse(conn, group.AcceptEmailInvite, "accept emailed group invite"),
+	)
 
 	return router
 }
