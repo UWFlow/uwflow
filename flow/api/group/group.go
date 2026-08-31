@@ -313,9 +313,13 @@ func attachMeetings(tx *db.Tx, sectionIds []int, byId map[int]*sharedClass) erro
 	return rows.Err()
 }
 
-// Invite resolves an email to a Flow account server-side and, when possible,
-// adds them as a pending member. The response is always "sent" so the endpoint
-// cannot be used to probe which emails have accounts.
+// Invite resolves an email to every Flow account that uses it server-side
+// and, for each, adds them as a pending member. Resolving to more than one
+// account is a pre-existing state (the same person signed up twice with the
+// same email through different providers): this is an interim measure to
+// reach that person regardless of which account they check, and should be
+// removed once duplicate accounts are consolidated. The response is always
+// "sent" so the endpoint cannot be used to probe which emails have accounts.
 func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -346,10 +350,26 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	sent := map[string]interface{}{"status": "sent"}
 
-	// Resolve the email to an account. Nothing about the outcome is returned.
-	var targetId int
-	err = tx.QueryRow(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email).Scan(&targetId)
+	// Resolve the email to every account that uses it. Nothing about the
+	// outcome is returned.
+	rows, err := tx.Query(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email)
 	if err != nil {
+		return nil, fmt.Errorf("resolving invited accounts: %w", err)
+	}
+	defer rows.Close()
+
+	targetIds := []int{}
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scanning invited account: %w", err)
+		}
+		targetIds = append(targetIds, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("resolving invited accounts: %w", err)
+	}
+	if len(targetIds) == 0 {
 		// No account (or lookup miss): nothing to add yet. Email delivery to
 		// non-users is not wired up; that is possible future work.
 		return sent, nil
@@ -358,13 +378,15 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	// A pending shared_group_member row is the invite: the person accepts by
 	// becoming 'member', or the row is deleted on decline. Existing membership
 	// is left as is (never demotes a confirmed member back to pending).
-	_, err = tx.Exec(`
-		INSERT INTO shared_group_member (group_id, user_id, status)
-		VALUES ($1, $2, 'pending')
-		ON CONFLICT (group_id, user_id) DO NOTHING
-	`, gid, targetId)
-	if err != nil {
-		return nil, fmt.Errorf("adding pending member: %w", err)
+	for _, targetId := range targetIds {
+		_, err = tx.Exec(`
+			INSERT INTO shared_group_member (group_id, user_id, status)
+			VALUES ($1, $2, 'pending')
+			ON CONFLICT (group_id, user_id) DO NOTHING
+		`, gid, targetId)
+		if err != nil {
+			return nil, fmt.Errorf("adding pending member: %w", err)
+		}
 	}
 	return sent, nil
 }
