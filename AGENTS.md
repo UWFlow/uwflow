@@ -1,5 +1,3 @@
-<!-- Generated: 2026-09-02 | Updated: 2026-09-02 -->
-
 # UWFlow backend
 
 This file is the canonical guide for coding agents working in this repository. `CLAUDE.md` is only an import shim. Read the relevant local `AGENTS.md` and linked style guide before changing a subsystem.
