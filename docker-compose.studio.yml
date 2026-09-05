@@ -1,0 +1,115 @@
+# Opt-in overlay: see admin/studio/README.md. Keep this file in COMPOSE_FILE
+# for subsequent backend deployments so Postgres retains its admin network.
+services:
+  postgres:
+    networks:
+      default:
+      studio-db:
+
+  studio:
+    image: supabase/studio:2026.08.03-sha-022b374@sha256:606aca9fdaa753b60968d5c304e2ada83869b76c9043684e63d5885aca9550e8
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp
+    env_file: ${STUDIO_ENV_FILE:-./admin/studio/.env}
+    entrypoint: [/bin/sh, /studio-entrypoint.sh]
+    command: [node, apps/studio/server.js]
+    volumes:
+      - ./admin/studio/entrypoint.sh:/studio-entrypoint.sh:ro
+    networks: [studio-web]
+    depends_on:
+      studio-meta:
+        condition: service_healthy
+    environment:
+      HOSTNAME: 0.0.0.0
+      STUDIO_PG_META_URL: http://studio-meta:8080
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT:?Set POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+      POSTGRES_USER_READ_WRITE: flow_studio
+      POSTGRES_USER_READ_ONLY: flow_studio
+      DEFAULT_ORGANIZATION_NAME: UWFlow
+      DEFAULT_PROJECT_NAME: UWFlow database administration
+      PGRST_DB_SCHEMAS: public
+      # No Supabase API services are installed. Never supply UWFlow JWT keys.
+      SUPABASE_URL: http://127.0.0.1:9
+      SUPABASE_PUBLIC_URL: http://localhost:8001
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+      ENABLED_FEATURES_LOGS_ALL: "false"
+      SNIPPETS_MANAGEMENT_FOLDER: /tmp/snippets
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/platform/profile').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  studio-meta:
+    image: supabase/postgres-meta:v0.96.6@sha256:a84cc713585eea7b401e4a2561ec4a1e48c87083d1c7ecb4502f204bb4391300
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp
+    env_file: ${STUDIO_ENV_FILE:-./admin/studio/.env}
+    entrypoint: [/bin/sh, /studio-entrypoint.sh]
+    command: [node, dist/server/server.js]
+    volumes:
+      - ./admin/studio/entrypoint.sh:/studio-entrypoint.sh:ro
+    networks: [studio-web, studio-db]
+    environment:
+      PG_META_PORT: "8080"
+      PG_META_DB_HOST: postgres
+      PG_META_DB_PORT: ${POSTGRES_PORT:?Set POSTGRES_PORT}
+      PG_META_DB_NAME: ${POSTGRES_DB:?Set POSTGRES_DB}
+      PG_META_DB_USER: flow_studio
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  studio-proxy:
+    image: nginx:1.30.4-alpine@sha256:dc5069ad14f19660b141b21236140b91656bf89bbc3e2417c70ae650cd66104c
+    restart: unless-stopped
+    user: "101:101"
+    entrypoint: [nginx, -g, "daemon off;"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp
+    networks: [studio-web, studio-ingress]
+    ports:
+      - "127.0.0.1:8001:8080"
+    depends_on:
+      studio:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "wget -S --spider --header='Host: localhost:8001' http://127.0.0.1:8080/ 2>&1 | grep -q '401 Unauthorized'"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    volumes:
+      - ./admin/studio/nginx.conf:/etc/nginx/nginx.conf:ro
+      - type: bind
+        source: ./admin/studio/.secrets/htpasswd
+        target: /etc/nginx/studio.htpasswd
+        read_only: true
+        bind:
+          create_host_path: false
+
+networks:
+  # Only the gateway gets a routable network for the localhost port publication.
+  studio-ingress:
+  studio-web:
+    internal: true
+  studio-db:
+    internal: true

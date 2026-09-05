@@ -29,6 +29,10 @@ In production, we run an Nginx reverse proxy in front of Hasura, the API, and th
 to route requests to the correct service. Hasura is exposed via `/graphql`, the API via `/api`,
 and the frontend via `/`.
 
+For optional, private Supabase Studio access to the existing database, see
+[the Studio admin setup](admin/studio/README.md). It does not replace Hasura or
+UWFlow authentication.
+
 ## Requirements
 
 The following packages are required for core functionality:
@@ -126,4 +130,3 @@ $ docker exec -it postgres sh
 ```
 
 There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
-
