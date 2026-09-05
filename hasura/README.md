@@ -5,8 +5,8 @@ We use GraphQL to perform all CRUD operations for UWFlow.
 
 ## Interface
 
-Hasura's host port is bound to `127.0.0.1` on `HASURA_PORT` from `.env`.
-Its GraphQL endpoint accepts POSTs with JSON bodies:
+Hasura listens on `HASURA_PORT` as specified in `.env`.
+It exposes a single endpoint expecting _only POSTs with JSON bodies_:
 `http://HOST:HASURA_PORT/v1/graphql`.
 
 A sample JSON body posted to this endpoint might look like the following:
@@ -60,22 +60,20 @@ will submit the contents of the file `payload` and get the response.
 
 ## Production CLI and Console access
 
-Production administration uses an SSH tunnel to the host's loopback-bound Hasura
-port. The public `/graphql` route still uses Docker networking. The engine's
+The helper connects through SSH to Hasura at `127.0.0.1:8080` on the server. The public `/graphql` route still uses Docker networking. The engine's
 built-in Console stays disabled; run the CLI Console on your own machine.
 SSH access and the production Hasura admin secret are both required. The admin
 secret grants full access, including through the public GraphQL endpoint; keep it
 in your password manager and never commit it or include it in command arguments.
 
-### Deployment prerequisite
+### Server prerequisite
 
-Deploy the updated `docker-compose.yml` and recreate Hasura using the normal
-deployment process. Ensure `HASURA_GRAPHQL_ADMIN_SECRET` is non-empty (Compose now
-rejects missing/empty values). `docker compose port hasura 8080` on the server
-should report `127.0.0.1:8080`, assuming the standard `HASURA_PORT=8080`.
-Keep the Hasura port blocked by the host/cloud firewall as well. Existing direct
-connections from other machines must switch to the tunnel; local development and
-Nginx's container-to-container connection still work.
+Production Hasura must be reachable at `127.0.0.1:8080` from the SSH host and
+configured with a non-empty `HASURA_GRAPHQL_ADMIN_SECRET`. The CLI Console works
+with `HASURA_GRAPHQL_ENABLE_CONSOLE=false`; no server-side Console is needed.
+The helper does not change the server's port bindings or firewall rules. The
+current Compose configuration publishes Hasura on all host interfaces; the SSH
+workflow does not itself prevent direct access to that published port.
 
 ### Connect
 
