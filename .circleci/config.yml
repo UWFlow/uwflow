@@ -5,6 +5,16 @@ executors:
       ALL_IMAGES: neuwflow/api neuwflow/email neuwflow/uw
     machine: true
 jobs:
+  studio-test:
+    executor: docker-publisher
+    steps:
+      - checkout
+      - run:
+          name: Install Studio test prerequisites
+          command: sudo apt-get update && sudo apt-get install -y apache2-utils python3
+      - run:
+          name: Test private Studio against disposable PostgreSQL
+          command: python3 admin/studio/test.py
   build:
     executor: docker-publisher
     steps:
@@ -39,6 +49,7 @@ workflows:
   version: 2
   normal:
     jobs:
+      - studio-test
       - build
       - publish:
           requires:

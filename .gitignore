@@ -1,5 +1,6 @@
 # Environment files (contain secrets)
 .env
+admin/studio/.secrets/
 # SSL certificates
 .ssl
 # Air tmp directory (generated during live reload)
@@ -14,4 +15,3 @@ terraform.tfvars
 .terraform.lock.hcl
 # TLS certs/keys — never commit
 *.pem
-
