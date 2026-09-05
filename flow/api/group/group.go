@@ -1,18 +1,5 @@
-// Package group backs the Shared Classes feature: small groups whose members
-// compare the schedules Flow already stores and see which sections they share.
-//
-// Group CRUD -- create, list, accept, decline, leave, delete -- is row-level
-// work on shared_group and shared_group_member, and lives in Hasura under the
-// permissions in that metadata. Only the two operations Hasura cannot express
-// are served here:
-//
-//   - Get, because it reads other members' names and the sections they share.
-//     Hasura's "user" select permission is self-only, and widening it, or
-//     exposing other members' user_schedule, would hand out every class a
-//     member takes rather than the ones the group has in common.
-//   - Invite, because resolving an email to an account is the one thing that
-//     must not be a query: the lookup happens server-side and the response is
-//     uniform, so the endpoint cannot be used to probe which emails exist.
+// Package group backs Shared Classes. CRUD lives in Hasura; Get and Invite
+// are here because they need to read across members and keep email lookups opaque.
 package group
 
 import (
@@ -63,8 +50,7 @@ type sharedClass struct {
 	Meetings    []meetingInfo `json:"meetings"`
 }
 
-// Get returns a group's members (pending members included) and the classes
-// shared by two or more confirmed members. Only members may read a group.
+// Get returns a group's members and its shared classes; only members may read it.
 func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -106,8 +92,7 @@ func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}, nil
 }
 
-// loadGroup reads a group and the caller's standing in it: the read/write gate
-// for every handler here, and the group's name for the one that reports it.
+// loadGroup is the read/write gate for every handler: the caller's standing in the group.
 func loadGroup(tx *db.Tx, gid, userId int) (name string, isMember, isCreator bool, err error) {
 	var createdBy int
 	var status *string
@@ -119,9 +104,7 @@ func loadGroup(tx *db.Tx, gid, userId int) (name string, isMember, isCreator boo
 		WHERE g.id = $1
 	`, gid, userId).Scan(&name, &createdBy, &status)
 	if errors.Is(err, pgx.ErrNoRows) {
-		// No such group. Answer exactly as we do for a group the caller is not
-		// in: a 404 here would tell anyone which group ids exist, which is the
-		// enumeration this package exists to avoid.
+		// No such group: answer like a non-member to avoid id enumeration.
 		return "", false, false, nil
 	}
 	if err != nil {
@@ -132,13 +115,8 @@ func loadGroup(tx *db.Tx, gid, userId int) (name string, isMember, isCreator boo
 	return name, isMember, isCreator, nil
 }
 
-// groupMembers returns one entry per member or pending row, deduped by the
-// account's email. Two rows sharing an email is a pre-existing state (see
-// Invite): this collapses them back to a single entry, preferring a
-// confirmed member over a pending one, so a person with two accounts shows
-// up once. The email itself is only a grouping key here and never reaches
-// the response. Interim measure, to be removed once duplicate accounts are
-// consolidated.
+// groupMembers dedupes by email, preferring member over pending, since one
+// person may hold two accounts (interim, until duplicate accounts are merged).
 func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	rows, err := tx.Query(`
 		SELECT m.user_id, u.first_name, u.last_name, m.status, u.email
@@ -185,10 +163,7 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	return members, nil
 }
 
-// invitedEmails lists addresses invited to a group that have no account behind
-// them yet, so members can see an invite is outstanding. Invites to addresses
-// that do resolve to an account become pending shared_group_member rows and
-// show up in the member list instead.
+// invitedEmails lists invites with no account yet; resolved invites show up as pending members instead.
 func invitedEmails(tx *db.Tx, gid int) ([]string, error) {
 	rows, err := tx.Query(`
 		SELECT invited_email FROM shared_group_invite
@@ -211,15 +186,10 @@ func invitedEmails(tx *db.Tx, gid int) ([]string, error) {
 	return emails, rows.Err()
 }
 
-// sharedClasses computes, for a group, each section held by two or more
-// confirmed members, with its meeting times and the ids of the members in it.
-// Ids rather than names: the caller already has the names, from "members".
+// sharedClasses returns each section held by two or more confirmed members,
+// with member ids (the caller already has names, from "members").
 func sharedClasses(tx *db.Tx, gid int) ([]sharedClass, error) {
-	// user_schedule is only pruned for the term being imported, so it keeps
-	// every schedule a member has ever uploaded. Without a term bound a group
-	// would see classes shared two years ago alongside this term's. Bound at
-	// the current term rather than equal to it because parse accepts schedules
-	// for the next term too, and those should show as soon as they are in.
+	// >= term rather than = : parse already accepts next term's schedules.
 	rows, err := tx.Query(`
 		WITH member_sections AS (
 			SELECT us.section_id, us.user_id,
@@ -313,13 +283,8 @@ func attachMeetings(tx *db.Tx, sectionIds []int, byId map[int]*sharedClass) erro
 	return rows.Err()
 }
 
-// Invite resolves an email to every Flow account that uses it server-side
-// and, for each, adds them as a pending member. Resolving to more than one
-// account is a pre-existing state (the same person signed up twice with the
-// same email through different providers): this is an interim measure to
-// reach that person regardless of which account they check, and should be
-// removed once duplicate accounts are consolidated. The response is always
-// "sent" so the endpoint cannot be used to probe which emails have accounts.
+// Invite adds every account matching the email as a pending member and
+// always responds "sent", so it can't be used to probe which emails exist.
 func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -350,8 +315,6 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	sent := map[string]interface{}{"status": "sent"}
 
-	// Resolve the email to every account that uses it. Nothing about the
-	// outcome is returned.
 	rows, err := tx.Query(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email)
 	if err != nil {
 		return nil, fmt.Errorf("resolving invited accounts: %w", err)
@@ -370,14 +333,11 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, fmt.Errorf("resolving invited accounts: %w", err)
 	}
 	if len(targetIds) == 0 {
-		// No account (or lookup miss): nothing to add yet. Email delivery to
-		// non-users is not wired up; that is possible future work.
+		// No matching account; emailing non-users isn't wired up yet.
 		return sent, nil
 	}
 
-	// A pending shared_group_member row is the invite: the person accepts by
-	// becoming 'member', or the row is deleted on decline. Existing membership
-	// is left as is (never demotes a confirmed member back to pending).
+	// A pending row is the invite; existing membership is never downgraded.
 	for _, targetId := range targetIds {
 		_, err = tx.Exec(`
 			INSERT INTO shared_group_member (group_id, user_id, status)
