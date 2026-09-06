@@ -1,276 +1,216 @@
-# Proposal: combine UWFlow into one Git repository
+# Monorepo migration and cutover
 
-Status: proposed. This document plans the migration; it does not change code,
-CI/CD, hosting settings, or production infrastructure.
+This branch implements the frontend import, combined CI, root developer commands,
+and deployment changes. External CI/Vercel connections and repository retirement
+remain a coordinated cutover after validation. Merging the PR does not reconnect
+Vercel automatically, but it does enable the combined CircleCI publisher on `main`.
 
-## Target
+## One repository and preserved history
 
-Import `UWFlow/uwflow_frontend` into `UWFlow/uwflow/frontend/`, preserving the
-frontend commit history. All future development uses one repository, one set of
-branches, and one pull-request workflow. A single commit can change frontend,
-Go API, and Hasura schema together.
+`frontend/` contains ordinary tracked files. There is no submodule, nested `.git`,
+or ongoing synchronization with `uwflow_frontend`. Future commits and PRs can change
+frontend, Go services, and Hasura together.
 
-```text
-uwflow/
-├── .git/                  # Only Git repository in a normal clone
-├── frontend/              # Ordinary tracked files; no nested .git or submodule
-│   ├── src/
-│   ├── public/
-│   ├── config/
-│   ├── scripts/
-│   ├── package.json
-│   ├── bun.lock
-│   ├── Dockerfile
-│   └── vercel.json
-├── flow/
-├── hasura/
-├── nginx/
-├── staging/
-├── script/
-├── .circleci/config.yml
-├── docker-compose.yml
-└── Makefile
+The import merge joins frontend commit
+`03ef05d70c9e983efd48a69af7d666b6dae69725` to backend history based on `9ef3b71`.
+At the import commit, the `frontend/` tree exactly matches the source tree
+`e359be325a7f5754a11f7b8b06e427183b44172a`. Migration changes follow in a separate
+commit so reviewers can inspect them independently of the large import.
+
+**Merge this PR with a merge commit. Do not squash or rebase merge it:** those
+methods discard the imported ancestry. The repository currently allows only squash
+merges (`allow_merge_commit=false`); an owner must enable merge commits before
+merging this migration. Original frontend commit IDs remain
+reachable. Before the import boundary, frontend files have their original root
+paths; inspect that history explicitly, for example:
+
+```sh
+git log 03ef05d70c9e983efd48a69af7d666b6dae69725 -- src/App.tsx
+git merge-base --is-ancestor 03ef05d70c9e983efd48a69af7d666b6dae69725 HEAD
 ```
 
-Keep backend paths stable to preserve Compose mounts, Go build contexts, Hasura
-configuration, and staging bootstrap. Keep Bun dependencies inside `frontend/`;
-no root JavaScript workspace or build orchestrator is needed for this migration.
-Archive the old frontend repository after cutover and outstanding work transfer.
+The old repository retains closed PR discussions, historical tags, and releases.
+It becomes an archive after active work and integrations are migrated.
 
-## Inspected baseline
+## Implemented repository changes
 
-Inspected on 2026-09-05:
-
-- Backend `main`: `9ef3b71`; frontend `main`: `03ef05d`.
-- Backend CircleCI builds and publishes `neuwflow/api`, `neuwflow/email`, and
-  `neuwflow/uw`. Frontend CircleCI separately publishes `neuwflow/frontend`.
-  Both publish `latest` on `main`.
-- Production Compose consumes those images. The frontend container serves the
-  built assets through the repository's Nginx configuration.
-- Frontend `vercel.json` builds with `bun run build:vercel`, serves `build`, and
-  proxies `/api` and `/graphql` to `https://uwflow.com` before the SPA fallback.
-- GitHub deployment checks identify Vercel project `uwflow-frontend` in team
-  `uwflow-62bc4f45`. The inspecting CLI account cannot access that team; private
-  project settings, domains, and environment configuration remain unverified.
-- Frontend build configuration derives application paths from `process.cwd()`.
-- `script/deploy.sh` omits the frontend. `script/stayupdated.sh` continuously
-  pulls images; which mechanism production currently uses remains unverified.
-- There are 14 open frontend PRs and 4 open frontend issues. The E2E harness is
-  on an open PR, not frontend `main`.
-- Main-branch review/admin protections differ between repositories. Neither
-  inspected main-branch protection lists required status checks.
-
-Refresh this inventory before execution. Local feature branches and untracked
-files are not migration inputs.
-
-## 1. Inventory external settings and establish rollback
-
-- [ ] Record exact source SHAs and the destination base SHA.
-- [ ] Inventory CircleCI variable names, contexts, triggers, permissions, SSH
-  keys, and caches. Configure required credentials in the destination project
-  without copying secret values into Git or the migration document.
-- [ ] Have an authorized Vercel owner inventory the Git connection, production
-  branch, root/build/install/output settings, runtime version, environment
-  scopes and branch overrides, domains, deployment protection, integrations,
-  deploy hooks, and ignored-build settings.
-- [ ] Inventory GitHub teams, collaborators, protections, webhooks, app access,
-  labels, milestones, releases, issues, and outstanding branches/PRs.
-- [ ] Inventory Sentry repository association, release commit mapping, and
-  source-map upload configuration. Retain existing analytics project identities.
-- [ ] Identify the actual production deployment process, repository checkout,
-  auto-updaters, and staging consumers. Record deployed image digests, repository
-  revision, and the last working Vercel deployment.
-- [ ] Record owners for CI, Vercel, production rollout, and repository migration.
-
-## 2. Import the frontend and its history
-
-- [ ] Work in an isolated checkout from destination `main`.
-- [ ] Use a one-time `git subtree add --prefix=frontend` import of the selected
-  frontend commit, without `--squash`. This joins the histories; it creates no
-  submodule, nested repository, or ongoing synchronization requirement.
-- [ ] Compare the imported `frontend/` tree with the source commit before
-  making migration edits. Preserve all tracked application assets, licenses,
-  documentation, dotfiles, agent instructions, and skills.
-- [ ] Do not copy `.git`, local environment files, `node_modules`, build outputs,
-  or workstation-only files from an existing working directory.
-- [ ] Preserve imported ancestry when merging the implementation PR. Use a merge
-  commit; squash/rebase merging would discard the intended history connection.
-- [ ] Document the import SHA and history lookup across the directory boundary.
-  Original frontend commit IDs remain reachable, though their historical paths
-  are at the old repository root.
-
-## 3. Update developer tooling
-
-- [ ] Add root convenience targets for frontend install, start, lint, typecheck,
-  unit tests, build, and GraphQL generation. Run every frontend command with
-  `frontend/` as its working directory.
-- [ ] Allow frontend-only targets to run without a backend `.env`; the current
-  Makefile includes it unconditionally. Preserve required backend configuration
-  checks for backend targets.
-- [ ] Keep frontend environment overrides inside `frontend/` and backend
-  environment configuration at the repository root.
-- [ ] Update README setup instructions, CI badges, sibling-repository references,
-  documentation, and agent/skill paths for the unified checkout.
-- [ ] Adapt Husky/lint-staged to the root Git repository and test hook execution
-  on frontend files. Preserve the frontend pre-commit lint requirement.
-- [ ] Review ignore rules and Docker context exclusions, including local
-  environment files and Vercel link metadata.
-- [ ] Run code generation from `frontend/` against the matching monorepo Hasura
-  schema. Do not hand-edit generated GraphQL types.
-- [ ] Port E2E harness paths when its open PR is migrated; do not assume that
-  feature-branch tooling is already part of the baseline.
-
-## 4. Consolidate CircleCI
-
-Replace the two independent configurations with one root pipeline. Remove the
-imported `frontend/.circleci/config.yml` after incorporating its responsibilities.
-
-| Area | Required behavior |
+| Area | Behavior |
 | --- | --- |
-| Frontend checks | From `frontend/`: frozen Bun install, lint, TypeScript, unit tests, production build |
-| Frontend image | Build using `frontend/` as the Docker context |
-| Backend checks/images | Preserve the `flow/` context and API/email/importer targets; run appropriate Go checks in the project Linux environment |
-| Artifacts | Separate frontend/backend image archive names and workspace paths |
-| Caches | Key frontend dependencies on `frontend/bun.lock` and pinned runtime versions |
-| Publishing | Only trusted `main` builds publish after required validation |
-| Credentials | Destination project provides Docker Hub credentials, Sentry token, and frontend public build variables |
-| Image identity | Retain existing image names; add commit-SHA tags alongside `latest` |
+| Layout | Frontend under `frontend/`; backend, Hasura, Nginx and staging paths stay stable |
+| Dependencies | Bun `1.3.14`, Node `22.20.0`, package and lockfile in `frontend/` |
+| Developer commands | Root `make frontend-*` targets run from the frontend package without loading backend `.env` |
+| Git hooks | `make hooks` installs `.githooks/pre-commit`; frontend lint checks staged frontend work without rewriting files |
+| CI | One root CircleCI pipeline; frontend lint/typecheck/tests, frontend image, backend images/Go tests |
+| Publishing | All validation must pass; only `main` publishes all four images with commit-SHA and `latest` tags |
+| Docker contexts | Frontend uses `frontend/`; API/email/importer use `flow/` |
+| Build credentials | Optional Sentry token remains a BuildKit secret; non-main CI frontend builds omit it |
+| Deployment | `script/deploy.sh` uses its own checkout, supports frontend-only releases, pulls before replacing containers, and avoids `down` |
+| Release selection | `UWFLOW_IMAGE_TAG` selects the tag for all four application images; default is `latest` |
+| Vercel | `frontend/vercel.json` carries install/build/output settings and existing rewrites |
 
-Preserve Bun `1.3.14` and the frontend Node version declaration unless a separate
-compatibility change is needed. Preserve optional Sentry source-map upload through
-the Docker build secret; PR validation must not depend on publishing credentials.
-
-Initially run frontend and backend validation on every PR. After cutover, add
-path filtering with an explicit dependency map:
-
-- `frontend/**`: frontend jobs.
-- `flow/**`: backend jobs.
-- `hasura/**`: backend/schema checks and frontend contract checks.
-- Shared CI, build, or deployment configuration: all affected jobs.
-- Documentation-only changes: lightweight validation, with required checks still
-  reaching a terminal successful state.
-
-Introduce required GitHub checks only after verifying their actual names and
-behavior, including changes that skip component work. See
+All components are validated on every PR initially. Path filtering can follow once
+shared schema/config dependencies and required-check behavior are covered. See
 [CircleCI dynamic configuration](https://circleci.com/docs/guides/orchestrate/using-dynamic-configuration/).
 
-## 5. Reconnect the existing Vercel project
+## External inventory before merging
 
-Use a temporary validation project to build the migration branch before switching
-the existing project's repository connection. Configure equivalent non-production
-settings and access controls; do not attach production domains to that project.
+Record owners and current settings without putting secret values in Git:
 
-At cutover, retain the existing Vercel project and reconnect it to `UWFlow/uwflow`:
+- [ ] CircleCI: destination project enabled, environment variable names, contexts,
+  triggers, cache behavior, and publishing permissions. Configure `DOCKERHUB_USER`,
+  `DOCKERHUB_PASS`, optional `SENTRY_AUTH_TOKEN`, and `REACT_APP_POSTHOG_KEY` in the
+  destination project/context as appropriate.
+- [ ] Vercel: Git connection, production branch, runtime, root/install/build/output,
+  environment scopes and branch overrides, domains, deploy hooks, deployment
+  protection, integrations, and ignored-build settings.
+- [ ] GitHub: teams/collaborators, review policy, required checks, merge-commit
+  support, webhooks, app access, labels, milestones, open issues and PRs.
+- [ ] Sentry: repository association, release commit mapping, and source-map uploads.
+  Preserve existing Sentry/PostHog project identities.
+- [ ] Production/staging: actual deployment entry point, checkout revision, running
+  auto-updaters, deployed image digests, and last working Vercel deployment.
 
-| Setting | Target |
+On 2026-09-05, GitHub checks identified Vercel project `uwflow-frontend` in team
+`uwflow-62bc4f45`. The inspecting CLI account could not access that team; private
+settings remain unverified. The repositories had different review/admin policies
+and no listed required main-branch status checks. Refresh these facts at cutover.
+
+## Vercel cutover
+
+Use the existing Vercel project so its identity and deployment history are retained.
+Before switching its Git connection, build the migration branch in a temporary
+validation project with appropriate non-production settings and access controls.
+Do not assign production domains to that temporary project.
+
+Apply these settings to the existing project when the destination branch contains
+`frontend/`:
+
+| Setting | Value |
 | --- | --- |
+| Git repository | `UWFlow/uwflow` |
 | Root Directory | `frontend` |
+| Framework preset | Other (`null` in `vercel.json`) |
 | Install command | `bun install --frozen-lockfile` |
 | Build command | `bun run build:vercel` |
-| Output Directory | `build` |
+| Output directory | `build` |
 | Production branch | `main` |
-| Application configuration | `frontend/vercel.json` |
+| Node version | Compatible Node 22 runtime; verify against `frontend/.nvmrc` |
 
-- [ ] Grant the Vercel GitHub app access to `UWFlow/uwflow`.
-- [ ] Preserve and verify project domains, environment scopes, protection,
-  runtime settings, and integrations against the inventory.
-- [ ] Remap branch-specific variables and deploy hooks as needed.
-- [ ] Preserve API/GraphQL rewrites and SPA fallback ordering.
-- [ ] Verify a new monorepo PR receives a preview deployment, status check, and
-  preview link associated with the correct monorepo commit.
-- [ ] Verify a `main` build follows the intended production-branch behavior.
-- [ ] Start without build-skipping optimization. Later, account for shared
-  configuration/schema dependencies and required-check behavior when skipping.
+Root Directory and the Git connection are project settings, not properties to add
+to `vercel.json`. An authorized owner can use the dashboard or Vercel CLI/API.
+Grant the Vercel GitHub app access to `UWFlow/uwflow`, reconnect the project, and
+compare every retained setting with the inventory. Remap branch-specific
+variables and deploy hooks where necessary. Disable old path-based ignored-build
+commands until monorepo behavior is verified.
 
-A frontend preview continues to use the deployed backend under the current
-rewrite contract. Combining repositories does not create isolated backend or
-database previews. Test schema-dependent changes against matching staging
-services before rollout. Creating per-PR backend environments is separate work.
+Verify a new PR on `uwflow` receives a preview deployment, status check, and preview
+link for its exact commit. Verify the `main` deployment separately. Existing
+frontend PRs will not automatically gain monorepo previews; port them first.
 
-References: [Vercel monorepos](https://vercel.com/docs/monorepos) and
-[Vercel Git connection management](https://vercel.com/docs/cli/git).
+The existing rewrites still send `/api` and `/graphql` to `https://uwflow.com`,
+then apply the SPA fallback. These are frontend previews using the deployed
+backend. Schema-dependent work needs a matching staging backend; a repository
+migration does not provision per-PR databases or APIs. Keep production domains and
+hosting topology unchanged during this cutover.
 
-## 6. Hand over production publishing and deployment
+References: [Vercel monorepos](https://vercel.com/docs/monorepos),
+[build settings](https://vercel.com/docs/builds/configure-a-build), and
+[Git connection management](https://vercel.com/docs/cli/git).
 
-- [ ] Disable the old frontend publisher and drain or cancel in-flight publishing
-  jobs before the new pipeline can update `neuwflow/frontend:latest`.
-- [ ] Extend or replace the active deployment entry point to include frontend
-  releases; the checked-in `script/deploy.sh` currently excludes them.
-- [ ] Account for any running auto-updater: publishing `latest` may itself start
-  rollout. Coordinate or pause it during the cutover and rollback window.
-- [ ] Keep Nginx/Compose/Hasura repository synchronization explicit. Pulling an
-  image alone does not update mounted configuration, migrations, or metadata.
-- [ ] Validate staging bootstrap and existing image consumers with the retained
-  backend paths and image names.
-- [ ] Deploy backward-compatible schema/API changes before dependent frontend
-  changes. Record the image digests and repository revision for each release.
+## Production publishing handoff
 
-## 7. Move outstanding work and repository administration
+1. Freeze frontend merges briefly. Confirm the imported source SHA is still the
+   intended baseline; merge ready work or record how to port subsequent commits.
+2. Prepare destination CircleCI credentials and validate the draft PR. Record the
+   old production images and repository configuration for rollback.
+3. Disable the old frontend publisher and drain/cancel its in-flight publishing
+   jobs before merging. Two pipelines must not race on `neuwflow/frontend:latest`.
+4. Coordinate any `script/stayupdated.sh` process or other auto-updater. Publishing
+   `latest` can initiate rollout without a separate deploy command. Pause it during
+   cutover, or pin the desired release in `.env` before publication.
+5. Merge with a merge commit, verify the new CircleCI image publication, then
+   reconnect Vercel and verify its previews and production-branch behavior.
+6. Update the deployment checkout explicitly. Pulling images alone does not update
+   mounted Nginx, Compose, migrations, or Hasura metadata. Apply backward-compatible
+   schema/API changes before frontend changes that require them.
+7. Pin the chosen release with `UWFLOW_IMAGE_TAG=<published-commit-sha>` in the root
+   `.env`, then run `./script/deploy.sh` for a full release or
+   `./script/deploy.sh frontend` for only the frontend. The latter assumes backend
+   dependencies are already running. Hasura/Postgres retain their existing image
+   versions; `UWFLOW_IMAGE_TAG` applies only to the four application images.
+8. Verify served assets and API/GraphQL behavior, record deployed digests and checkout
+   revision, then resume normal development and the intended updater behavior.
 
-- [ ] During a short frontend merge freeze, refresh and import the final source
-  SHA. Account explicitly for every open PR and active branch.
-- [ ] Merge ready frontend PRs before that import or port their changes to
-  monorepo branches. Reopen ported PRs as drafts with links to original discussion
-  and backend dependencies. Preserve original PRs as historical references.
-- [ ] Transfer open issues, preserving labels/milestones as appropriate. See
-  [GitHub issue transfers](https://docs.github.com/en/issues/tracking-your-work-with-issues/administering-issues/transferring-an-issue-to-another-repository).
-- [ ] Reconcile collaborators, teams, ownership/review policy, branch protections,
-  labels, milestones, releases, and repository links.
-- [ ] Update or retire webhook consumers and app connections deliberately;
-  repository-level settings do not move with a Git history import.
-- [ ] Keep old branches, tags, releases, and closed PR discussions available in
-  the old repository; port active work and namespace any tags copied into the
-  destination to avoid collisions.
-- [ ] After the rollback window and outstanding-work audit, add a migration
-  notice to the old repository and archive it.
+`latest` is retained for existing consumers, but pushes to several image repositories
+are not atomic. SHA-pinned deployment is the way to select one complete release.
+Both production and staging continue using the existing image names and root paths.
 
-## Acceptance checklist
+## Outstanding work and archive
 
-- [ ] A fresh clone contains ordinary frontend files and no nested frontend Git
-  repository or submodule; both original histories are reachable.
-- [ ] Frontend install/start/checks work from documented root commands without
-  requiring backend credentials for frontend-only tasks.
-- [ ] Frontend lint, TypeScript, unit tests, production build, and relevant Go
-  checks pass; all four application Docker images build.
-- [ ] Frontend-only, backend-only, and combined PRs report expected checks.
-- [ ] A monorepo PR receives a working Vercel preview for its exact commit.
-- [ ] Terminal checks validate assets, deep-link responses, and API/GraphQL
-  routing. A maintainer verifies appearance and interactive login manually;
-  browser UI automation requires an explicit user request.
-- [ ] A staging deployment proves the frontend image works with existing Nginx
-  routing and matching backend/schema changes.
-- [ ] Destination `main` publishes expected images and the deployment mechanism
-  actually serves the expected revision.
-- [ ] Old publishing jobs cannot overwrite new images.
-- [ ] A prior image digest and Vercel deployment can be restored.
+The inventory on 2026-09-05 found 14 open frontend PRs and 4 open frontend issues.
+The E2E harness was on an open PR, not frontend `main`; it is not included in this
+import. Refresh this list rather than importing local feature branches silently.
 
-## Cutover and rollback order
+- [ ] Merge ready PRs before the final import or port their commits into monorepo
+  branches, accounting for the `frontend/` prefix. Reopen as drafts with links to
+  original discussion and backend dependencies.
+- [ ] Transfer active issues and reconcile labels/milestones. Git history import
+  does not move GitHub issues, PRs, settings, or webhooks.
+- [ ] Reconcile collaborators, teams, ownership and review policy. Once observed,
+  configure required checks for `frontend-checks`, `frontend-build`, and
+  `backend-build`; use the exact contexts GitHub receives. Publishing is main-only
+  and should not be a required PR check.
+- [ ] Update webhook consumers and repository-linked integrations, including Sentry.
+- [ ] Keep historical tags/releases in the old repository or namespace any copied
+  tags to avoid collisions.
+- [ ] After the rollback window and active-work audit, add a migration notice,
+  disable remaining old automation, and archive `uwflow_frontend`.
+- [ ] Remove the temporary Vercel validation project after verification.
 
-1. Complete the inventory and baseline validation; prepare the history-preserving
-   implementation PR as a draft and validate its frontend on the temporary
-   Vercel project. Prepare destination credentials before merging.
-2. Freeze frontend merges briefly, refresh the imported source SHA, and repeat
-   affected checks. Disable the old publisher and drain its jobs. Coordinate
-   production auto-updaters so no unreviewed release is pulled mid-cutover.
-3. Merge the implementation PR with a merge commit. Reconnect the existing
-   Vercel project and set its root directory only once `frontend/` exists on the
-   destination branch. Verify previews and production-branch behavior.
-4. Verify the new CircleCI publication, then deploy and verify production with
-   the recorded release identity. Resume normal development in `uwflow`.
-5. Port remaining work, observe the rollback window, then archive the old repo
-   and remove the temporary validation project.
+See [GitHub issue transfers](https://docs.github.com/en/issues/tracking-your-work-with-issues/administering-issues/transferring-an-issue-to-another-repository).
 
-If cutover fails, pause the new publisher and any auto-updater first. Restore
-known-good image digests plus the matching repository configuration; restore the
-previous Vercel deployment and, if needed, its old Git connection/root settings.
-Only re-enable the old publisher after the new one cannot race it. Do not reset
-the database or undo unrelated work to reverse a repository migration. Any schema
-change needs its own compatibility/rollback plan.
+## Implementation validation
 
-## Delivery
+Verified locally for the migration changes:
 
-This proposal PR is documentation only. The implementation PR will contain the
-history import, tooling updates, consolidated CI, deployment-script changes, and
-the completed cutover runbook. External service changes happen during the
-coordinated cutover after implementation validation. Path-filtering optimization
-can follow once the unified pipeline has proven reliable.
+- Frozen Bun install, frontend lint, TypeScript, production build, and all 44 unit tests.
+- Ten command tests covering component builds, secret references, environment-file
+  isolation, frontend-only deployment, failed pulls, and root Git hook installation.
+- All four Docker images built successfully; backend builds include the Go suite.
+- Official CircleCI CLI configuration validation passed.
+- The frontend image served HTTPS, SPA deep links, JavaScript assets, missing-asset
+  404s, and API/GraphQL rewrites using the existing Nginx configuration. Upstreams
+  were disposable mocks, not production or a full staging database.
+
+Reproduce the routing test with `make frontend-container-test` after building the
+frontend image. Set `FRONTEND_TEST_IMAGE` to test a specific local image tag.
+Vercel account settings, live previews, production rollout, and manual visual/login
+checks remain cutover acceptance items below.
+
+## Acceptance and rollback
+
+Before cutover:
+
+- [ ] Verify original frontend ancestry, exact import tree, and no frontend submodule.
+- [ ] From a fresh clone, run `make frontend-install frontend-check frontend-build`
+  and `make migration-test`. Verify the installed root hook.
+- [ ] Build all four Docker images; backend builds include `go test ./...`.
+- [ ] Validate CircleCI configuration and observe the draft PR checks.
+- [ ] Verify frontend-only, backend-only, and combined PR preview/check behavior.
+- [ ] Use terminal checks for assets, deep links, API and GraphQL routing; have a
+  maintainer verify appearance and interactive login manually.
+- [ ] Validate the frontend image with the existing Nginx configuration in staging.
+
+After cutover:
+
+- [ ] Verify monorepo `main` published and deployed the intended release.
+- [ ] Verify the old publisher cannot overwrite images.
+- [ ] Record and exercise restoration of a prior image digest and Vercel deployment.
+
+If cutover fails, pause the new publisher and auto-updaters first. Restore the
+known-good application image digests and matching checkout/configuration. Releases
+predating this migration may not have common SHA tags, so use the recorded digests
+in a Compose override file. Restore the prior Vercel deployment and, if necessary,
+the previous Git connection and Root Directory settings. Only re-enable the old
+publisher after the new publisher cannot race it. Do not reset the database to
+reverse a repository migration; schema changes need a separate compatibility plan.

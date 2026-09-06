@@ -28,3 +28,6 @@ package-lock.json
 
 # Sentry Config File
 .sentryclirc
+
+# Local Vercel link metadata
+.vercel/

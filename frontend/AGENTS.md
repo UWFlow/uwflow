@@ -32,7 +32,10 @@ Architecture and UI guidance:
 
 ## Pre-commit requirement
 
-Before every commit, run `bun run lint-nofix` and confirm it exits clean. This is required by CI/CD — commits that fail it will not pass the pipeline.
+From `frontend/`, before every commit, run `bun run lint-nofix` and confirm it exits clean. This is required by CI/CD — commits that fail it will not pass the pipeline.
+
+Install the tracked root hook with `make hooks` from the repository root. It
+runs frontend lint without modifying the index when frontend files are staged.
 
 ## React memoization
 

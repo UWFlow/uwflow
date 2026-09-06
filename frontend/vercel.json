@@ -3,8 +3,19 @@
   "buildCommand": "bun run build:vercel",
   "outputDirectory": "build",
   "rewrites": [
-    { "source": "/graphql", "destination": "https://uwflow.com/graphql" },
-    { "source": "/api/:path*", "destination": "https://uwflow.com/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/graphql",
+      "destination": "https://uwflow.com/graphql"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://uwflow.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "installCommand": "bun install --frozen-lockfile",
+  "framework": null
 }

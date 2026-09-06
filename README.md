@@ -1,9 +1,64 @@
-# Backend
+# UWFlow
 
-This is a collection of services comprising the UWFlow backend.
+UWFlow is one Git repository containing the frontend, Go services, Hasura schema,
+and deployment configuration. A single branch or PR can update the entire stack.
 
-The [monorepo migration proposal](docs/monorepo-migration.md) describes combining
-the frontend and backend into this repository, including CI/CD and Vercel cutover.
+| Directory | Contents |
+| --- | --- |
+| `frontend/` | React application, Bun lockfile, frontend Dockerfile, Vercel configuration |
+| `flow/` | Go API, email worker, and UW importer |
+| `hasura/` | Database migrations and GraphQL metadata |
+| `nginx/` | Production frontend and API reverse proxy |
+| `script/`, `staging/` | Build/deploy commands and staging infrastructure |
+
+## Frontend development
+
+Install Bun `1.3.14` and Node `22.20.0` (see `frontend/.nvmrc`), then run from the
+repository root:
+
+```sh
+make frontend-install
+make hooks
+make frontend-start
+```
+
+The frontend runs at `http://localhost:3000`. Frontend-only commands do not need
+or load the backend `.env`. Put browser configuration overrides in
+`frontend/.env.local`, following `frontend/.env.sample`. Follow the backend setup
+below for local API/GraphQL services.
+
+```sh
+make frontend-check     # lint, TypeScript, and unit tests
+make frontend-build     # production build without Sentry upload
+make frontend-generate  # requires a matching local Hasura schema
+make migration-test     # build/deployment command tests; no Docker required
+```
+
+The root Git hook runs non-mutating frontend lint when frontend files are staged.
+`make hooks` replaces this clone's `core.hooksPath`; it applies to linked worktrees
+sharing that Git configuration. Existing standalone frontend clones should be
+replaced by a fresh monorepo clone. See [frontend documentation](frontend/README.md).
+
+## Builds and deployment
+
+`./script/build.sh` builds all four application images; pass service names to build
+a subset, for example `./script/build.sh frontend`. After building, run
+`make frontend-container-test` for an isolated Nginx/routing smoke test (requires
+Docker and OpenSSL; uses temporary containers and mock upstreams). Images retain the
+`neuwflow/*` names and receive both a commit-SHA tag and `latest`. The unified
+CircleCI pipeline validates both components on every PR and publishes on `main`.
+
+From the production checkout, use `./script/deploy.sh frontend` for a frontend-only
+release, or `./script/deploy.sh` for all services. Persist `UWFLOW_IMAGE_TAG` in the
+backend `.env` to pin application images to a published commit. Without a pin,
+Compose continues using `latest`. Pulling images does not update this checkout's
+Nginx, Compose, or Hasura files.
+
+Vercel uses `frontend` as its project Root Directory. Its Git connection must point
+to `UWFlow/uwflow`. See the [migration and cutover runbook](docs/monorepo-migration.md)
+for the history-preserving merge requirement, CI/Vercel handoff, and rollback.
+
+## Backend setup
 
 ## Architecture
 

@@ -110,7 +110,8 @@
     "lint-nofix": "eslint src/ --ext .ts,.tsx,.js,.jsx -c .eslintrc.js --quiet",
     "generate": "graphql-codegen --config codegen.js",
     "generate:sitemap": "bun scripts/generate-sitemap.js",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org flow-fa --project uwflow-frontend ./build && sentry-cli sourcemaps upload --org flow-fa --project uwflow-frontend ./build"
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org flow-fa --project uwflow-frontend ./build && sentry-cli sourcemaps upload --org flow-fa --project uwflow-frontend ./build",
+    "typecheck": "tsc --noEmit"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -161,8 +162,6 @@
     "eslint-plugin-react": "^7.19.0",
     "eslint-plugin-react-hooks": "^4.0.0",
     "eslint-plugin-simple-import-sort": "^5.0.3",
-    "husky": "^3.1.0",
-    "lint-staged": "^10.2.2",
     "prettier": "^2.0.5",
     "source-map-loader": "^0.2.4",
     "tailwindcss": "^3.4.17",
@@ -170,16 +169,6 @@
     "ts-loader": "^7.0.2",
     "typescript": "4.9.5",
     "worker-loader": "^2.0.0"
-  },
-  "lint-staged": {
-    "src/**/*.{ts,tsx,js,jsx}": [
-      "eslint --ext .ts,.tsx,.js,.jsx --fix -c .eslintrc.js --quiet"
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   },
   "jest": {
     "roots": [

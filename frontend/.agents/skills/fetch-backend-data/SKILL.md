@@ -9,7 +9,7 @@ This skill guides you through the full data-fetching stack: Postgres → Hasura 
 
 ## 1. Understand the Schema via psql
 
-Credentials live in `uwflow/.env` (copy of `.env.sample`):
+Credentials live in the root `.env` (`../.env` from `frontend/`), copied from the root `.env.sample`:
 
 ```
 POSTGRES_DB=flow
@@ -20,13 +20,13 @@ POSTGRES_USER=postgres
 ```
 
 Connect locally (backend must be running via `docker-compose`). Read the
-database name from `uwflow/.env` rather than assuming it — it is `flow_new`,
-not `flow`:
+database name from the root `.env` rather than assuming it. For a database named
+`flow`, for example:
 
 ```bash
-psql -h localhost -p 5432 -U postgres -d flow_new
+psql -h localhost -p 5432 -U postgres -d flow
 # or, without a local psql client:
-docker exec -i postgres psql -U postgres -d flow_new
+docker exec -i postgres psql -U postgres -d flow
 ```
 
 Useful psql commands:
@@ -37,10 +37,10 @@ Useful psql commands:
 \d+ user_schedule -- verbose description including indexes and foreign keys
 ```
 
-The canonical source of truth for the schema is the Hasura migrations:
+The canonical source of truth is the Hasura migrations (paths from the repository root):
 
-- **Init migration**: `uwflow/hasura/migrations/default/1559740220527_init/up.sql` — defines all base tables
-- **Subsequent migrations**: `uwflow/hasura/migrations/default/*/up.sql` — incremental alterations
+- **Init migration**: `hasura/migrations/default/1559740220527_init/up.sql` — defines all base tables
+- **Subsequent migrations**: `hasura/migrations/default/*/up.sql` — incremental alterations
 
 Read these files to understand table structure before writing queries.
 
@@ -48,7 +48,7 @@ Read these files to understand table structure before writing queries.
 
 Hasura introspects the Postgres schema and **automatically generates a GraphQL API** — no resolver code needed. Every table becomes a queryable root field. Relationships between tables (foreign keys) become nested fields.
 
-The Hasura console runs at `http://localhost:8080`. 
+Use the Hasura CLI console from `hasura/`; the local GraphQL endpoint is `http://localhost:8080/v1/graphql`.
 
 Key mapping rules:
 - Table `course` → GraphQL root field `course`
@@ -113,7 +113,7 @@ so the backend must be running first. Postgres and Hasura are enough — the Go
 services are not needed:
 
 ```bash
-cd uwflow && docker compose up -d postgres hasura
+cd .. && docker compose up -d postgres hasura
 ```
 
 Codegen emits typed operations for every document under `src/**`. Use them
@@ -133,7 +133,7 @@ hand-written type will silently drift from the schema.
 
 Codegen reads whatever schema your local Hasura currently has, so **any
 unmerged backend migration applied to your local database leaks into the
-output**. Regenerating while the backend repo sits on a feature branch adds
+output**. Regenerating against a different branch's database adds
 types for tables that do not exist on `main`, inflating an unrelated frontend
 PR by hundreds of lines.
 
@@ -151,11 +151,11 @@ Unauthenticated queries work as the `anonymous` role — only publicly visible d
 
 | Layer           | Location                                              |
 |-----------------|-------------------------------------------------------|
-| Schema def      | `uwflow/hasura/migrations/default/*/up.sql`           |
-| psql creds      | `uwflow/.env`                                         |
-| Hasura UI       | `http://localhost:8080`                               |
-| GQL queries     | `uwflow_frontend/src/graphql/queries/`                |
-| Fragments       | `uwflow_frontend/src/graphql/fragments/`              |
-| Apollo init     | `uwflow_frontend/src/graphql/apollo.js`               |
-| Generated types | `uwflow_frontend/src/generated/graphql.tsx` (never hand-edit) |
-| Codegen config  | `uwflow_frontend/codegen.js` (`bun run generate`)     |
+| Schema def      | `hasura/migrations/default/*/up.sql`           |
+| psql creds      | `.env` (repository root)                                         |
+| GraphQL API     | `http://localhost:8080/v1/graphql`                               |
+| GQL queries     | `frontend/src/graphql/queries/`                |
+| Fragments       | `frontend/src/graphql/fragments/`              |
+| Apollo init     | `frontend/src/graphql/apollo.js`               |
+| Generated types | `frontend/src/generated/graphql.tsx` (never hand-edit) |
+| Codegen config  | `frontend/codegen.js` (`bun run generate`)     |

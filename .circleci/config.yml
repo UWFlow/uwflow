@@ -1,48 +1,106 @@
 version: 2.1
+
 executors:
   docker-publisher:
-    environment:
-      ALL_IMAGES: neuwflow/api neuwflow/email neuwflow/uw
-    machine: true
+    machine:
+      image: ubuntu-2204:current
+
 jobs:
-  build:
+  frontend-checks:
+    docker:
+      - image: cimg/node:22.20.0
+    steps:
+      - checkout
+      - run:
+          name: Install pinned Bun
+          command: |
+            curl --fail --silent --show-error --location https://bun.sh/install | bash -s "bun-v1.3.14"
+            echo 'export PATH="$HOME/.bun/bin:$PATH"' >> "$BASH_ENV"
+      - restore_cache:
+          keys:
+            - frontend-bun-1.3.14-node-22-v1-{{ checksum "frontend/bun.lock" }}
+      - run: make frontend-install
+      - save_cache:
+          key: frontend-bun-1.3.14-node-22-v1-{{ checksum "frontend/bun.lock" }}
+          paths:
+            - ~/.bun/install/cache
+      - run: make frontend-check
+      - run: make migration-test
+      - store_artifacts:
+          path: frontend/coverage
+
+  backend-build:
     executor: docker-publisher
     steps:
       - checkout
       - run:
-          name: Build all images
-          command: ./script/build.sh
+          name: Build and test backend images
+          command: IMAGE_TAG="$CIRCLE_SHA1" ./script/build.sh api email uw
       - run:
-          name: Archive all images
-          command: docker save -o image.tar $ALL_IMAGES
+          name: Archive backend images and release tags
+          command: |
+            mkdir -p images
+            docker save -o images/backend.tar neuwflow/api:latest "neuwflow/api:$CIRCLE_SHA1" neuwflow/email:latest "neuwflow/email:$CIRCLE_SHA1" neuwflow/uw:latest "neuwflow/uw:$CIRCLE_SHA1"
       - persist_to_workspace:
-          root: .
+          root: images
           paths:
-            - ./image.tar
+            - backend.tar
+
+  frontend-build:
+    executor: docker-publisher
+    steps:
+      - checkout
+      - run:
+          name: Build frontend image
+          command: |
+            if [ "$CIRCLE_BRANCH" != main ]; then
+              unset SENTRY_AUTH_TOKEN
+            fi
+            IMAGE_TAG="$CIRCLE_SHA1" ./script/build.sh frontend
+      - run:
+          name: Archive frontend image and release tags
+          command: |
+            mkdir -p images
+            docker save -o images/frontend.tar neuwflow/frontend:latest "neuwflow/frontend:$CIRCLE_SHA1"
+      - persist_to_workspace:
+          root: images
+          paths:
+            - frontend.tar
+
   publish:
     executor: docker-publisher
     steps:
       - attach_workspace:
-          at: /tmp/workspace
+          at: /tmp/images
       - run:
-          name: Load archived images
-          command: docker load -i /tmp/workspace/image.tar
+          name: Load validated images
+          command: |
+            docker load -i /tmp/images/backend.tar
+            docker load -i /tmp/images/frontend.tar
       - run:
-          name: Publish Docker images to Docker Hub
+          name: Publish application images
           command: |
             echo "$DOCKERHUB_PASS" | docker login --username "$DOCKERHUB_USER" --password-stdin
-            for image in $ALL_IMAGES
-            do
-              docker push $image:latest
+            # Publish release tags before updating compatibility tags.
+            for service in api email uw frontend; do
+              docker push "neuwflow/$service:$CIRCLE_SHA1"
             done
+            for service in api email uw frontend; do
+              docker push "neuwflow/$service:latest"
+            done
+
 workflows:
-  version: 2
   normal:
     jobs:
-      - build
+      # Run both components on every PR, including schema/config changes.
+      - frontend-checks
+      - backend-build
+      - frontend-build
       - publish:
           requires:
-            - build
+            - frontend-checks
+            - backend-build
+            - frontend-build
           filters:
             branches:
               only: main

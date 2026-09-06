@@ -17,7 +17,7 @@ Shared layers must not import from `src/pages`. UI primitives must not import Ap
 
 ## Data flow and state
 
-- Postgres/Hasura migrations in `../uwflow` define the source GraphQL contract. Documents live under `src/graphql/`; reuse fragments where fields represent the same entity view.
+- Postgres/Hasura migrations in `../hasura` define the source GraphQL contract. Documents live under `src/graphql/`; reuse fragments where fields represent the same entity view.
 - Run `bun run generate` after document/schema changes and import types from `src/generated/graphql.tsx`. Never declare a parallel handwritten operation type or edit the generated file.
 - Inspect every generated diff. Local codegen reads the running Hasura schema and can include unrelated backend changes.
 - Apollo owns remote server state. Component state owns local interaction. A focused context may own one cross-tree concern.
@@ -48,9 +48,9 @@ Use `bun run build:vercel` for a local production build without Sentry upload. T
 
 Tests should assert behavior through accessible roles, labels, and visible outcomes. Add a regression test for bug fixes when the affected boundary is testable. Cover loading, empty, error, disabled, and success states where they are meaningful.
 
-## Cross-repository contract checklist
+## Frontend/backend contract checklist
 
-For a backend-dependent change, inspect `../uwflow` and confirm:
+For a backend-dependent change, inspect `../hasura` and `../flow` and confirm:
 
 - migration and Hasura metadata/permissions exist for GraphQL fields;
 - operation types were regenerated from the intended schema;
