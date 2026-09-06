@@ -1,0 +1,6 @@
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>UW Flow</ShortName>
+  <Description>Search UW Flow</Description>
+  <Url type="text/html" method="get" template="https://uwflow.com/explore?q={searchTerms}"/>
+  <InputEncoding>UTF-8</InputEncoding>
+</OpenSearchDescription>

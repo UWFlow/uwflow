@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run build:vercel",
+  "outputDirectory": "build",
+  "rewrites": [
+    { "source": "/graphql", "destination": "https://uwflow.com/graphql" },
+    { "source": "/api/:path*", "destination": "https://uwflow.com/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

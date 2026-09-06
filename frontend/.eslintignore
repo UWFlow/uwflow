@@ -1,0 +1,15 @@
+**/node_modules/**
+public/**
+build/**
+config/**
+coverage/**
+scripts/**
+src/generated/**
+
+tailwind.config.js
+*.css
+Dockerfile
+LICENSE
+*.lock
+*.json
+*.md
