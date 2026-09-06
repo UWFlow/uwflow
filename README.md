@@ -2,6 +2,9 @@
 
 This is a collection of services comprising the UWFlow backend.
 
+The [monorepo migration proposal](docs/monorepo-migration.md) describes combining
+the frontend and backend into this repository, including CI/CD and Vercel cutover.
+
 ## Architecture
 
 The UWFlow backend is composed of 5 components that will be explained in detail below.
@@ -126,4 +129,3 @@ $ docker exec -it postgres sh
 ```
 
 There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
-
