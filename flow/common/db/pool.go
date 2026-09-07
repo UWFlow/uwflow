@@ -15,11 +15,14 @@ const ConnectTimeout = time.Second * 10
 
 // Connect to database.
 func ConnectPool(ctx context.Context, env *env.Environment) (*Conn, error) {
-	uri := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		env.PostgresUser, env.PostgresPassword,
-		env.PostgresHost, env.PostgresPort, env.PostgresDatabase,
-	)
+	uri := env.DatabaseURL
+	if uri == "" {
+		uri = fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			env.PostgresUser, env.PostgresPassword,
+			env.PostgresHost, env.PostgresPort, env.PostgresDatabase,
+		)
+	}
 	connectCtx, cancel := context.WithTimeout(ctx, ConnectTimeout)
 	defer cancel()
 

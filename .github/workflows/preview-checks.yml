@@ -1,0 +1,21 @@
+name: Preview control plane checks
+on:
+  pull_request:
+    paths: ['preview/**', 'flow/**', '.github/workflows/preview*.yml']
+  push:
+    branches: [main]
+    paths: ['preview/**', 'flow/**', '.github/workflows/preview*.yml']
+permissions:
+  contents: read
+jobs:
+  controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.7 .github/workflows/preview.yml .github/workflows/preview-checks.yml
+      - run: python3 -m unittest discover -s preview/tests -v
+      - run: docker build --target api -t uwflow-preview-api-validation flow
+      - run: docker build -f preview/Hasura.Dockerfile -t uwflow-preview-hasura-validation .
+      - run: python3 preview/smoke.py

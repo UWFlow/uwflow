@@ -127,3 +127,7 @@ $ docker exec -it postgres sh
 
 There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
 
+
+## Branch previews
+
+See [admin-approved Neon previews on EC2](preview/README.md) for isolated per-PR databases, Vercel review URLs, capacity limits, automatic cleanup, and setup instructions.

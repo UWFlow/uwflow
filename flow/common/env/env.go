@@ -14,15 +14,17 @@ type Environment struct {
 
 	JwtKey []byte `from:"HASURA_GRAPHQL_JWT_KEY"`
 
+	DatabaseURL string `from:"DATABASE_URL" optional:"true"`
+
 	PostgresDatabase string `from:"POSTGRES_DB"`
 	PostgresHost     string `from:"POSTGRES_HOST"`
 	PostgresPassword string `from:"POSTGRES_PASSWORD"`
 	PostgresPort     string `from:"POSTGRES_PORT"`
 	PostgresUser     string `from:"POSTGRES_USER"`
 
-	RunMode		string `from:"RUN_MODE"`
+	RunMode string `from:"RUN_MODE"`
 
-	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
+	UWApiKeyv3 string `from:"UW_API_KEY_V3"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.
@@ -41,7 +43,7 @@ func Get(env interface{}) error {
 			fieldType := envType.Field(i).Type
 			convertedValue := reflect.ValueOf(value).Convert(fieldType)
 			envReflect.Field(i).Set(convertedValue)
-		} else {
+		} else if envType.Field(i).Tag.Get("optional") != "true" {
 			return fmt.Errorf("environment variable %s is not set", envKey)
 		}
 	}

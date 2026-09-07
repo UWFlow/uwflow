@@ -1,0 +1,127 @@
+name: Approved branch preview
+run-name: "Preview ${{ inputs.action }} · frontend PR #${{ inputs.pr }}"
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        options: [deploy, destroy, status]
+        default: deploy
+      pr:
+        description: Frontend PR number (ignored for status)
+        required: true
+        type: string
+      backend_sha:
+        description: Optional full backend SHA; defaults to main at request time
+        type: string
+      ttl_hours:
+        description: Lifetime in hours (host maximum is authoritative)
+        type: choice
+        options: ['1', '4', '8', '24']
+        default: '24'
+permissions:
+  contents: read
+concurrency:
+  group: approved-preview-${{ inputs.pr }}
+  cancel-in-progress: false
+jobs:
+  resolve:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_sha: ${{ steps.resolve.outputs.frontend_sha }}
+      backend_sha: ${{ steps.resolve.outputs.backend_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_ACTION: ${{ inputs.action }}
+          PREVIEW_PR: ${{ inputs.pr }}
+          PREVIEW_BACKEND_SHA: ${{ inputs.backend_sha }}
+        run: python3 preview/resolve.py
+  deploy:
+    needs: resolve
+    name: Approve ${{ inputs.action }} · frontend ${{ needs.resolve.outputs.frontend_sha }} · backend ${{ needs.resolve.outputs.backend_sha }}
+    environment: ec2-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: control
+      - uses: actions/checkout@v4
+        if: inputs.action == 'deploy'
+        with:
+          ref: ${{ needs.resolve.outputs.backend_sha }}
+          persist-credentials: false
+          path: source
+      # PR code is compiled on this ephemeral runner, never on EC2. Dockerfiles
+      # come from the approved control plane on main, not the requested SHA.
+      - name: Build approved backend
+        if: inputs.action == 'deploy'
+        run: |
+          docker build --target api -f control/flow/Dockerfile -t preview-api source/flow
+          docker build -f control/preview/Hasura.Dockerfile -t preview-hasura source
+      - name: Publish immutable images
+        id: images
+        if: inputs.action == 'deploy'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          prefix="ghcr.io/${GITHUB_REPOSITORY,,}-preview"
+          for service in api hasura; do
+            image="$prefix-$service:$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            docker tag "preview-$service" "$image"
+            docker push "$image"
+            digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")
+            printf '%s_image=%s\n' "$service" "$digest" >> "$GITHUB_OUTPUT"
+          done
+      - name: Request deployment through restricted SSH command
+        env:
+          PREVIEW_ACTION: ${{ inputs.action }}
+          PREVIEW_PR: ${{ inputs.pr }}
+          FRONTEND_SHA: ${{ needs.resolve.outputs.frontend_sha }}
+          BACKEND_SHA: ${{ needs.resolve.outputs.backend_sha }}
+          API_IMAGE: ${{ steps.images.outputs.api_image }}
+          HASURA_IMAGE: ${{ steps.images.outputs.hasura_image }}
+          TTL_HOURS: ${{ inputs.ttl_hours }}
+          EC2_HOST: ${{ vars.PREVIEW_EC2_HOST }}
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PREVIEW_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/preview"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          trap 'rm -f "$HOME/.ssh/preview"' EXIT
+          python3 control/preview/request.py > request.json
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 \
+            -i "$HOME/.ssh/preview" "preview-deploy@$EC2_HOST" < request.json > preview-result.json
+          cat preview-result.json
+          python3 - <<'PY'
+          import json, os, datetime
+          records = json.load(open('preview-result.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              for record in records:
+                  expiry = datetime.datetime.fromtimestamp(record['expires_at'], datetime.timezone.utc).isoformat()
+                  out.write(f"\n**{record['key']}** ({record['phase']}): {record['url']}\n\n")
+                  out.write(f"Frontend `{record['frontend_sha']}` · backend `{record['backend_sha']}` · expires {expiry}\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-result-${{ github.run_id }}
+          path: preview-result.json
+          if-no-files-found: ignore
+          retention-days: 14

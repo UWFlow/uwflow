@@ -1,0 +1,10 @@
+[Unit]
+Description=Expire UWFlow previews and reconcile closed PRs
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/uwflow-preview/controller.py reconcile
+TimeoutStartSec=25min
+UMask=0077

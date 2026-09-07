@@ -1,0 +1,17 @@
+# Copy to the existing nginx/config/preview.conf AFTER replacing the domain.
+# Attach the existing frontend proxy to the external uwflow-preview-edge network.
+# /ssl/preview/ must contain a certificate valid for *.preview-api.uwflow.com.
+server {
+    listen 443 ssl;
+    server_name ~^pr-(?<preview_pr>[1-9][0-9]*)\.preview-api\.uwflow\.com$;
+    ssl_certificate /ssl/preview/fullchain.pem;
+    ssl_certificate_key /ssl/preview/privkey.pem;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    location / {
+        set $preview_upstream preview-pr-$preview_pr;
+        proxy_pass http://$preview_upstream:8080;
+        proxy_set_header Host $host;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 30s;
+    }
+}

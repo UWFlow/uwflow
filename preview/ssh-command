@@ -1,0 +1,4 @@
+#!/bin/sh
+# Install root-owned; use as authorized_keys forced command with restrict.
+# Never evaluate SSH_ORIGINAL_COMMAND. Input is one bounded JSON request.
+exec sudo -n /usr/bin/python3 /opt/uwflow-preview/controller.py request

@@ -1,0 +1,10 @@
+# Use only when configuring the existing production reverse proxy, not previews.
+services:
+  frontend:
+    networks:
+      - default
+      - preview-edge
+networks:
+  preview-edge:
+    external: true
+    name: uwflow-preview-edge
