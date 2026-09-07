@@ -26,7 +26,8 @@ services:
     env_file: .env
     image: postgres:15-alpine
     ports:
-      - $POSTGRES_PORT:$POSTGRES_PORT
+      # Host access is local only; remote analytics/admin clients use SSH.
+      - 127.0.0.1:$POSTGRES_PORT:$POSTGRES_PORT
     restart: always
     volumes:
       - postgres:/var/lib/postgresql/data

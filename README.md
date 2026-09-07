@@ -29,6 +29,9 @@ In production, we run an Nginx reverse proxy in front of Hasura, the API, and th
 to route requests to the correct service. Hasura is exposed via `/graphql`, the API via `/api`,
 and the frontend via `/`.
 
+For PostHog warehouse access to PostgreSQL, see the
+[restricted SSH connection design and rollout](admin/posthog/README.md).
+
 ## Requirements
 
 The following packages are required for core functionality:
@@ -114,9 +117,9 @@ Hasura supports live reloading as well, due to its configuration.
 When `docker-compose` is active, services may be accessed
 at their published ports, as declared in `docker-compose.yml`.
 
-To illustrate, the `postgres` service publishes port `5432`, so
+To illustrate, the `postgres` service publishes port `5432` on `127.0.0.1` only, so
 ```sh
-psql -h localhost -p 5432 -U flow
+psql -h 127.0.0.1 -p 5432 -U flow
 ```
 will spawn a Postgres shell connected to the database container.
 If you do not happen to have `postgres-client` installed, this also works:
@@ -126,4 +129,3 @@ $ docker exec -it postgres sh
 ```
 
 There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
-
