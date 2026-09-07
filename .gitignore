@@ -15,3 +15,7 @@ terraform.tfvars
 # TLS certs/keys — never commit
 *.pem
 
+
+# Local Neon project link and tooling dependencies
+.neon
+node_modules/
