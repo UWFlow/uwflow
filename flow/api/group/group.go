@@ -1,21 +1,3 @@
-// Package group backs the Shared Classes feature: small groups whose members
-// compare the schedules Flow already stores and see which sections they share.
-//
-// Group CRUD -- create, list, accept, decline, leave, delete -- is row-level
-// work on shared_group and shared_group_member, and lives in Hasura under the
-// permissions in that metadata. Only the operations Hasura cannot express
-// are served here:
-//
-//   - Get, because it reads other members' names and the sections they share.
-//     Hasura's "user" select permission is self-only, and widening it, or
-//     exposing other members' user_schedule, would hand out every class a
-//     member takes rather than the ones the group has in common.
-//   - Invite, because resolving an email to an account is the one thing that
-//     must not be a query: the lookup happens server-side and the response is
-//     uniform, so the endpoint cannot be used to probe which emails exist.
-//   - AcceptEmailInvite, because possession of the secret mailed to an address
-//     is what authorizes an account to claim an invite created before it
-//     existed.
 package group
 
 import (
