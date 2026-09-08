@@ -27,9 +27,10 @@ FROM golang:1.25-alpine AS dev
 
 WORKDIR /build
 
-# Install build dependencies and Air
-RUN apk add --no-cache git g++ poppler-dev && \
-    go install github.com/air-verse/air@latest
+# Install build dependencies separately so failures identify the failing step.
+RUN apk add --no-cache git g++ poppler-dev
+# Pin Air to a Go 1.25-compatible release; latest can require a newer toolchain.
+RUN go install github.com/air-verse/air@v1.63.0
 
 # Copy go.mod and go.sum for dependency caching
 COPY go.mod go.sum ./
