@@ -1,5 +1,21 @@
-// Package group backs Shared Classes. CRUD lives in Hasura; Get and Invite
-// are here because they need to read across members and keep email lookups opaque.
+// Package group backs the Shared Classes feature: small groups whose members
+// compare the schedules Flow already stores and see which sections they share.
+//
+// Group CRUD -- create, list, accept, decline, leave, delete -- is row-level
+// work on shared_group and shared_group_member, and lives in Hasura under the
+// permissions in that metadata. Only the operations Hasura cannot express
+// are served here:
+//
+//   - Get, because it reads other members' names and the sections they share.
+//     Hasura's "user" select permission is self-only, and widening it, or
+//     exposing other members' user_schedule, would hand out every class a
+//     member takes rather than the ones the group has in common.
+//   - Invite, because resolving an email to an account is the one thing that
+//     must not be a query: the lookup happens server-side and the response is
+//     uniform, so the endpoint cannot be used to probe which emails exist.
+//   - AcceptEmailInvite, because possession of the secret mailed to an address
+//     is what authorizes an account to claim an invite created before it
+//     existed.
 package group
 
 import (
@@ -7,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -50,7 +67,10 @@ type sharedClass struct {
 	Meetings    []meetingInfo `json:"meetings"`
 }
 
-// Get returns a group's members and its shared classes; only members may read it.
+var emailPattern = regexp.MustCompile(`(?i)^[A-Z0-9._%+*-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$`)
+
+// Get returns a group's members (pending members included) and the classes
+// shared by two or more confirmed members. Only members may read a group.
 func Get(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -163,7 +183,8 @@ func groupMembers(tx *db.Tx, gid int) ([]memberInfo, error) {
 	return members, nil
 }
 
-// invitedEmails lists invites with no account yet; resolved invites show up as pending members instead.
+// invitedEmails lists invitations waiting for the recipient to create an
+// account. Invites to existing accounts appear as pending members instead.
 func invitedEmails(tx *db.Tx, gid int) ([]string, error) {
 	rows, err := tx.Query(`
 		SELECT invited_email FROM shared_group_invite
@@ -283,8 +304,9 @@ func attachMeetings(tx *db.Tx, sectionIds []int, byId map[int]*sharedClass) erro
 	return rows.Err()
 }
 
-// Invite adds every account matching the email as a pending member and
-// always responds "sent", so it can't be used to probe which emails exist.
+// Invite resolves an email to Flow accounts server-side and adds pending
+// memberships for any matches. The response is always "sent" so the endpoint
+// cannot be used to probe which emails have accounts.
 func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -309,46 +331,92 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid request body: %w", err))
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
-	if email == "" || !strings.Contains(email, "@") {
+	if len(email) > 256 || !emailPattern.MatchString(email) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("enter a valid email"))
 	}
 
-	sent := map[string]interface{}{"status": "sent"}
-
-	rows, err := tx.Query(`SELECT id FROM "user" WHERE LOWER(email) = $1`, email)
-	if err != nil {
-		return nil, fmt.Errorf("resolving invited accounts: %w", err)
+	// A pending shared_group_member row is the invite for an existing account.
+	// user.email is not unique, so invite every matching account instead of
+	// choosing one arbitrarily. If there is no account yet, retain the address
+	// in shared_group_invite so the mail service can invite them to sign up.
+	// Both paths return the same response to prevent account enumeration.
+	if _, err := tx.Exec(
+		`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, email,
+	); err != nil {
+		return nil, fmt.Errorf("locking invited email: %w", err)
 	}
-	defer rows.Close()
-
-	targetIds := []int{}
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("scanning invited account: %w", err)
-		}
-		targetIds = append(targetIds, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("resolving invited accounts: %w", err)
-	}
-	if len(targetIds) == 0 {
-		// No matching account; emailing non-users isn't wired up yet.
-		return sent, nil
-	}
-
-	// A pending row is the invite; existing membership is never downgraded.
-	for _, targetId := range targetIds {
-		_, err = tx.Exec(`
+	_, err = tx.Exec(`
+		WITH matching_accounts AS MATERIALIZED (
+			SELECT id FROM "user" WHERE LOWER(email) = $2
+		), added_members AS (
 			INSERT INTO shared_group_member (group_id, user_id, status)
-			VALUES ($1, $2, 'pending')
+			SELECT $1, a.id, 'pending'
+			FROM matching_accounts a
+			WHERE (
+				SELECT COUNT(*) FROM shared_group_member m
+				WHERE m.user_id = a.id AND m.status = 'pending'
+			) < 20
 			ON CONFLICT (group_id, user_id) DO NOTHING
-		`, gid, targetId)
-		if err != nil {
-			return nil, fmt.Errorf("adding pending member: %w", err)
-		}
+		), removed_mail_invite AS (
+			DELETE FROM shared_group_invite
+			WHERE group_id = $1 AND invited_email = $2
+				AND EXISTS (SELECT 1 FROM matching_accounts)
+		)
+		INSERT INTO shared_group_invite (group_id, invited_email, invited_by)
+		SELECT $1, $2, $3
+		WHERE NOT EXISTS (SELECT 1 FROM matching_accounts)
+			AND (
+				SELECT COUNT(*) FROM shared_group_invite i
+				WHERE i.invited_email = $2
+			) < 20
+		ON CONFLICT (group_id, invited_email) DO NOTHING
+	`, gid, email, userId)
+	if err != nil {
+		return nil, fmt.Errorf("adding pending member: %w", err)
 	}
-	return sent, nil
+	return map[string]interface{}{"status": "sent"}, nil
+}
+
+// AcceptEmailInvite consumes the bearer secret sent to an address without an
+// account and makes the authenticated caller a confirmed group member.
+func AcceptEmailInvite(tx *db.Tx, r *http.Request) (interface{}, error) {
+	userId, err := serde.UserIdFromRequest(r)
+	if err != nil {
+		return nil, serde.WithStatus(http.StatusUnauthorized, err)
+	}
+	secret := chi.URLParam(r, "secret")
+	if len(secret) != 32 {
+		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("invalid invite secret"))
+	}
+
+	var inviteId, gid int
+	err = tx.QueryRow(`
+		SELECT id, group_id
+		FROM shared_group_invite
+		WHERE secret_key = $1
+		FOR UPDATE
+	`, secret).Scan(&inviteId, &gid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, serde.WithStatus(http.StatusNotFound, fmt.Errorf("invite not found"))
+	}
+	if err != nil {
+		return nil, fmt.Errorf("loading email invite: %w", err)
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO shared_group_member (group_id, user_id, status)
+		VALUES ($1, $2, 'member')
+		ON CONFLICT (group_id, user_id)
+		DO UPDATE SET status = 'member'
+	`, gid, userId)
+	if err != nil {
+		return nil, fmt.Errorf("accepting email invite: %w", err)
+	}
+	if _, err := tx.Exec(`DELETE FROM shared_group_invite WHERE id = $1`, inviteId); err != nil {
+		return nil, fmt.Errorf("removing email invite: %w", err)
+	}
+
+	return map[string]interface{}{"status": "member", "group_id": gid}, nil
 }
 
 func fullName(first, last *string) string {

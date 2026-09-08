@@ -45,7 +45,7 @@ func Subscribed(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, subscribedInfo)
 }
 
-// Invite processes all unmailed rows of shared_group_invite.
+// Invite processes all unmailed shared-group invitations.
 func Invite(ctx context.Context, tx pgx.Tx) error {
 	return process(ctx, tx, inviteInfo)
 }
