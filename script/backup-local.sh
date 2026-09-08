@@ -24,6 +24,7 @@ set -euo pipefail
 
 DIR="$(dirname "$(realpath "$0")")"
 . "$DIR/common.sh"
+. "$DIR/postgres-dump.sh"
 
 # Bring backend environment variables into scope (POSTGRES_USER/DB/PORT).
 cd "$BACKEND_DIR"
@@ -48,9 +49,7 @@ fi
 
 echo "Dumping database '$POSTGRES_DB' to $FINAL ..."
 
-# No -t/-i on docker exec: a TTY would corrupt the binary dump on stdout.
-if $PREFIX docker exec postgres \
-     pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -p "$POSTGRES_PORT" -Fc \
+if dump_postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -p "$POSTGRES_PORT" \
    > "$TMP"
 then
   # Verify it's a readable archive before promoting it. pg_dump can exit 0 and
