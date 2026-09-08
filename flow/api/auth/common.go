@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 
 	"flow/api/serde"
 	"flow/common/db"
@@ -44,6 +45,18 @@ UPDATE "user" SET picture_url = $2 WHERE id = $1
 func InsertUser(tx *db.Tx, user *userInfo) (*authResponse, error) {
 	var response authResponse
 
+	var invitedEmail string
+	if user.Email != nil {
+		invitedEmail = strings.ToLower(strings.TrimSpace(*user.Email))
+	}
+	if invitedEmail != "" {
+		// Use the invite endpoint's lock before inserting the account. Whichever
+		// transaction runs second must see the other's account or pending invites.
+		if _, err := tx.Exec(`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, invitedEmail); err != nil {
+			return nil, fmt.Errorf("locking signup email: %w", err)
+		}
+	}
+
 	secretId, err := random.String(SecretIdLength, random.Uppercase)
 	if err != nil {
 		return nil, fmt.Errorf("generating secret id: %w", err)
@@ -55,6 +68,25 @@ func InsertUser(tx *db.Tx, user *userInfo) (*authResponse, error) {
 	).Scan(&response.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("inserting user: %w", err)
+	}
+
+	if invitedEmail != "" {
+		// Copy only outstanding invitations, not accepted memberships. Run once
+		// at signup so logging in cannot recreate invitations the user declined.
+		_, err = tx.Exec(`
+			INSERT INTO shared_group_member (group_id, user_id, status, created_at)
+			SELECT m.group_id, $1, 'pending', MIN(m.created_at)
+			FROM shared_group_member m
+			JOIN "user" u ON u.id = m.user_id
+			WHERE LOWER(u.email) = $2 AND m.status = 'pending'
+			GROUP BY m.group_id
+			ORDER BY MIN(m.created_at), m.group_id
+			LIMIT 20
+			ON CONFLICT (group_id, user_id) DO NOTHING
+		`, response.UserId, invitedEmail)
+		if err != nil {
+			return nil, fmt.Errorf("inheriting pending group invites: %w", err)
+		}
 	}
 
 	response.Token, err = serde.NewSignedJwt(response.UserId)
