@@ -10,7 +10,8 @@ CREATE TABLE shared_group (
     REFERENCES "user"(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT shared_group_created_by_name_key UNIQUE (created_by, name)
 );
 
 CREATE INDEX shared_group_created_by_idx ON shared_group(created_by);
