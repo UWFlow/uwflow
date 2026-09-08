@@ -346,7 +346,7 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 }
 
 // AcceptEmailInvite consumes the bearer secret sent to an address without an
-// account and makes the authenticated caller a confirmed group member.
+// account and makes the authenticated recipient a confirmed group member.
 func AcceptEmailInvite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -358,17 +358,27 @@ func AcceptEmailInvite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	}
 
 	var inviteId, gid int
+	var isRecipient bool
 	err = tx.QueryRow(`
-		SELECT id, group_id
-		FROM shared_group_invite
-		WHERE secret_key = $1
-		FOR UPDATE
-	`, secret).Scan(&inviteId, &gid)
+		SELECT i.id, i.group_id, EXISTS (
+			SELECT 1 FROM "user" u
+			WHERE u.id = $2 AND LOWER(u.email) = LOWER(i.invited_email)
+		)
+		FROM shared_group_invite i
+		WHERE i.secret_key = $1
+		FOR UPDATE OF i
+	`, secret, userId).Scan(&inviteId, &gid, &isRecipient)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, serde.WithStatus(http.StatusNotFound, fmt.Errorf("invite not found"))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("loading email invite: %w", err)
+	}
+	// The frontend attempts acceptance as soon as it sees an authenticated
+	// session. Preserve the link if the browser is signed into another account.
+	// Matching email alone is insufficient: the bearer secret is still required.
+	if !isRecipient {
+		return nil, serde.WithStatus(http.StatusForbidden, fmt.Errorf("sign in with the invited email to accept this invitation"))
 	}
 
 	_, err = tx.Exec(`
