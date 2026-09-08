@@ -6,8 +6,7 @@ if [ "$#" -ne 0 ]; then
   echo 'This command accepts no arguments.' >&2
   exit 2
 fi
+# Load only the root-owned installed helper, never a file from the checkout.
+. /usr/local/lib/uwflow/postgres-dump.sh
 # Fixed deployment-specific identifiers; change these during installation if needed.
-# No TTY: binary pg_dump output is streamed unchanged over SSH.
-exec docker exec \
-  -e PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=900000 -c lock_timeout=10000' \
-  postgres pg_dump -U postgres -d flow -Fc --no-owner --no-acl
+PREFIX='' dump_postgres -U postgres -d flow -p 5432 --no-owner --no-acl

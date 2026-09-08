@@ -5,15 +5,22 @@
 session, and creates no dump file on production. Errors go to stderr and a failed
 dump returns a nonzero status. No arguments are accepted.
 
-Install the script on production as a root-owned executable:
+The dump command is shared with `backup-local.sh` through `postgres-dump.sh`.
+Both use a read-only session with a 15-minute statement timeout and a 10-second
+lock timeout. Local backups retain archive validation and atomic file promotion;
+the staging exporter streams the archive and omits ownership and ACLs.
+
+Install the script and shared helper on production as root-owned files:
 
 ```sh
+sudo install -d -o root -g root -m 0755 /usr/local/lib/uwflow
+sudo install -o root -g root -m 0644 script/postgres-dump.sh /usr/local/lib/uwflow/postgres-dump.sh
 sudo install -o root -g root -m 0755 script/staging-dump.sh /usr/local/sbin/uwflow-staging-dump
 ```
 
 The fixed container name is `postgres`, database is `flow`, and database user is
 `postgres`. Adjust these identifiers during installation if production differs.
-The PostgreSQL port is the client's default (5432). The receiving staging server
+The PostgreSQL port is fixed at 5432. The receiving staging server
 must use a compatible `pg_restore` version, at least as new as the dump client.
 
 Create a dedicated SSH account, e.g. `staging-sync`, and grant only this exact
@@ -30,7 +37,7 @@ restrict,command="sudo -n /usr/local/sbin/uwflow-staging-dump" ssh-ed25519 PUBLI
 ```
 
 The account does not need membership in the Docker group. Keep the installed
-script and its parent directories unwritable by the SSH account. The forced
+script, shared helper, and their parent directories unwritable by the SSH account. The forced
 command restricts this key to database exports and disables forwarding and PTYs.
 Protect access to this key: the snapshot includes production data.
 
