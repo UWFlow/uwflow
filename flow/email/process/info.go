@@ -26,6 +26,11 @@ var subscribedInfo = queueInfo{
 	writeQuery: `UPDATE queue.section_subscribed SET seen_at = NOW() WHERE id = $1`,
 }
 
+var inviteInfo = queueInfo{
+	scanFunc:   scanInvite,
+	writeQuery: `UPDATE shared_group_invite SET mailed_at = NOW() WHERE id = $1`,
+}
+
 var vacatedInfo = queueInfo{
 	scanFunc:   scanVacated,
 	writeQuery: `UPDATE queue.section_vacated SET seen_at = NOW() WHERE id = $1`,

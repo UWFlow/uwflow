@@ -91,6 +91,39 @@ WHERE ss.seen_at IS NULL
 	return items, nil
 }
 
+func scanInvite(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
+	var items []format.QueueItem
+
+	const query = `
+SELECT i.id, i.invited_email, u.first_name, g.name, i.secret_key
+FROM shared_group_invite i
+  JOIN shared_group g ON g.id = i.group_id
+  JOIN "user" u ON u.id = i.invited_by
+WHERE i.mailed_at IS NULL
+`
+
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("loading rows: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		item := new(format.InviteItem)
+		var secret string
+		if err := rows.Scan(&item.ID, &item.Email, &item.InviterName, &item.GroupName, &secret); err != nil {
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		item.InviteURL = "https://uwflow.com/shared-classes?invite=" + secret
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading rows: %w", err)
+	}
+	return items, nil
+}
+
 func scanVacated(ctx context.Context, tx pgx.Tx) ([]format.QueueItem, error) {
 	var items []format.QueueItem
 
