@@ -15,6 +15,7 @@ import {
   RemoveSharedGroupMembershipMutationVariables,
 } from 'generated/graphql';
 
+import { Calendar, CalendarEvent, WEEKDAY_LABELS } from 'components/calendar';
 import {
   CourseColor,
   DEFAULT_COURSE_COLOR,
@@ -32,6 +33,7 @@ import {
   REMOVE_SHARED_GROUP_MEMBERSHIP,
 } from 'graphql/mutations/SharedClasses';
 import { getKittenFromID } from 'utils/Kitten';
+import { weekDayLetters } from 'utils/Misc';
 
 import {
   fetchGroup,
@@ -41,6 +43,7 @@ import {
   inviteToGroup,
   SharedClass,
 } from './api';
+import MemberAvatar from './MemberAvatar';
 
 interface Props {
   groupId: number;
@@ -64,6 +67,47 @@ const MemberChip = ({ member }: { member: GroupMember }) => {
       {pending && <span className="text-xs text-dark3">pending</span>}
     </span>
   );
+};
+
+// Flatten shared classes into calendar blocks: one per meeting per weekday it
+// runs on. days come as tokens matching weekDayLetters (M, T, W, Th, F).
+const toCalendarEvents = (
+  classes: SharedClass[],
+  membersById: Map<number, GroupMember>,
+): CalendarEvent[] => {
+  const events: CalendarEvent[] = [];
+  classes.forEach((c) => {
+    const sharedMembers = c.member_ids.flatMap((id) => {
+      const member = membersById.get(id);
+      if (!member) return [];
+      return [member];
+    });
+    c.meetings.forEach((m, mi) => {
+      const { start_seconds: startSeconds, end_seconds: endSeconds } = m;
+      if (startSeconds === null || endSeconds === null) return;
+      m.days.forEach((day) => {
+        const dayIndex = weekDayLetters.indexOf(day);
+        if (dayIndex < 0 || dayIndex > 4) return;
+        events.push({
+          id: `${c.section_id}-${mi}-${day}`,
+          dayIndex,
+          startMinutes: Math.round(startSeconds / 60),
+          endMinutes: Math.round(endSeconds / 60),
+          colorKey: c.course_code,
+          title: `${c.course_code.toUpperCase()} · ${c.section_name}`,
+          subtitle: sharedMembers.length ? (
+            <div className="flex h-5 items-center gap-xs overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {sharedMembers.map((member) => (
+                <MemberAvatar key={member.user_id} member={member} />
+              ))}
+            </div>
+          ) : undefined,
+          location: m.location ?? undefined,
+        });
+      });
+    });
+  });
+  return events;
 };
 
 const SharedClassCard = ({
@@ -209,6 +253,13 @@ const GroupDetail = ({ groupId, onBack, onChanged }: Props) => {
   const pending = group.members.filter((m) => m.status === 'pending');
   const membersById = new Map(group.members.map((m) => [m.user_id, m]));
 
+  const events = toCalendarEvents(group.shared_classes, membersById);
+  const eventHours = events.flatMap((e) => [
+    e.startMinutes / 60,
+    e.endMinutes / 60,
+  ]);
+  const minHour = eventHours.length ? Math.floor(Math.min(...eventHours)) : 8;
+  const maxHour = eventHours.length ? Math.ceil(Math.max(...eventHours)) : 18;
   const courseColors = getCourseColors(
     group.shared_classes.map((shared) => shared.course_code),
   );
@@ -327,24 +378,40 @@ const GroupDetail = ({ groupId, onBack, onChanged }: Props) => {
             section, it shows up here.
           </div>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-sm p-0">
-            {group.shared_classes.map((shared) => {
-              const sharedMembers = shared.member_ids.flatMap((memberId) => {
-                const member = membersById.get(memberId);
-                return member ? [member] : [];
-              });
-              return (
-                <SharedClassCard
-                  key={shared.section_id}
-                  shared={shared}
-                  color={
-                    courseColors.get(shared.course_code) ?? DEFAULT_COURSE_COLOR
-                  }
-                  members={sharedMembers}
+          <>
+            {events.length > 0 && (
+              <div className="hidden rounded-card border border-light3 bg-white p-md shadow-box tablet:block">
+                <Calendar
+                  dayLabels={WEEKDAY_LABELS}
+                  events={events}
+                  colorKeys={Array.from(courseColors.keys())}
+                  minHour={minHour}
+                  maxHour={maxHour}
+                  interactive={false}
+                  showHeader={false}
                 />
-              );
-            })}
-          </ul>
+              </div>
+            )}
+            <ul className="m-0 flex list-none flex-col gap-sm p-0">
+              {group.shared_classes.map((shared) => {
+                const sharedMembers = shared.member_ids.flatMap((memberId) => {
+                  const member = membersById.get(memberId);
+                  return member ? [member] : [];
+                });
+                return (
+                  <SharedClassCard
+                    key={shared.section_id}
+                    shared={shared}
+                    color={
+                      courseColors.get(shared.course_code) ??
+                      DEFAULT_COURSE_COLOR
+                    }
+                    members={sharedMembers}
+                  />
+                );
+              })}
+            </ul>
+          </>
         )}
       </div>
     </div>

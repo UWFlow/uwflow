@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button } from 'components/ui/button';
 import { cn } from 'lib/utils';
 
+import { layoutCalendarEvents } from './calendarLayout';
 import { DEFAULT_COURSE_COLOR, getCourseColors } from './courseColors';
 
 // Vertical pixels per hour of the day; the single source of truth for the
@@ -13,6 +14,9 @@ export const HOUR_HEIGHT = 64;
 const HEADER_HEIGHT = 32;
 // Width of the left gutter that holds the hour labels.
 const TIME_WIDTH = 64;
+
+/** Weekday column labels for a Mon-Fri calendar. */
+export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 /**
  * Visual state of an event block:
@@ -108,35 +112,6 @@ const NAV_BUTTON_CLASS =
 // 24-hour gutter labels: "09:00", "10:00", ...
 const formatHour = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
 
-// Derive left/right placement for overlapping non-preview events within each
-// column. Preview ghosts are skipped so they layer cleanly on top, and any
-// caller-provided `truncate` is left untouched.
-const deriveTruncation = (events: CalendarEvent[]) => {
-  const sides: Record<string, 'left' | 'right'> = {};
-  const byColumn = new Map<number, CalendarEvent[]>();
-
-  events.forEach((event) => {
-    if (event.state === 'preview') return;
-    const column = byColumn.get(event.dayIndex) ?? [];
-    column.push(event);
-    byColumn.set(event.dayIndex, column);
-  });
-
-  byColumn.forEach((column) => {
-    const ordered = [...column].sort((a, b) => a.startMinutes - b.startMinutes);
-    for (let i = 1; i < ordered.length; i += 1) {
-      const prev = ordered[i - 1];
-      const curr = ordered[i];
-      if (prev.endMinutes > curr.startMinutes) {
-        const prevSide = sides[prev.id] ?? (sides[prev.id] = 'left');
-        sides[curr.id] = prevSide === 'left' ? 'right' : 'left';
-      }
-    }
-  });
-
-  return sides;
-};
-
 /**
  * A purely presentational week-grid calendar. It knows nothing about Moment,
  * Apollo or the schedule shape — callers map their domain onto `CalendarEvent`s
@@ -166,7 +141,7 @@ const Calendar = ({
   onNextWeek,
   className,
 }: CalendarProps) => {
-  const derivedSides = deriveTruncation(events);
+  const placements = layoutCalendarEvents(events);
   const courseColors = getCourseColors(
     colorKeys ??
       events.flatMap((event) => (event.colorKey ? [event.colorKey] : [])),
@@ -182,9 +157,9 @@ const Calendar = ({
     const isPreview = state === 'preview';
     const isSelected = state === 'selected';
     // Preview ghosts overlay full-width and ignore overlap truncation.
-    const truncate = isPreview
-      ? undefined
-      : event.truncate ?? derivedSides[event.id];
+    const truncate = isPreview ? undefined : event.truncate;
+    const placement =
+      !isPreview && !truncate ? placements.get(event.id) : undefined;
     const clickable = interactive && !isPreview && Boolean(event.onClick);
 
     // Map minutes-since-midnight to a pixel offset within the hour grid.
@@ -211,7 +186,14 @@ const Calendar = ({
               }
             : undefined
         }
-        style={{ top, height }}
+        style={{
+          top,
+          height,
+          ...(placement && {
+            left: `${(placement.column / placement.columns) * 100}%`,
+            width: `calc(${100 / placement.columns}% - 4px)`,
+          }),
+        }}
         className={cn(
           // Base block: rounded, solid course fill with a thick accent left
           // rail; the text stack is vertically centered but left-aligned, with
@@ -255,7 +237,7 @@ const Calendar = ({
           </div>
         )}
         {event.subtitle && (
-          <div className="w-full truncate text-[10px] text-dark3">
+          <div className="w-full shrink-0 truncate text-[10px] text-dark3">
             {event.subtitle}
           </div>
         )}
