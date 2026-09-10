@@ -20,7 +20,7 @@ import LoadingSpinner from 'components/display/LoadingSpinner';
 import AccentButton from 'components/input/Button';
 import Textbox from 'components/input/Textbox';
 import { Button } from 'components/ui/button';
-import { AUTH_MODAL } from 'constants/Modal';
+import { AUTH_MODAL, SHARED_CLASSES_TOUR_MODAL } from 'constants/Modal';
 import { RootState } from 'data/reducers/RootReducer';
 import {
   ACCEPT_SHARED_GROUP_INVITE,
@@ -45,9 +45,11 @@ interface GroupSummary {
   member_count: number;
 }
 
+const TOUR_DISMISSED_KEY = 'shared_classes_tour_dismissed';
+
 const SharedClassesPage = () => {
   const isLoggedIn = useSelector((state: RootState) => state.auth.loggedIn);
-  const [openModal] = useModal();
+  const [openModal, closeModal] = useModal();
   const history = useHistory();
   const location = useLocation();
   const handledInviteRef = useRef<string | null>(null);
@@ -144,6 +146,19 @@ const SharedClassesPage = () => {
       cancelled = true;
     };
   }, [history, isLoggedIn, location.pathname, location.search, refetch]);
+
+  // First logged-in visit: walk through the short tour once. Any dismissal
+  // (Skip, X, backdrop, or Done) persists the flag so it never shows again.
+  useEffect(() => {
+    if (isLoggedIn && !localStorage.getItem(TOUR_DISMISSED_KEY)) {
+      openModal(SHARED_CLASSES_TOUR_MODAL, {
+        onRequestClose: () => {
+          localStorage.setItem(TOUR_DISMISSED_KEY, '1');
+          closeModal(SHARED_CLASSES_TOUR_MODAL);
+        },
+      });
+    }
+  }, [isLoggedIn, openModal, closeModal]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
