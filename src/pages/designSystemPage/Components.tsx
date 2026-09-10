@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus } from 'react-feather';
 import { useTheme } from 'styled-components';
 
+import { getCourseColors } from 'components/calendar/courseColors';
 import DropdownList from 'components/input/DropdownList';
 import { Badge } from 'components/ui/badge';
 import { Button } from 'components/ui/button';
@@ -340,6 +341,28 @@ export const Badges = () => (
           <Badge variant={variant}>Badge</Badge>
         </Example>
       ))}
+    </ExampleGroup>
+    <ExampleGroup title="Course section highlights">
+      <Text>
+        Use the same course color for its lectures, tutorials, and labs.
+      </Text>
+      {Array.from(getCourseColors(['CS135', 'MATH137'])).map(
+        ([course, color]) => (
+          <Example key={course} label={course}>
+            <div className="flex flex-wrap gap-sm">
+              {['LEC 001', 'TUT 101', 'LAB 201'].map((section) => (
+                <Badge
+                  key={section}
+                  variant="outline"
+                  className={`${color.fill} ${color.rail}`}
+                >
+                  {section}
+                </Badge>
+              ))}
+            </div>
+          </Example>
+        ),
+      )}
     </ExampleGroup>
   </Section>
 );

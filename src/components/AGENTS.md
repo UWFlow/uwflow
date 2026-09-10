@@ -19,7 +19,7 @@ Cross-feature product components and reusable UI primitives. `ui/` is the design
 | File | Role |
 | --- | --- |
 | `ui/button.tsx` | Destination button primitive and CVA variant pattern |
-| `ui/dropdown-menu.tsx` | Radix dropdown composition |
+| `input/DropdownList.tsx` | Shared dropdown used by the design-system examples and profile menu |
 | `ui/popover.tsx` | Radix popover composition |
 | `../lib/utils.ts` | Tailwind-aware `cn()` utility (outside this directory) |
 | `../constants/GlobalTheme.tsx` | Legacy token source mirrored by Tailwind (outside this directory) |

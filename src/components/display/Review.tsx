@@ -25,7 +25,6 @@ import {
   ReviewAuthor,
   ReviewMetricsBody,
   ReviewMetricsWrapper,
-  ReviewPicture,
   ReviewPictureAndMetricsRow,
   ReviewPictureAndUpvotesWrapper,
   ReviewTextWrapper,
@@ -36,6 +35,7 @@ import {
   SingleMetricWrapper,
   UpvoteNumber,
 } from './styles/Review';
+import Avatar from './Avatar';
 import { CircleRatings, ThumbsRatings } from './BubbleRatings';
 import Tooltip from './Tooltip';
 
@@ -215,7 +215,7 @@ const Review = ({ review, isCourseReview }: ReviewProps) => {
     <ReviewWrapper isUserReview={!!user}>
       <ReviewPictureAndMetricsRow>
         <ReviewPictureAndUpvotesWrapper>
-          <ReviewPicture image={userImage} />
+          <Avatar src={userImage} alt="" className="tabletDown:mr-sm" />
           <Tooltip
             content={userUpvoted ? `Remove vote` : `This review was helpful`}
           >

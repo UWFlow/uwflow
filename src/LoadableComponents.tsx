@@ -40,6 +40,13 @@ export const LoadableSwapPage = loadable(
   () => import(/* webpackPrefetch: true */ './pages/swapPage/SwapPage'),
 );
 
+export const LoadableSharedClassesPage = loadable(
+  () =>
+    import(
+      /* webpackPrefetch: true */ './pages/sharedClassesPage/SharedClassesPage'
+    ),
+);
+
 export const LoadableDesignSystemPage = loadable(
   () =>
     import(

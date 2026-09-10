@@ -19,6 +19,7 @@ import {
 import Textbox from './Textbox';
 
 type DropdownListProps = {
+  ariaLabel?: string;
   color: string;
   options: string[];
   selectedIndex: number;
@@ -34,6 +35,7 @@ type DropdownListProps = {
 };
 
 const DropdownList = ({
+  ariaLabel,
   color,
   options,
   selectedIndex,
@@ -49,6 +51,8 @@ const DropdownList = ({
 }: DropdownListProps) => {
   const theme = useTheme();
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const focusFirstItem = useRef(false);
   const [open, setOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filteredOptions, setFilteredOptions] = useState<
@@ -58,8 +62,11 @@ const DropdownList = ({
 
   const handleUserKeyPress = useCallback((event: KeyboardEvent) => {
     const { keyCode } = event;
-    if (keyCode === KeycodeConstants.ESCAPE) {
+    if (keyCode === KeycodeConstants.ESCAPE || event.key === 'Escape') {
       setOpen(false);
+      if (ref.current?.contains(document.activeElement)) {
+        triggerRef.current?.focus();
+      }
     }
   }, []);
 
@@ -95,6 +102,15 @@ const DropdownList = ({
   }, [searchText, options]);
 
   useEffect(() => {
+    if (open && focusFirstItem.current) {
+      ref.current
+        ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
+        ?.focus();
+      focusFirstItem.current = false;
+    }
+  }, [open]);
+
+  useEffect(() => {
     window.addEventListener('keydown', handleUserKeyPress);
     return () => {
       window.removeEventListener('keydown', handleUserKeyPress);
@@ -104,6 +120,9 @@ const DropdownList = ({
   const Row = useCallback(
     ({ index, style }: ListChildComponentProps) => (
       <MenuItem
+        type="button"
+        role="menuitem"
+        className="box-border focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         key={filteredOptions[index].index}
         selected={filteredOptions[index].index === selectedIndex}
         itemColor={itemColor}
@@ -111,6 +130,7 @@ const DropdownList = ({
         onClick={() => {
           onChange(filteredOptions[index].index);
           setOpen(false);
+          triggerRef.current?.focus();
         }}
         style={style}
       >
@@ -160,6 +180,18 @@ const DropdownList = ({
       margin={margin}
     >
       <DropdownControl
+        ref={triggerRef}
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onKeyDown={(event) => {
+          if (['ArrowDown', 'Enter', ' '].includes(event.key)) {
+            event.preventDefault();
+            focusFirstItem.current = true;
+            setOpen(true);
+          }
+        }}
         open={open}
         color={color}
         onClick={() => setOpen(!open)}
@@ -169,9 +201,34 @@ const DropdownList = ({
         <ChevronDown />
       </DropdownControl>
       <FadeIn>
-        <DropdownMenu open={open} menuOffset={menuOffset}>
-          {DropdownMenuContent()}
-        </DropdownMenu>
+        {open && (
+          <DropdownMenu
+            role="menu"
+            aria-label={ariaLabel}
+            open={open}
+            menuOffset={menuOffset}
+            onKeyDown={(event) => {
+              if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+              event.preventDefault();
+              const items = Array.from(
+                event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                  '[role="menuitem"]',
+                ),
+              );
+              const current = items.indexOf(
+                document.activeElement as HTMLButtonElement,
+              );
+              const next =
+                (current +
+                  (event.key === 'ArrowDown' ? 1 : -1) +
+                  items.length) %
+                items.length;
+              items[next]?.focus();
+            }}
+          >
+            {DropdownMenuContent()}
+          </DropdownMenu>
+        )}
       </FadeIn>
     </DropdownWrapper>
   );
