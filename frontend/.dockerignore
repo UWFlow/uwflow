@@ -1,0 +1,10 @@
+node_modules
+build
+coverage
+.git
+.vercel
+.env*
+!.env.sample
+.sentryclirc
+.DS_Store
+*.log
