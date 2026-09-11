@@ -16,6 +16,8 @@ func dispatch(ctx context.Context, tx pgx.Tx, source string) error {
 		return process.Reset(ctx, tx)
 	case "section_subscribed":
 		return process.Subscribed(ctx, tx)
+	case "shared_group_invite":
+		return process.Invite(ctx, tx)
 	case "section_vacated":
 		return process.Vacated(ctx, tx)
 	default:

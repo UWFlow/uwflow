@@ -46,6 +46,25 @@ func (item *SubscribedItem) Message() (Message, error) {
 }
 
 // Message implements QueueItem.
+func (item *InviteItem) Message() (Message, error) {
+	var (
+		buf bytes.Buffer
+		msg Message
+	)
+
+	if err := inviteTemplate.Execute(&buf, item); err != nil {
+		return msg, err
+	}
+
+	msg = Message{
+		Body:    buf.Bytes(),
+		Subject: item.InviterName + " invited you to share classes on UW Flow",
+		To:      item.Email,
+	}
+	return msg, nil
+}
+
+// Message implements QueueItem.
 func (item *VacatedItem) Message() (Message, error) {
 	var (
 		buf bytes.Buffer
