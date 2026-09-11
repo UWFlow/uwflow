@@ -1,6 +1,8 @@
+import React from 'react';
 import styled from 'styled-components';
 
-import { BoxShadow, Heading2 } from 'constants/Mixins';
+import { BoxShadow } from 'constants/Mixins';
+import { cn } from 'lib/utils';
 
 export const DeleteModalWrapper = styled.form`
   ${BoxShadow}
@@ -14,10 +16,18 @@ export const DeleteModalWrapper = styled.form`
   min-width: 300px;
 `;
 
-export const DeleteAccountTitle = styled.div`
-  ${Heading2}
-  margin-bottom: 24px;
-`;
+export const DeleteAccountTitle = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    {...props}
+    className={cn(
+      'mb-lg min-w-0 w-full break-words font-anderson text-3xl font-extrabold tabletDown:text-2xl',
+      className,
+    )}
+  />
+);
 
 export const ButtonsWrapper = styled.div`
   display: flex;

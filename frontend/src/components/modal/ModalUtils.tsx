@@ -18,6 +18,9 @@ import EditEmailModalContent, {
 import NotificationEmailModalContent, {
   NotificationEmailModalContentProps,
 } from 'components/email/NotificationEmailModalContent';
+import SharedClassesTourModalContent, {
+  SharedClassesTourModalContentProps,
+} from 'components/tour/SharedClassesTourModalContent';
 import SwapTourModalContent, {
   SwapTourModalContentProps,
 } from 'components/tour/SwapTourModalContent';
@@ -36,6 +39,7 @@ import {
   NOTIFICATION_EMAIL_MODAL,
   RESET_PASSWORD_MODAL,
   SCHEDULE_UPLOAD_MODAL,
+  SHARED_CLASSES_TOUR_MODAL,
   SWAP_TOUR_MODAL,
   TRANSCRIPT_UPLOAD_MODAL,
 } from 'constants/Modal';
@@ -77,6 +81,10 @@ const SwapTourModal = (props: SwapTourModalContentProps) => (
   <SwapTourModalContent {...props} />
 );
 
+const SharedClassesTourModal = (props: SharedClassesTourModalContentProps) => (
+  <SharedClassesTourModalContent {...props} />
+);
+
 type NameModalMap = {
   [key in ModalName]: (props: any) => ReactNode;
 };
@@ -91,4 +99,5 @@ export const modalNameToModal: NameModalMap = {
   [RESET_PASSWORD_MODAL]: ResetPasswordModal,
   [DELETE_ACCOUNT_MODAL]: DeleteAccountModal,
   [SWAP_TOUR_MODAL]: SwapTourModal,
+  [SHARED_CLASSES_TOUR_MODAL]: SharedClassesTourModal,
 };

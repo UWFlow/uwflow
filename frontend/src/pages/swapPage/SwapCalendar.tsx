@@ -20,6 +20,7 @@ import {
   Calendar,
   CalendarEvent,
   CalendarEventState,
+  WEEKDAY_LABELS,
 } from 'components/calendar';
 import LastUpdatedSchedule from 'components/common/LastUpdatedSchedule';
 import { GET_COURSE_FOR_SWAP } from 'graphql/queries/course/SwapCourse';
@@ -49,8 +50,6 @@ import useScheduleSwaps, {
   DisplayedTerm,
   PlannedSwap,
 } from './useScheduleSwaps';
-
-const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
 
 // 24-hour "HH:MM" from seconds since midnight (`secsToTime` is 12-hour).
 const secsTo24hTime = (secs: number) =>
@@ -600,7 +599,7 @@ const SwapCalendar = ({
           <div className="min-w-0 flex-1 overflow-hidden rounded border border-solid border-light3 bg-white shadow-box">
             <Calendar
               showHeader={false}
-              dayLabels={DAY_LABELS}
+              dayLabels={WEEKDAY_LABELS}
               events={events}
               minHour={GRID_START_HOUR}
               maxHour={GRID_END_HOUR - 1}

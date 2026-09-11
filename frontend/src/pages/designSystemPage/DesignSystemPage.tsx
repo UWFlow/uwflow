@@ -19,6 +19,7 @@ import {
   Tables,
   Textareas,
   ThumbToggles,
+  Tours,
 } from './Components';
 import {
   BorderRadius,
@@ -59,6 +60,7 @@ const DesignSystemPage = () => (
         <Feedback />
         <Disclosure />
         <Overlays />
+        <Tours />
         <Tables />
       </div>
     </main>

@@ -4,6 +4,30 @@
   "outputDirectory": "build",
   "rewrites": [
     {
+      "source": "/prod/api",
+      "destination": "https://uwflow.com/api"
+    },
+    {
+      "source": "/prod/api/:path*",
+      "destination": "https://uwflow.com/api/:path*"
+    },
+    {
+      "source": "/prod/graphql",
+      "destination": "https://uwflow.com/graphql"
+    },
+    {
+      "source": "/staging/api",
+      "destination": "https://jerryzhou.ca/staging/api"
+    },
+    {
+      "source": "/staging/api/:path*",
+      "destination": "https://jerryzhou.ca/staging/api/:path*"
+    },
+    {
+      "source": "/staging/graphql",
+      "destination": "https://jerryzhou.ca/staging/graphql"
+    },
+    {
       "source": "/graphql",
       "destination": "https://uwflow.com/graphql"
     },

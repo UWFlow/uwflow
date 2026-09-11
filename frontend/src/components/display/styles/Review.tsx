@@ -44,18 +44,6 @@ export const ReviewPictureAndUpvotesWrapper = styled.div`
   `}
 `;
 
-export const ReviewPicture = styled.div<{ image: string }>`
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  background-color: ${({ theme }) => theme.light3};
-  background-image: ${({ image }) => `url(${image})`};
-  background-size: 64px;
-  ${breakpoint('zero', 'tablet')`
-    margin-right: 8px;
-  `};
-`;
-
 export const ReviewUpvotes = styled.button<{ selected: boolean }>`
   padding: 0;
   width: 40px;

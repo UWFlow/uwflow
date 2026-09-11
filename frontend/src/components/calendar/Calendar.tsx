@@ -4,6 +4,9 @@ import { ChevronLeft, ChevronRight } from 'react-feather';
 import { Button } from 'components/ui/button';
 import { cn } from 'lib/utils';
 
+import { layoutCalendarEvents } from './calendarLayout';
+import { DEFAULT_COURSE_COLOR, getCourseColors } from './courseColors';
+
 // Vertical pixels per hour of the day; the single source of truth for the
 // time grid and for translating an event's start/end into a pixel offset.
 export const HOUR_HEIGHT = 64;
@@ -11,6 +14,9 @@ export const HOUR_HEIGHT = 64;
 const HEADER_HEIGHT = 32;
 // Width of the left gutter that holds the hour labels.
 const TIME_WIDTH = 64;
+
+/** Weekday column labels for a Mon-Fri calendar. */
+export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 /**
  * Visual state of an event block:
@@ -52,6 +58,8 @@ export type CalendarProps = {
   /** One label per displayed day, left to right. */
   dayLabels: ReactNode[];
   events: CalendarEvent[];
+  /** Include courses without meetings to keep colors aligned with class cards. */
+  colorKeys?: string[];
   /** Inclusive hour bounds of the visible grid. */
   minHour: number;
   maxHour: number;
@@ -83,28 +91,6 @@ export type CalendarProps = {
 // Tailwind's JIT scanner can see the full class.)
 const GRID_LINE = 'border-light3';
 
-// One hue per course, keyed on `colorKey`: the section type is already spelled
-// out in each block's label ("LEC 001"), while the course had no visual
-// identifier at all. Full class strings so Tailwind's JIT scanner sees them.
-// Gold is left out on purpose (it marks the selected block on the swap page),
-// and so is grey — a grey block reads as disabled next to the coloured ones.
-const COURSE_COLORS = [
-  { rail: 'border-primary', fill: 'bg-[#f0f6ff]', ghost: 'bg-[#f0f6ff]/60' },
-  { rail: 'border-[#36b37e]', fill: 'bg-[#ebf9f3]', ghost: 'bg-[#ebf9f3]/60' },
-  { rail: 'border-[#6554c0]', fill: 'bg-[#f2f0fc]', ghost: 'bg-[#f2f0fc]/60' },
-  { rail: 'border-[#ff8b00]', fill: 'bg-[#fff4e6]', ghost: 'bg-[#fff4e6]/60' },
-  { rail: 'border-[#2b8fcd]', fill: 'bg-[#f0fdff]', ghost: 'bg-[#f0fdff]/60' },
-  { rail: 'border-[#d83ba0]', fill: 'bg-[#fdeff8]', ghost: 'bg-[#fdeff8]/60' },
-  { rail: 'border-[#de350b]', fill: 'bg-[#fdefeb]', ghost: 'bg-[#fdefeb]/60' },
-];
-
-// Blocks with no course key (rare — every caller passes a course code).
-const DEFAULT_COURSE_COLOR = {
-  rail: 'border-dark3',
-  fill: 'bg-[#eaecef]',
-  ghost: 'bg-[#eaecef]/60',
-};
-
 // State -> extra block classes, layered on top of the base block + colour.
 const STATE_CLASS: Record<CalendarEventState, string> = {
   default: '',
@@ -126,35 +112,6 @@ const NAV_BUTTON_CLASS =
 // 24-hour gutter labels: "09:00", "10:00", ...
 const formatHour = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
 
-// Derive left/right placement for overlapping non-preview events within each
-// column. Preview ghosts are skipped so they layer cleanly on top, and any
-// caller-provided `truncate` is left untouched.
-const deriveTruncation = (events: CalendarEvent[]) => {
-  const sides: Record<string, 'left' | 'right'> = {};
-  const byColumn = new Map<number, CalendarEvent[]>();
-
-  events.forEach((event) => {
-    if (event.state === 'preview') return;
-    const column = byColumn.get(event.dayIndex) ?? [];
-    column.push(event);
-    byColumn.set(event.dayIndex, column);
-  });
-
-  byColumn.forEach((column) => {
-    const ordered = [...column].sort((a, b) => a.startMinutes - b.startMinutes);
-    for (let i = 1; i < ordered.length; i += 1) {
-      const prev = ordered[i - 1];
-      const curr = ordered[i];
-      if (prev.endMinutes > curr.startMinutes) {
-        const prevSide = sides[prev.id] ?? (sides[prev.id] = 'left');
-        sides[curr.id] = prevSide === 'left' ? 'right' : 'left';
-      }
-    }
-  });
-
-  return sides;
-};
-
 /**
  * A purely presentational week-grid calendar. It knows nothing about Moment,
  * Apollo or the schedule shape — callers map their domain onto `CalendarEvent`s
@@ -172,6 +129,7 @@ const deriveTruncation = (events: CalendarEvent[]) => {
 const Calendar = ({
   dayLabels,
   events,
+  colorKeys,
   minHour,
   maxHour,
   interactive = true,
@@ -183,31 +141,25 @@ const Calendar = ({
   onNextWeek,
   className,
 }: CalendarProps) => {
-  const derivedSides = deriveTruncation(events);
-  // Palette slot per course, by alphabetical order of the codes on screen, so
-  // every course visible at once gets a different hue.
-  const courseKeys = Array.from(
-    new Set(
+  const placements = layoutCalendarEvents(events);
+  const courseColors = getCourseColors(
+    colorKeys ??
       events.flatMap((event) => (event.colorKey ? [event.colorKey] : [])),
-    ),
-  ).sort();
+  );
 
   const hours: number[] = [];
   for (let hour = minHour; hour <= maxHour; hour += 1) hours.push(hour);
 
   const renderEvent = (event: CalendarEvent) => {
-    const slot = event.colorKey ? courseKeys.indexOf(event.colorKey) : -1;
     const color =
-      slot === -1
-        ? DEFAULT_COURSE_COLOR
-        : COURSE_COLORS[slot % COURSE_COLORS.length];
+      courseColors.get(event.colorKey ?? '') ?? DEFAULT_COURSE_COLOR;
     const state = event.state ?? 'default';
     const isPreview = state === 'preview';
     const isSelected = state === 'selected';
     // Preview ghosts overlay full-width and ignore overlap truncation.
-    const truncate = isPreview
-      ? undefined
-      : event.truncate ?? derivedSides[event.id];
+    const truncate = isPreview ? undefined : event.truncate;
+    const placement =
+      !isPreview && !truncate ? placements.get(event.id) : undefined;
     const clickable = interactive && !isPreview && Boolean(event.onClick);
 
     // Map minutes-since-midnight to a pixel offset within the hour grid.
@@ -234,7 +186,14 @@ const Calendar = ({
               }
             : undefined
         }
-        style={{ top, height }}
+        style={{
+          top,
+          height,
+          ...(placement && {
+            left: `${(placement.column / placement.columns) * 100}%`,
+            width: `calc(${100 / placement.columns}% - 4px)`,
+          }),
+        }}
         className={cn(
           // Base block: rounded, solid course fill with a thick accent left
           // rail; the text stack is vertically centered but left-aligned, with
@@ -278,7 +237,7 @@ const Calendar = ({
           </div>
         )}
         {event.subtitle && (
-          <div className="w-full truncate text-[10px] text-dark3">
+          <div className="w-full shrink-0 truncate text-[10px] text-dark3">
             {event.subtitle}
           </div>
         )}
@@ -364,9 +323,7 @@ const Calendar = ({
         <div
           style={{ left: TIME_WIDTH }}
           className={cn(
-            // overflow-auto lets the columns scroll horizontally on narrow
-            // viewports rather than being clipped.
-            'absolute inset-y-0 right-0 flex overflow-auto border-0 border-l border-solid',
+            'absolute inset-y-0 right-0 flex border-0 border-l border-solid',
             GRID_LINE,
           )}
         >
@@ -375,7 +332,7 @@ const Calendar = ({
               // eslint-disable-next-line react/no-array-index-key
               key={column}
               className={cn(
-                'relative min-w-[136px] flex-1 border-0 border-r border-solid last:border-r-0',
+                'relative min-w-0 flex-1 border-0 border-r border-solid last:border-r-0',
                 GRID_LINE,
               )}
             >

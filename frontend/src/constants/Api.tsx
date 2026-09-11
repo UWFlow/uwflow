@@ -7,20 +7,24 @@ export const FACEBOOK_APP_ID = '219309734863464';
 const LOCAL_GRAPHQL_ENDPOINT = 'http://localhost:8080/v1/graphql';
 const LOCAL_BACKEND_ENDPOINT = 'http://localhost:8081';
 
-// Endpoints can be overridden at build time via REACT_APP_* env vars. This lets
-// deployments that don't share an origin with the backend (e.g. Vercel preview
-// builds served from *.vercel.app) target an absolute backend URL (see
-// package.json's build:vercel + vercel.json). When unset, fall back to
-// same-origin relative paths, which is correct when the frontend is served from the host that proxies /graphql + /api.
+// Set /prod or /staging per Vercel preview branch. Explicit endpoint overrides
+// below take precedence; leave them unset when selecting a backend path.
+// Remove a trailing slash so /staging/ becomes /staging/api, not /staging//api.
+const CONFIGURED_BACKEND_PATH = (
+  process.env.REACT_APP_BACKEND_PATH || ''
+).replace(/\/$/, '');
+
 export const GRAPHQL_ENDPOINT =
   process.env.REACT_APP_GRAPHQL_ENDPOINT ||
   (process.env.NODE_ENV === 'development'
     ? LOCAL_GRAPHQL_ENDPOINT
-    : '/graphql');
+    : `${CONFIGURED_BACKEND_PATH}/graphql`);
 
 export const BACKEND_ENDPOINT =
   process.env.REACT_APP_BACKEND_ENDPOINT ||
-  (process.env.NODE_ENV === 'development' ? LOCAL_BACKEND_ENDPOINT : '/api');
+  (process.env.NODE_ENV === 'development'
+    ? LOCAL_BACKEND_ENDPOINT
+    : `${CONFIGURED_BACKEND_PATH}/api`);
 
 /* Auth */
 export const EMAIL_AUTH_LOGIN_ENDPOINT = '/auth/email/login';
@@ -51,3 +55,9 @@ export const GOOGLE_CALENDAR_URL = `https://calendar.google.com/calendar/r?cid=`
 
 /* User */
 export const USER_ACCOUNT_ENDPOINT = '/user';
+
+/* Shared Classes */
+export const GROUP_BY_ID_ENDPOINT = (id: number) => `/group/${id}`;
+export const GROUP_INVITE_ENDPOINT = (id: number) => `/group/${id}/invite`;
+export const GROUP_EMAIL_INVITE_ACCEPT_ENDPOINT = (secret: string) =>
+  `/group/invite/${encodeURIComponent(secret)}/accept`;

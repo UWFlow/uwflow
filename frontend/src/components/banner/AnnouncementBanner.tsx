@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import FadeIn from 'react-fade-in';
-import { ArrowRight, Repeat, X } from 'react-feather';
+import { ArrowRight, Users, X } from 'react-feather';
 import { Link } from 'react-router-dom';
-import { SWAP_PAGE_ROUTE } from 'Routes';
+import { SHARED_CLASSES_PAGE_ROUTE } from 'Routes';
 
 // Bump the banner ID when announcing something new so the banner reappears
 // for users who dismissed a previous announcement.
-const BANNER_ID = 'class-swapper';
+const BANNER_ID = 'shared-classes';
 
 const AnnouncementBanner = () => {
   const localStorageKey = `banner-dismissed-${BANNER_ID}`;
@@ -27,16 +27,16 @@ const AnnouncementBanner = () => {
   return (
     <FadeIn>
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 bg-accent px-6 py-3">
-        <Repeat aria-hidden="true" className="shrink-0 text-dark1" size={20} />
+        <Users aria-hidden="true" className="shrink-0 text-dark1" size={20} />
         <div className="min-w-0 text-md text-dark1">
-          <strong>Introducing Class Swapper.</strong> No more Quest tab swapping
-          to figure out your ideal schedule.
+          <strong>Introducing Shared Classes.</strong> See which classes you
+          have in common with your friends.
         </div>
         <Link
           className="flex shrink-0 items-center gap-2 rounded-lg bg-dark1 px-5 py-2.5 text-sm font-semibold text-white no-underline transition-colors hover:bg-primaryExtraDark hover:text-white"
-          to={SWAP_PAGE_ROUTE}
+          to={SHARED_CLASSES_PAGE_ROUTE}
         >
-          Start swapping
+          See shared classes
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
         <button

@@ -1,7 +1,8 @@
-import React from 'react';
-import { Plus } from 'react-feather';
+import React, { useState } from 'react';
+import { CheckCircle, Compass, Plus, Star } from 'react-feather';
 import { useTheme } from 'styled-components';
 
+import { getCourseColors } from 'components/calendar/courseColors';
 import DropdownList from 'components/input/DropdownList';
 import { Badge } from 'components/ui/badge';
 import { Button } from 'components/ui/button';
@@ -44,6 +45,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/ui/tabs';
 import { Textarea } from 'components/ui/textarea';
 import { ThumbToggle } from 'components/ui/thumb-toggle';
 import { Tooltip } from 'components/ui/tooltip';
+import { TourContent } from 'components/ui/tour';
 import { Heading, Text } from 'components/ui/typography';
 
 import { Example, ExampleGroup, Section } from './Showcase';
@@ -341,6 +343,28 @@ export const Badges = () => (
         </Example>
       ))}
     </ExampleGroup>
+    <ExampleGroup title="Course section highlights">
+      <Text>
+        Use the same course color for its lectures, tutorials, and labs.
+      </Text>
+      {Array.from(getCourseColors(['CS135', 'MATH137'])).map(
+        ([course, color]) => (
+          <Example key={course} label={course}>
+            <div className="flex flex-wrap gap-sm">
+              {['LEC 001', 'TUT 101', 'LAB 201'].map((section) => (
+                <Badge
+                  key={section}
+                  variant="outline"
+                  className={`${color.fill} ${color.rail}`}
+                >
+                  {section}
+                </Badge>
+              ))}
+            </div>
+          </Example>
+        ),
+      )}
+    </ExampleGroup>
   </Section>
 );
 
@@ -544,3 +568,65 @@ export const Tables = () => (
     </ExampleGroup>
   </Section>
 );
+
+export const Tours = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Section title="Tour">
+      <ExampleGroup title="Multi-step introduction">
+        <Example label="Next, Skip, and Done">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>Open tour</Button>
+            </DialogTrigger>
+            <DialogContent ariaLabel="Example tour" className="max-w-sm p-0">
+              <DialogCloseButton />
+              <TourContent
+                label="Getting started"
+                onRequestClose={() => setOpen(false)}
+                steps={[
+                  {
+                    heading: 'Welcome',
+                    illustration: (
+                      <div
+                        className="flex h-32 items-center justify-center bg-light1 text-primary"
+                        aria-hidden
+                      >
+                        <Star size={48} />
+                      </div>
+                    ),
+                    body: 'Introduce a feature with a short tour.',
+                  },
+                  {
+                    heading: 'Explore',
+                    illustration: (
+                      <div
+                        className="flex h-32 items-center justify-center bg-light1 text-primary"
+                        aria-hidden
+                      >
+                        <Compass size={48} />
+                      </div>
+                    ),
+                    body: 'Give each step its own heading, copy, and optional illustration.',
+                  },
+                  {
+                    heading: 'Ready to begin',
+                    illustration: (
+                      <div
+                        className="flex h-32 items-center justify-center bg-light1 text-primary"
+                        aria-hidden
+                      >
+                        <CheckCircle size={48} />
+                      </div>
+                    ),
+                    body: 'Done closes the tour. The host decides whether to show it again.',
+                  },
+                ]}
+              />
+            </DialogContent>
+          </Dialog>
+        </Example>
+      </ExampleGroup>
+    </Section>
+  );
+};
