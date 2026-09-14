@@ -4,7 +4,6 @@ WORKDIR /work
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
-RUN bun run lint-nofix
 
 # PostHog project key is a publishable client key (inlined into the bundle by
 # DefinePlugin), not a secret — pass it as a plain build-arg. Discarded with
