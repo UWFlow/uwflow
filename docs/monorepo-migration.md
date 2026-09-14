@@ -94,7 +94,6 @@ Apply these settings to the existing project when the destination branch contain
 | Build command | `bun run build:vercel` |
 | Output directory | `build` |
 | Production branch | `main` |
-| Node version | Compatible Node 22 runtime; verify against `frontend/.nvmrc` |
 
 Root Directory and the Git connection are project settings, not properties to add
 to `vercel.json`. An authorized owner can use the dashboard or Vercel CLI/API.

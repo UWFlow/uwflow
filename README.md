@@ -13,7 +13,7 @@ and deployment configuration. A single branch or PR can update the entire stack.
 
 ## Frontend development
 
-Install Bun `1.3.14` and Node `22.20.0` (see `frontend/.nvmrc`), then run from the
+Install the Bun version in `frontend/.bun-version`, then run from the
 repository root:
 
 ```sh
