@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.4
-FROM oven/bun:1.3.14-alpine AS builder
+ARG BUN_VERSION
+FROM oven/bun:${BUN_VERSION}-alpine AS builder
 WORKDIR /work
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile

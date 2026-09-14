@@ -57,6 +57,9 @@ if os.getenv("FAIL_COMMAND") in sys.argv[1:]:
             self.assertIn(f"neuwflow/{service}:latest", call["args"])
             self.assertEqual(call["args"][-1], str(ROOT / ("frontend" if service == "frontend" else "flow")))
             self.assertNotIn("--secret", call["args"])
+            if service == "frontend":
+                bun_version = (ROOT / "frontend/.bun-version").read_text().strip()
+                self.assertIn(f"BUN_VERSION={bun_version}", call["args"])
 
     def test_frontend_secret_uses_buildkit_reference(self):
         self.env["SENTRY_AUTH_TOKEN"] = "test-token-not-for-build-args"

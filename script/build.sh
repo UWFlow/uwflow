@@ -29,6 +29,7 @@ for target in "$@"; do
         --label "org.opencontainers.image.source=https://github.com/UWFlow/uwflow"
     )
     if [[ "$target" == frontend ]]; then
+        args+=(--build-arg "BUN_VERSION=$(cat "$ROOT_DIR/frontend/.bun-version")")
         args+=(--build-arg "REACT_APP_POSTHOG_KEY=${REACT_APP_POSTHOG_KEY:-}")
         if [[ -n "${SENTRY_AUTH_TOKEN:-}" ]]; then
             args+=(--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN)

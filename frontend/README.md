@@ -14,6 +14,9 @@ under Bun, including lint, TypeScript, and Jest. Copy `.env.sample` to `.env.loc
 for browser configuration overrides. Backend credentials belong in the root
 `.env` and are not needed for frontend-only commands.
 
+Build the Docker image with `./script/build.sh frontend` from the repository root.
+It passes `.bun-version` to the Dockerfile as the required `BUN_VERSION` build argument.
+
 ## 🎬 Building for Production 🎬
 
 1. `bun run lint-nofix` and `bun run typecheck` to validate the application.
