@@ -1,0 +1,27 @@
+/*
+ * Tailwind CSS entrypoint.
+ *
+ * Utilities are layered on top of the app's existing reset (public/index.css)
+ * and styled-components styles. Tailwind's preflight is disabled in
+ * tailwind.config.js, so `@tailwind base` is effectively a no-op here but is
+ * kept so future `@layer base { ... }` additions work as expected.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Tailwind Preflight's border reset, scoped to <button>. Full Preflight is
+   * disabled in tailwind.config.js to coexist with the app's own reset in
+   * public/index.css, so we re-introduce just the slice Tailwind-styled buttons
+   * depend on. Following Preflight, we set `border-style: solid; border-width: 0`
+   * (not `border: none`): the browser's default outset border disappears, and a
+   * `border` utility on its own then yields a visible 1px solid border with no
+   * `border-solid` workaround.
+   */
+  button {
+    border-width: 0;
+    border-style: solid;
+  }
+}

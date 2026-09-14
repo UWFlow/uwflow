@@ -1,8 +1,11 @@
 .PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum migrate test build-test docker-build-test logs clean
 
-# Load environment variables
+# Frontend-only commands must not load backend credentials.
+.DEFAULT_GOAL := help
+ifneq ($(strip $(filter-out help frontend-% hooks migration-test,$(MAKECMDGOALS))),)
 include .env
 export
+endif
 
 # Docker compose command with proper file configuration
 DOCKER_COMPOSE := docker-compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -104,3 +107,38 @@ clean: ## Remove all containers, volumes, and reset environment
 
 ps: ## Show status of all services
 	@docker-compose ps
+
+.PHONY: frontend-install frontend-start frontend-lint frontend-typecheck frontend-test frontend-check frontend-build frontend-generate hooks migration-test
+
+frontend-install: ## Install frontend dependencies with the committed lockfile
+	cd frontend && bun install --frozen-lockfile
+
+frontend-start: ## Start the frontend development server on port 3000
+	cd frontend && bun run start
+
+frontend-lint: ## Check frontend lint without changing files
+	cd frontend && bun run lint-nofix
+
+frontend-typecheck: ## Check frontend TypeScript
+	cd frontend && bun run typecheck
+
+frontend-test: ## Run frontend unit tests
+	cd frontend && bun run test -- --runInBand
+
+frontend-check: frontend-lint frontend-typecheck frontend-test ## Run frontend validation
+
+frontend-build: ## Build frontend assets without uploading Sentry source maps
+	cd frontend && bun run build:vercel
+
+frontend-generate: ## Generate GraphQL types from the matching local Hasura schema
+	cd frontend && bun run generate
+
+hooks: ## Install the monorepo Git hooks for this clone
+	git config --local core.hooksPath .githooks
+
+migration-test: ## Test build/deploy commands without touching Docker or production
+	python3 script/test-monorepo.py
+
+.PHONY: frontend-container-test
+frontend-container-test: ## Check the built frontend image with Nginx and disposable upstreams
+	python3 script/test-frontend-container.py

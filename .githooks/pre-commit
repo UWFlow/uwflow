@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+# Git runs hooks from the repository root. Frontend config resolves against cwd.
+# Never rewrite or stage files: partially staged work must remain untouched.
+if git diff --cached --name-only --diff-filter=ACMR -- frontend/ | grep -q .; then
+    cd frontend
+    bun run lint-nofix
+fi

@@ -1,0 +1,16 @@
+<svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="5" y="5" width="398" height="399">
+<circle cx="204.063" cy="204.615" r="138.028" transform="rotate(-45 204.063 204.615)" stroke="#0052CC" stroke-width="5"/>
+<ellipse cx="204.656" cy="204.225" rx="91.8839" ry="91.0524" transform="rotate(-45 204.656 204.225)" fill="#0052CC"/>
+</mask>
+<g mask="url(#mask0)">
+<rect x="-82.8711" y="224.606" width="414.933" height="188.757" transform="rotate(-45 -82.8711 224.606)" fill="#0052CC"/>
+</g>
+<mask id="mask1" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="19" width="398" height="399">
+<circle cx="198.765" cy="218.721" r="138.028" transform="rotate(135 198.765 218.721)" stroke="#0052CC" stroke-width="5"/>
+<ellipse cx="198.177" cy="218.721" rx="91.8839" ry="91.0524" transform="rotate(135 198.177 218.721)" fill="#0052CC"/>
+</mask>
+<g mask="url(#mask1)">
+<rect x="485.699" y="198.73" width="414.933" height="188.757" transform="rotate(135 485.699 198.73)" fill="#0052CC"/>
+</g>
+</svg>
