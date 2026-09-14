@@ -105,7 +105,7 @@
     "start": "bun scripts/start.js",
     "build": "bun scripts/build.js && bun run sentry:sourcemaps",
     "build:vercel": "bun scripts/build.js",
-    "test": "CI=true node scripts/test.js --env=jsdom --coverage",
+    "test": "CI=true bun scripts/test.js --env=jsdom --coverage",
     "lint": "eslint src/ --ext .ts,.tsx,.js,.jsx --fix -c .eslintrc.js --quiet",
     "lint-nofix": "eslint src/ --ext .ts,.tsx,.js,.jsx -c .eslintrc.js --quiet",
     "generate": "graphql-codegen --config codegen.js",

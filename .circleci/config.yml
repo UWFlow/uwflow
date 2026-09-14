@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  node: circleci/node@7.2.1
-
 executors:
   docker-publisher:
     machine:
@@ -15,20 +12,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Expose frontend Node version to the Node orb
-          command: ln -s frontend/.nvmrc .nvmrc
-      - node/install
-      - run:
-          name: Install pinned Bun
+          name: Install Bun from frontend/package.json
           command: |
-            curl --fail --silent --show-error --location https://bun.sh/install | bash -s "bun-v1.3.14"
+            BUN_VERSION=$(jq -er '.packageManager | capture("^bun@(?<version>.+)$").version' frontend/package.json)
+            curl --fail --silent --show-error --location https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
             echo 'export PATH="$HOME/.bun/bin:$PATH"' >> "$BASH_ENV"
       - restore_cache:
           keys:
-            - frontend-bun-1.3.14-v2-{{ checksum "frontend/.nvmrc" }}-{{ checksum "frontend/bun.lock" }}
+            - frontend-bun-v4-{{ checksum "frontend/package.json" }}-{{ checksum "frontend/bun.lock" }}
       - run: make frontend-install
       - save_cache:
-          key: frontend-bun-1.3.14-v2-{{ checksum "frontend/.nvmrc" }}-{{ checksum "frontend/bun.lock" }}
+          key: frontend-bun-v4-{{ checksum "frontend/package.json" }}-{{ checksum "frontend/bun.lock" }}
           paths:
             - ~/.bun/install/cache
       - run: make frontend-check
