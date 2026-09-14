@@ -9,7 +9,7 @@ From the monorepo root, run `make frontend-install`, `make hooks`, then
 `bun run start` from this `frontend/` directory. The server runs at
 [localhost:3000](http://localhost:3000).
 
-Use the Bun version in `package.json` (`packageManager`). All frontend scripts run
+Use the Bun version in `.bun-version`. All frontend scripts run
 under Bun, including lint, TypeScript, and Jest. Copy `.env.sample` to `.env.local`
 for browser configuration overrides. Backend credentials belong in the root
 `.env` and are not needed for frontend-only commands.

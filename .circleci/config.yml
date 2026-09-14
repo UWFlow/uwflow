@@ -12,17 +12,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Bun from frontend/package.json
+          name: Install Bun from frontend/.bun-version
           command: |
-            BUN_VERSION=$(jq -er '.packageManager | capture("^bun@(?<version>.+)$").version' frontend/package.json)
+            BUN_VERSION=$(cat frontend/.bun-version)
             curl --fail --silent --show-error --location https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
             echo 'export PATH="$HOME/.bun/bin:$PATH"' >> "$BASH_ENV"
       - restore_cache:
           keys:
-            - frontend-bun-v4-{{ checksum "frontend/package.json" }}-{{ checksum "frontend/bun.lock" }}
+            - frontend-bun-v5-{{ checksum "frontend/.bun-version" }}-{{ checksum "frontend/bun.lock" }}
       - run: make frontend-install
       - save_cache:
-          key: frontend-bun-v4-{{ checksum "frontend/package.json" }}-{{ checksum "frontend/bun.lock" }}
+          key: frontend-bun-v5-{{ checksum "frontend/.bun-version" }}-{{ checksum "frontend/bun.lock" }}
           paths:
             - ~/.bun/install/cache
       - run: make frontend-check

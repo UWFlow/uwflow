@@ -37,7 +37,7 @@ It becomes an archive after active work and integrations are migrated.
 | Area | Behavior |
 | --- | --- |
 | Layout | Frontend under `frontend/`; backend, Hasura, Nginx and staging paths stay stable |
-| Dependencies | Bun version from `frontend/package.json`; lockfile and Bun runtime configuration in `frontend/` |
+| Dependencies | Bun version from `frontend/.bun-version`; lockfile and Bun runtime configuration in `frontend/` |
 | Developer commands | Root `make frontend-*` targets run from the frontend package without loading backend `.env` |
 | Git hooks | `make hooks` installs `.githooks/pre-commit`; frontend lint checks staged frontend work without rewriting files |
 | CI | One root CircleCI pipeline; frontend lint/typecheck/tests, frontend image, backend images/Go tests |
