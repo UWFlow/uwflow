@@ -1,0 +1,18 @@
+table:
+  name: checklist
+  schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - id
+        - name
+        - requirements
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - id
+        - name
+        - requirements
+      filter: {}
