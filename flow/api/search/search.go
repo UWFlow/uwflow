@@ -40,6 +40,10 @@ SELECT c.id, c.code, c.name, e.embedding
 FROM course_embedding e
   JOIN course c ON c.id = e.course_id
 WHERE e.model = $1
+  -- Transfer-credit placeholders (e.g. cs2xx "CS Transfer Credit") have short,
+  -- generic text that outranks real courses for most short queries.
+  AND c.code !~ 'xx$'
+  AND c.name NOT ILIKE '%transfer credit%'
 `
 
 type Embedder interface {
