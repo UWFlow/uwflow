@@ -24,3 +24,17 @@ Next, we query for:
   3. All matching course codes.
 
 Once we have the raw results for courses, profs, and course codes, we rerank them by weighting on the number of ratings for each entity and return them.
+
+## 4. Semantic results
+
+Fuzzy matching only finds courses whose code, name, or professors share text with the query. To also surface courses that match by meaning (e.g. "learn to build websites"), the search bar shows a "Related courses" section populated by the `/search/semantic` API endpoint. `useSemanticSearch` debounces requests by 300ms, skips queries shorter than 3 characters, and drops responses for outdated queries. The search bar removes courses the fuzzy results already show and displays up to 3 of the rest.
+
+On the backend, the importer embeds each course's code, name, and description with OpenAI `text-embedding-3-small` (512 dimensions) and stores the vectors in the `course_embedding` table. Only new or changed courses are re-embedded. The API keeps all vectors in memory, refreshing them hourly, embeds the query, and ranks courses by cosine similarity. Semantic search requires `OPENAI_API_KEY` in the backend `.env`. Without it, the endpoint returns no results and the importer skips embedding, so the dropdown shows only fuzzy results. Run `make import-embeddings` to backfill embeddings locally.
+
+## 5. AI summaries
+
+For natural-language queries (`isSummaryQuery` in `summary.ts`: three or more words, a question, or two words with an intent word like "easy" or "electives"), the dropdown opens with a short streamed answer that links the courses it cites. Course codes and two-word names go straight to autocomplete without calling the LLM.
+
+`useSearchSummary` shows a skeleton as soon as the query qualifies and requests `/search/summary` 350ms after typing stops. It aborts superseded requests and keeps the previous answer dimmed until the next one starts streaming, so the dropdown doesn't jump. Any failure hides the card.
+
+The API endpoint retrieves 24 courses by meaning and keeps the 10 that are most similar, with a nudge towards courses that have many ratings. It sends their ratings, descriptions, and two most-upvoted reviews to OpenAI `gpt-5.4-mini` with reasoning disabled, and streams the answer back as server-sent events (`courses`, `delta`, `done`, or `error`). It sets `X-Accel-Buffering: no` so Nginx doesn't buffer the stream. Finished summaries are cached for an hour, and at most 8 summaries are generated at once; further requests get 429.

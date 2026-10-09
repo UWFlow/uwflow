@@ -15,6 +15,7 @@ import (
 	"flow/api/group"
 	"flow/api/middleware"
 	"flow/api/parse"
+	"flow/api/search"
 	"flow/api/serde"
 
 	"flow/common/db"
@@ -88,6 +89,16 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Get(
 		"/data/search",
 		serde.WithDbResponse(conn, data.HandleSearch, "search data dump"),
+	)
+
+	searchIndex := search.NewIndex(env.Global.OpenAIApiKey)
+	router.Get(
+		"/search/semantic",
+		serde.WithDbDirect(conn, searchIndex.Handle, "semantic search"),
+	)
+	router.Get(
+		"/search/summary",
+		serde.WithDbDirect(conn, searchIndex.HandleSummary, "search summary"),
 	)
 
 	router.Get(
