@@ -69,6 +69,17 @@ export type SearchDataResponse = {
   profs: SearchDataProf[];
 };
 
+export type SemanticSearchCourse = {
+  id: number;
+  code: string;
+  name: string;
+  score: number;
+};
+
+export type SemanticSearchResponse = {
+  courses: SemanticSearchCourse[];
+};
+
 /* Data upload */
 export type ScheduleParseBody = {
   text: string;

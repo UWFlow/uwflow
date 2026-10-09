@@ -27,6 +27,7 @@ import {
   IndexedProf,
 } from 'search/SearchClient';
 import { useSearchContext } from 'search/SearchProvider';
+import useSemanticSearch from 'search/useSemanticSearch';
 import { formatCourseCode } from 'utils/Misc';
 
 import {
@@ -45,6 +46,8 @@ import {
 } from './styles/SearchBar';
 
 const isMac = navigator.userAgent.includes('Mac');
+
+const MAX_RELATED_COURSES = 3;
 
 type HighlightProps = {
   children: ReactNode;
@@ -88,6 +91,17 @@ const SearchBar = ({
     courseCodeResults: [],
   });
   const { searchWorker } = useSearchContext();
+  const semanticCourses = useSemanticSearch(searchText);
+
+  // Semantic matches that fuzzy autocomplete did not already surface
+  const relatedCourses = semanticCourses
+    .filter(
+      (course) =>
+        !searchResults.courseResults.some(
+          (result) => result.code === course.code,
+        ),
+    )
+    .slice(0, MAX_RELATED_COURSES);
 
   // Handle search result data from search worker message
   const performSearch = (event: MessageEvent): void => {
@@ -124,7 +138,8 @@ const SearchBar = ({
         const length =
           Math.max(searchResults.courseCodeResults.length, 1) +
           searchResults.courseResults.length +
-          searchResults.profResults.length;
+          searchResults.profResults.length +
+          relatedCourses.length;
         setSelectedResultIndex(Math.min(length - 1, selectedResultIndex + 1));
       }
     };
@@ -133,7 +148,7 @@ const SearchBar = ({
     return () => {
       window.removeEventListener('keydown', handleUserKeyPress);
     };
-  }, [selectedResultIndex, searchResults, searchWorker]);
+  }, [selectedResultIndex, searchResults, relatedCourses.length, searchWorker]);
 
   useEffect(() => {
     const handleCmdK = (event: globalThis.KeyboardEvent) => {
@@ -251,7 +266,7 @@ const SearchBar = ({
   );
 
   const courseResult = (
-    course: IndexedCourse,
+    course: Pick<IndexedCourse, 'code' | 'name'>,
     ref: RefObject<HTMLButtonElement> | null = null,
   ) => (
     <SearchResult
@@ -341,6 +356,15 @@ const SearchBar = ({
 
     offset += profResults.length;
 
+    const relatedResults = relatedCourses.map((course, i) =>
+      courseResult(
+        course,
+        selectedResultIndex === i + offset ? selectedResultRef : null,
+      ),
+    );
+
+    offset += relatedResults.length;
+
     const courseCodeResults =
       searchResults.courseCodeResults.length > 0
         ? searchResults.courseCodeResults.map((result, i) =>
@@ -356,7 +380,25 @@ const SearchBar = ({
             ),
           ];
 
-    const allResults = [...courseResults, ...profResults, ...courseCodeResults];
+    const relatedSection =
+      relatedResults.length > 0
+        ? [
+            <div
+              key="related-courses-header"
+              className="border-0 border-b border-solid border-light3 bg-white px-md pb-xs pt-sm text-xs font-semibold uppercase text-dark3"
+            >
+              Related courses
+            </div>,
+            ...relatedResults,
+          ]
+        : [];
+
+    const allResults = [
+      ...courseResults,
+      ...profResults,
+      ...relatedSection,
+      ...courseCodeResults,
+    ];
 
     return (
       <SearchResultsWrapper maximizeWidth={maximizeWidth}>

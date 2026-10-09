@@ -24,3 +24,9 @@ Next, we query for:
   3. All matching course codes.
 
 Once we have the raw results for courses, profs, and course codes, we rerank them by weighting on the number of ratings for each entity and return them.
+
+## 4. Semantic results
+
+Fuzzy matching only finds courses whose code, name, or professors share text with the query. To also surface courses that match by meaning (e.g. "learn to build websites"), the search bar shows a "Related courses" section populated by the `/search/semantic` API endpoint. `useSemanticSearch` debounces requests by 300ms, skips queries shorter than 3 characters, and drops responses for outdated queries. The search bar removes courses the fuzzy results already show and displays up to 3 of the rest.
+
+On the backend, the importer embeds each course's code, name, and description with OpenAI `text-embedding-3-small` (512 dimensions) and stores the vectors in the `course_embedding` table. Only new or changed courses are re-embedded. The API keeps all vectors in memory, refreshing them hourly, embeds the query, and ranks courses by cosine similarity. Semantic search requires `OPENAI_API_KEY` in the backend `.env`. Without it, the endpoint returns no results and the importer skips embedding, so the dropdown shows only fuzzy results. Run `make import-embeddings` to backfill embeddings locally.

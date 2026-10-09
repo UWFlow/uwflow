@@ -47,6 +47,7 @@ export const TRANSCRIPT_PARSE_ENDPOINT = '/parse/transcript';
 
 /* Search */
 export const SEARCH_DATA_ENDPOINT = '/data/search';
+export const SEMANTIC_SEARCH_ENDPOINT = '/search/semantic';
 
 /* Calendar */
 export const CALENDAR_EXPORT_ENDPOINT = (secretId: string) =>
