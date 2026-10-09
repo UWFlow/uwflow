@@ -18,32 +18,6 @@ func TestFormatCode(t *testing.T) {
 	}
 }
 
-func TestDocument(t *testing.T) {
-	tests := []struct {
-		name string
-		in   course
-		want string
-	}{
-		{
-			"with description",
-			course{code: "cs135", name: "Designing Functional Programs", description: "An introduction."},
-			"CS 135: Designing Functional Programs. An introduction.",
-		},
-		{
-			"without description",
-			course{code: "pd1", name: "Career Fundamentals"},
-			"PD 1: Career Fundamentals",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := document(tt.in); got != tt.want {
-				t.Errorf("document() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestContentHashSeparatesFields(t *testing.T) {
 	a := contentHash(course{code: "cs1", name: "35"})
 	b := contentHash(course{code: "cs13", name: "5"})

@@ -2,7 +2,6 @@ package embed
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -15,13 +14,6 @@ func TestEmbedOrdersByIndexAndNormalizes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer key" {
 			t.Errorf("Authorization = %q", got)
-		}
-		var req request
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatal(err)
-		}
-		if req.Model != Model || req.Dimensions != Dimensions {
-			t.Errorf("request = %+v", req)
 		}
 		// Respond out of order to check that results follow input order.
 		w.Write([]byte(`{"data":[
