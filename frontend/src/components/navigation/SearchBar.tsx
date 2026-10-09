@@ -27,6 +27,7 @@ import {
   IndexedProf,
 } from 'search/SearchClient';
 import { useSearchContext } from 'search/SearchProvider';
+import useSearchSummary from 'search/useSearchSummary';
 import useSemanticSearch from 'search/useSemanticSearch';
 import { formatCourseCode } from 'utils/Misc';
 
@@ -44,6 +45,7 @@ import {
   ShortcutBadge,
   UnderlinedText,
 } from './styles/SearchBar';
+import SearchSummaryCard from './SearchSummaryCard';
 
 const isMac = navigator.userAgent.includes('Mac');
 
@@ -92,6 +94,7 @@ const SearchBar = ({
   });
   const { searchWorker } = useSearchContext();
   const semanticCourses = useSemanticSearch(searchText);
+  const summary = useSearchSummary(searchText);
 
   // Semantic matches that fuzzy autocomplete did not already surface
   const relatedCourses = semanticCourses
@@ -394,6 +397,14 @@ const SearchBar = ({
         : [];
 
     const allResults = [
+      <SearchSummaryCard
+        key="search-summary"
+        summary={summary}
+        // Summary codes are formatted ("CS 135"); routes use "cs135"
+        onCourseClick={(code) =>
+          goToCourse(code.split(' ').join('').toLowerCase())
+        }
+      />,
       ...courseResults,
       ...profResults,
       ...relatedSection,

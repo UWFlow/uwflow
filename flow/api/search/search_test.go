@@ -32,12 +32,11 @@ var testEntries = []entry{
 // loadedIndex returns an index whose entries are fresh, so Handle never
 // touches the database.
 func loadedIndex(embedder Embedder) *Index {
-	return &Index{
-		embedder: embedder,
-		entries:  testEntries,
-		loadedAt: time.Now(),
-		cache:    make(map[string][]float32),
-	}
+	ix := newIndex()
+	ix.embedder = embedder
+	ix.entries = testEntries
+	ix.loadedAt = time.Now()
+	return ix
 }
 
 func TestRank(t *testing.T) {

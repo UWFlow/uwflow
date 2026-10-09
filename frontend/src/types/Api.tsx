@@ -80,6 +80,11 @@ export type SemanticSearchResponse = {
   courses: SemanticSearchCourse[];
 };
 
+export type SearchSummaryCourse = {
+  code: string;
+  name: string;
+};
+
 /* Data upload */
 export type ScheduleParseBody = {
   text: string;

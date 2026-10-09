@@ -30,9 +30,10 @@ const (
 	minScore        = 0.2
 	refreshInterval = time.Hour
 	reloadTimeout   = 30 * time.Second
-	// Query embeddings are cached to save API calls on repeated searches.
-	// The cache is reset when full, which is simpler than LRU and good enough.
+	// Query embeddings and summaries are cached to save API calls on
+	// repeated searches. Summaries expire so they pick up new ratings.
 	maxCachedQueries = 1024
+	summaryTTL       = time.Hour
 )
 
 const selectEmbeddingsQuery = `
@@ -69,8 +70,10 @@ type response struct {
 }
 
 type Index struct {
-	// A nil embedder disables semantic search.
+	// A nil embedder disables semantic search; a nil streamer disables
+	// summaries.
 	embedder Embedder
+	streamer Streamer
 
 	mu       sync.RWMutex
 	entries  []entry
@@ -80,25 +83,47 @@ type Index struct {
 	loadMu     sync.Mutex
 	refreshing atomic.Bool
 
-	cacheMu sync.Mutex
-	cache   map[string][]float32
+	vectors      *cache[[]float32]
+	summaries    *cache[summary]
+	summarySlots chan struct{}
+	// Replaceable so tests can run without a database.
+	loadContext func(context.Context, *db.Conn, []Result) ([]courseContext, error)
 }
 
 func NewIndex(apiKey string) *Index {
-	ix := &Index{cache: make(map[string][]float32)}
+	ix := newIndex()
 	if apiKey != "" {
 		ix.embedder = embed.NewClient(apiKey)
+		ix.streamer = newChatClient(apiKey)
 	}
 	return ix
 }
 
-func (ix *Index) Handle(conn *db.Conn, w http.ResponseWriter, r *http.Request) error {
+func newIndex() *Index {
+	return &Index{
+		vectors:      newCache[[]float32](0),
+		summaries:    newCache[summary](summaryTTL),
+		summarySlots: make(chan struct{}, maxConcurrentSummaries),
+		loadContext:  loadCourseContext,
+	}
+}
+
+// parseQuery returns the whitespace-normalized query or a 400 error.
+func parseQuery(r *http.Request) (string, error) {
 	query := strings.Join(strings.Fields(r.URL.Query().Get("q")), " ")
 	if query == "" || utf8.RuneCountInString(query) > maxQueryLength {
-		return serde.WithStatus(
+		return "", serde.WithStatus(
 			http.StatusBadRequest,
 			fmt.Errorf("query must be 1-%d characters", maxQueryLength),
 		)
+	}
+	return query, nil
+}
+
+func (ix *Index) Handle(conn *db.Conn, w http.ResponseWriter, r *http.Request) error {
+	query, err := parseQuery(r)
+	if err != nil {
+		return err
 	}
 
 	results := []Result{}
@@ -181,10 +206,7 @@ func (ix *Index) reload(conn *db.Conn) ([]entry, error) {
 }
 
 func (ix *Index) embedQuery(ctx context.Context, query string) ([]float32, error) {
-	ix.cacheMu.Lock()
-	vector, ok := ix.cache[query]
-	ix.cacheMu.Unlock()
-	if ok {
+	if vector, ok := ix.vectors.get(query); ok {
 		return vector, nil
 	}
 
@@ -192,15 +214,45 @@ func (ix *Index) embedQuery(ctx context.Context, query string) ([]float32, error
 	if err != nil {
 		return nil, err
 	}
-	vector = vectors[0]
+	ix.vectors.put(query, vectors[0])
+	return vectors[0], nil
+}
 
-	ix.cacheMu.Lock()
-	if len(ix.cache) >= maxCachedQueries {
-		ix.cache = make(map[string][]float32)
+// cache is a concurrency-safe map that is reset when full, which is simpler
+// than LRU and good enough here. A zero ttl means entries never expire.
+type cache[T any] struct {
+	mu      sync.Mutex
+	ttl     time.Duration
+	entries map[string]cached[T]
+}
+
+type cached[T any] struct {
+	value  T
+	stored time.Time
+}
+
+func newCache[T any](ttl time.Duration) *cache[T] {
+	return &cache[T]{ttl: ttl, entries: make(map[string]cached[T])}
+}
+
+func (c *cache[T]) get(key string) (T, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	entry, ok := c.entries[key]
+	if !ok || (c.ttl > 0 && time.Since(entry.stored) > c.ttl) {
+		var zero T
+		return zero, false
 	}
-	ix.cache[query] = vector
-	ix.cacheMu.Unlock()
-	return vector, nil
+	return entry.value, true
+}
+
+func (c *cache[T]) put(key string, value T) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.entries) >= maxCachedQueries {
+		c.entries = make(map[string]cached[T])
+	}
+	c.entries[key] = cached[T]{value: value, stored: time.Now()}
 }
 
 // rank returns up to limit entries scoring at least threshold, best first.

@@ -8,11 +8,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"strings"
-	"unicode"
 
 	"flow/common/embed"
 	"flow/common/state"
+	"flow/common/util"
 	"flow/importer/uw/log"
 )
 
@@ -60,20 +59,9 @@ func contentHash(c course) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// formatCode turns a stored code such as "cs135" into "CS 135".
-func formatCode(code string) string {
-	code = strings.ToUpper(code)
-	for i, r := range code {
-		if unicode.IsDigit(r) {
-			return code[:i] + " " + code[i:]
-		}
-	}
-	return code
-}
-
 // document is the text embedded for a course.
 func document(c course) string {
-	doc := formatCode(c.code) + ": " + c.name
+	doc := util.FormatCourseCode(c.code) + ": " + c.name
 	if c.description != "" {
 		doc += ". " + c.description
 	}

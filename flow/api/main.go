@@ -96,6 +96,10 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		"/search/semantic",
 		serde.WithDbDirect(conn, searchIndex.Handle, "semantic search"),
 	)
+	router.Get(
+		"/search/summary",
+		serde.WithDbDirect(conn, searchIndex.HandleSummary, "search summary"),
+	)
 
 	router.Get(
 		"/calendar/{secretId}.ics",
