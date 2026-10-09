@@ -28,12 +28,18 @@ type dumpResponse struct {
 	Profs   []prof   `json:"profs"`
 }
 
+// The search dump must list every course/prof so the frontend can autocomplete
+// against the full catalog. aggregate.course_rating / aggregate.prof_rating are
+// backed by materialized views that are only refreshed by triggers on review and
+// section_meeting writes, so they can be stale or empty (e.g. a freshly seeded
+// DB). LEFT JOIN keeps the live course/prof tables as the source of truth and
+// COALESCE defaults the rating count to 0 when the matview has no row yet.
 const courseQuery = `
 SELECT
-  c.id, c.code, c.name, cr.filled_count AS review_count,
+  c.id, c.code, c.name, COALESCE(cr.filled_count, 0) AS review_count,
   COALESCE(ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL), ARRAY[]::TEXT[]) AS profs
 FROM course c
- INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
+  LEFT JOIN aggregate.course_rating cr ON cr.course_id = c.id
   LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
   LEFT JOIN prof p ON p.id = pc.prof_id
 GROUP BY c.id, cr.filled_count
@@ -41,10 +47,10 @@ GROUP BY c.id, cr.filled_count
 
 const profQuery = `
 SELECT
-  p.id, p.code, p.name, pr.filled_count AS review_count,
+  p.id, p.code, p.name, COALESCE(pr.filled_count, 0) AS review_count,
   COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses
 FROM prof p
- INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
+  LEFT JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
   LEFT JOIN course c ON c.id = pc.course_id
 GROUP BY p.id, pr.filled_count
@@ -66,6 +72,9 @@ func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 		}
 		response.Courses = append(response.Courses, c)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating course rows: %w", err)
+	}
 
 	rows, err = tx.Query(profQuery)
 	if err != nil {
@@ -80,6 +89,9 @@ func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 			return nil, fmt.Errorf("reading prof row: %w", err)
 		}
 		response.Profs = append(response.Profs, p)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating prof rows: %w", err)
 	}
 
 	return &response, nil
