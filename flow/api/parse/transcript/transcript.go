@@ -9,13 +9,25 @@ import (
 	"flow/common/util"
 )
 
+type TermCourse struct {
+	// Course codes are similar to CS 145, STAT 920, PD 1, CHINA 120R,
+	// normalized to the form "cs145".
+	Code string `json:"code"`
+	// Units attempted (e.g. 0.5); 0 when the transcript does not list them
+	// (current-term courses).
+	Units float64 `json:"units"`
+	// Grade is the numeric grade out of 100; nil for non-numeric grades
+	// (CR, NCR, letter grades) and current-term courses. Grades are returned
+	// to the client for display only and are never persisted.
+	Grade *int `json:"grade"`
+}
+
 type TermSummary struct {
 	// Term ids are numbers of the form 1189 (Fall 2018)
-	TermId int
+	TermId int `json:"term_id"`
 	// Levels are similar to 1A, 5C (delayed graduation).
-	Level string
-	// Course codes are similar to CS 145, STAT 920, PD 1, CHINA 120R.
-	Courses []string
+	Level   string       `json:"level"`
+	Courses []TermCourse `json:"courses"`
 }
 
 type Summary struct {
@@ -54,6 +66,26 @@ func isTransferCredit(courseLine string) bool {
 	return len(matches) == 1
 }
 
+// extractUnitsAndGrade pulls the attempted units (first credit column) and the
+// numeric grade (token after the last credit column) out of a course line.
+// Past term course lines look like "ECON  102  Macroeconomics  0.50  0.50  98";
+// the grade may also be non-numeric (CR, NCR), in which case it is nil.
+func extractUnitsAndGrade(courseLine string) (float64, *int) {
+	credits := creditRegexp.FindAllStringIndex(courseLine, -1)
+	if len(credits) < 2 {
+		return 0, nil
+	}
+	units, err := strconv.ParseFloat(courseLine[credits[0][0]:credits[0][1]], 64)
+	if err != nil {
+		units = 0
+	}
+	rest := strings.TrimSpace(courseLine[credits[len(credits)-1][1]:])
+	if grade, err := strconv.Atoi(rest); err == nil {
+		return units, &grade
+	}
+	return units, nil
+}
+
 func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
 	terms := termRegexp.FindAllStringSubmatchIndex(text, -1)
@@ -75,16 +107,22 @@ func extractTermSummaries(text string) ([]TermSummary, error) {
 		// Include courses that come before next term's heading
 		// except for the last term, which includes all remaining courses.
 		for ; j < len(courses) && (i == len(terms)-1 || courses[j][0] < terms[i+1][0]); j++ {
+			courseLine := text[courses[j][0]:courses[j][1]]
 			// Some courses are transfer (AP/IB) credits.
 			// They were not taken at UW, so should not be imported.
-			if isTransferCredit(text[courses[j][0]:courses[j][1]]) {
+			if isTransferCredit(courseLine) {
 				continue
 			}
 			department := text[courses[j][2]:courses[j][3]]
 			number := text[courses[j][4]:courses[j][5]]
+			units, grade := extractUnitsAndGrade(courseLine)
 			history[i].Courses = append(
 				history[i].Courses,
-				strings.ToLower(department+number),
+				TermCourse{
+					Code:  strings.ToLower(department + number),
+					Units: units,
+					Grade: grade,
+				},
 			)
 		}
 	}
