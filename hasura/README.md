@@ -82,7 +82,7 @@ metadata. Configure an SSH host alias with your production host, user, and key.
 Verify the server's SSH host-key fingerprint through a trusted channel and add it
 to `known_hosts` before using the helper; it refuses unknown or changed host keys.
 
-From the backend repository root, run one command. The optional second argument
+From the repository root, run one command. The optional second argument
 is the local port where you want to open the **Console**, defaulting to `9695`:
 
 ```sh

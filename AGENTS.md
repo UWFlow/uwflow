@@ -5,7 +5,7 @@ This file is the canonical guide for coding agents working in this repository. `
 UWFlow is a small collection of services around one Postgres schema:
 
 ```text
-Hasura migrations + metadata -> Postgres/GraphQL contract -> uwflow_frontend
+Hasura migrations + metadata -> Postgres/GraphQL contract -> frontend/
                                       ^
                                       |
                  Go API + UW importer + email worker
@@ -14,7 +14,7 @@ Hasura migrations + metadata -> Postgres/GraphQL contract -> uwflow_frontend
                            flow/common primitives
 ```
 
-Changes on the left can affect every consumer to the right. Search the frontend repository when changing GraphQL fields, permissions, API routes or JSON, JWT claims, error codes, calendar output, or product-visible links.
+Changes on the left can affect every consumer to the right. Search `frontend/` when changing GraphQL fields, permissions, API routes or JSON, JWT claims, error codes, calendar output, or product-visible links.
 
 ## Repository map
 
@@ -56,7 +56,7 @@ Run the narrowest useful check first, then the package or repository gate:
 | Change | Required checks |
 | --- | --- |
 | Go formatting or behavior | `gofmt` changed files; focused `go test`; `go test ./...`; `go build ./...` |
-| API contract | Above, plus search `../uwflow_frontend` for consumers |
+| API contract | Above, plus search `frontend/src` for consumers |
 | Migration or metadata | Apply the migration locally, inspect metadata/permissions, test rollback, then check frontend codegen impact |
 | Import conversion | Table-driven tests with representative upstream fixtures |
 | Docker/build files | `make docker-build-test` when Docker is available |
