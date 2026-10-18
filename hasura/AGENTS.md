@@ -21,7 +21,7 @@ This directory is the canonical relational schema and GraphQL authorization cont
 - Update registration, relationships, and every relevant role's select/insert/update/delete permissions.
 - Review constraints and indexes as part of the same change. Application validation does not replace database invariants.
 - Apply forward migration and metadata locally, exercise the affected query/mutation under realistic roles, then test rollback.
-- Search `../../uwflow_frontend/src/graphql` for consumers and regenerate frontend types when the schema contract changes.
+- Search `../frontend/src/graphql` for consumers and regenerate frontend types when the schema contract changes.
 - Do not put secrets in metadata or migration files.
 
 <!-- MANUAL: Add durable schema-specific notes below this line. -->

@@ -60,9 +60,9 @@ Do not make the Go API a proxy for GraphQL CRUD. Do not put database mutation in
 - Tests must be deterministic: inject time, clients, or randomness when touching behavior that otherwise depends on them.
 - A bug fix should include a test that fails for the old behavior whenever the boundary is testable.
 
-## Cross-repository contract checklist
+## Frontend contract checklist
 
-When changing a public contract, search `../uwflow_frontend` and verify:
+When changing a public contract, search `frontend/` and verify:
 
 - GraphQL documents and generated types for schema changes;
 - Apollo cache keys for identity or primary-key changes;

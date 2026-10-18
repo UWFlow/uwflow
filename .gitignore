@@ -19,3 +19,7 @@ terraform.tfvars
 # Local Vercel links and Python test caches
 .vercel/
 __pycache__/
+# Local editor/agent state
+.DS_Store
+.claude/settings.local.json
+.claude/worktrees/

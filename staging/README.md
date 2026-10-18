@@ -100,7 +100,7 @@ To seed from a `pg_dump`:
 
 ```bash
 # 1. copy the dump to the instance
-scp -i ~/.ssh/<key>.pem ../uwflow/XXX-XX-XX-pg-latest.pgdump ubuntu@<public_ip>:/home/ubuntu/
+scp -i ~/.ssh/<key>.pem ../XXX-XX-XX-pg-latest.pgdump ubuntu@<public_ip>:/home/ubuntu/
 
 # 2. restore into the postgres container
 ssh -i ~/.ssh/<key>.pem ubuntu@<public_ip> \
