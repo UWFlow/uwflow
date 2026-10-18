@@ -9,15 +9,23 @@ DIR="$(dirname $(realpath $0))"
 cd "$BACKEND_DIR"
 export $(cat .env | xargs)
 
+# Hosts with only the Compose v2 plugin have no docker-compose binary.
+if $PREFIX docker compose version >/dev/null 2>&1
+then
+  docker_compose() { $PREFIX docker compose "$@"; }
+else
+  docker_compose() { $PREFIX docker-compose "$@"; }
+fi
+
 # Restart docker containers, rebuilding images as needed
-$PREFIX docker-compose down --remove-orphans
+docker_compose down --remove-orphans
 $PREFIX docker volume rm -f backend_postgres
 
 # Generate self-signed SSL certificate if needed
 "$DIR/generate-ssl-cert.sh"
 
 # Restore backup before starting everything else
-$PREFIX docker-compose run --name postgres_bootstrap -d postgres
+docker_compose run --name postgres_bootstrap -d postgres
 
 # Wait for postgres server to settle
 while ! $PREFIX docker exec postgres_bootstrap \
@@ -32,6 +40,6 @@ $PREFIX docker exec -i postgres_bootstrap sh -c 'cat > /pg_backup' < $POSTGRES_D
 $PREFIX docker exec -i postgres_bootstrap pg_restore -U $POSTGRES_USER -d $POSTGRES_DB -p $POSTGRES_PORT /pg_backup
 $PREFIX docker stop postgres_bootstrap
 $PREFIX docker rm postgres_bootstrap
-$PREFIX docker-compose down
+docker_compose down
 
 
