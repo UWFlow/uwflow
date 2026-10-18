@@ -1,0 +1,33 @@
+# Staging overrides layered on top of production's docker-compose.yml.
+#
+# Installed root-owned by install.sh; uwflow-staging passes both files to
+# `docker compose`. Nothing in a deployed PR can change this file.
+#
+# The staging box also runs other services (server-infra's nginx already owns
+# 127.0.0.1:8080), so every published port is replaced with a loopback-only
+# one. Reach staging through the Cloudflare tunnel or an SSH port forward.
+#
+# `!override` / `!reset` need Docker Compose >= 2.24.4.
+services:
+  postgres:
+    ports: !override
+      - 127.0.0.1:${STAGING_POSTGRES_PORT:-15432}:${POSTGRES_PORT}
+  hasura:
+    ports: !override
+      - 127.0.0.1:${STAGING_HASURA_PORT:-18080}:${HASURA_PORT}
+  api:
+    image: ${STAGING_REGISTRY:?}/uwflow-staging-api:${UWFLOW_IMAGE_TAG:?}
+    ports: !reset []
+  frontend:
+    image: ${STAGING_REGISTRY:?}/uwflow-staging-frontend:${UWFLOW_IMAGE_TAG:?}
+    ports: !override
+      - 127.0.0.1:${STAGING_HTTPS_PORT:-18443}:${NGINX_HTTPS_PORT}
+  # Built and pushed for parity, but never started by default: the importer
+  # mutates data from the UW API, and the email worker would mail real users
+  # from the restored production queue.
+  uw:
+    image: ${STAGING_REGISTRY:?}/uwflow-staging-uw:${UWFLOW_IMAGE_TAG:?}
+    profiles: [importer]
+  email:
+    image: ${STAGING_REGISTRY:?}/uwflow-staging-email:${UWFLOW_IMAGE_TAG:?}
+    profiles: [email]

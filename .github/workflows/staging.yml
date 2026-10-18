@@ -1,0 +1,324 @@
+# Deploy a PR (or main) to the single staging box, then smoke-test it.
+#
+# Add the `staging` label to a PR to deploy it; every later push to that PR
+# redeploys. Staging is one slot: deploying a PR removes the label from
+# whichever PR held it before. Use "Run workflow" to deploy main, deploy a PR
+# by number, or force a fresh copy of production data.
+#
+# Setup (secrets, AWS role, box install): staging/box/README.md.
+name: Staging
+
+run-name: >-
+  Staging · ${{ github.event.pull_request.number && format('PR #{0}', github.event.pull_request.number)
+  || (inputs.pr && format('PR #{0}', inputs.pr)) || 'main' }}
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to deploy (leave empty to deploy main)
+        required: false
+        type: string
+      refresh_data:
+        description: Replace staging data with the newest production dump
+        type: boolean
+        default: false
+
+# One box and one database: deploys queue instead of overlapping. A newer
+# pending run replaces an older pending one; a running deploy is never cut off.
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  STAGING_LABEL: staging
+
+jobs:
+  resolve:
+    # Label events for other labels, unlabelled pushes, and fork PRs (which
+    # get no secrets) are skipped here, before anything is built.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'staging') &&
+        (github.event.action != 'labeled' || github.event.label.name == 'staging'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      pr: ${{ steps.target.outputs.pr }}
+      name: ${{ steps.target.outputs.name }}
+      registry: ${{ steps.target.outputs.registry }}
+    steps:
+      - id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_PR: ${{ github.event.pull_request.number }}
+          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
+          INPUT_PR: ${{ inputs.pr }}
+        run: |
+          set -euo pipefail
+          if [ -n "$EVENT_PR" ]; then
+            pr="$EVENT_PR" sha="$EVENT_SHA"
+          elif [ -n "$INPUT_PR" ]; then
+            [[ "$INPUT_PR" =~ ^[0-9]+$ ]] || { echo "::error::PR must be a number"; exit 1; }
+            read -r state head_repo sha < <(gh api "repos/$GITHUB_REPOSITORY/pulls/$INPUT_PR" \
+              --jq '[.state, .head.repo.full_name, .head.sha] | @tsv')
+            [ "$state" = open ] || { echo "::error::PR #$INPUT_PR is $state"; exit 1; }
+            # Fork code would run next to staging's secrets; push it to a branch here first.
+            [ "$head_repo" = "$GITHUB_REPOSITORY" ] || { echo "::error::PR #$INPUT_PR is from fork $head_repo"; exit 1; }
+            pr="$INPUT_PR"
+          else
+            pr="" sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+          fi
+          {
+            echo "sha=$sha"
+            echo "pr=$pr"
+            echo "name=${pr:+pr-$pr}${pr:-main}"
+            echo "registry=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  backend:
+    needs: resolve
+    # Set the STAGING_BUILD_RUNNER variable to a larger runner label to speed
+    # up the Go build; standard runners work, just more slowly.
+    runs-on: ${{ vars.STAGING_BUILD_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # api, uw and email share flow/Dockerfile's builder stage (which also
+      # runs `go test ./...`), so after api the other two are cache hits.
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with:
+          context: flow
+          target: api
+          push: true
+          tags: ${{ needs.resolve.outputs.registry }}/uwflow-staging-api:${{ needs.resolve.outputs.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=staging-backend
+          cache-to: type=gha,mode=max,scope=staging-backend
+      - name: Build and push uw
+        uses: docker/build-push-action@v6
+        with:
+          context: flow
+          target: uw
+          push: true
+          tags: ${{ needs.resolve.outputs.registry }}/uwflow-staging-uw:${{ needs.resolve.outputs.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=staging-backend
+      - name: Build and push email
+        uses: docker/build-push-action@v6
+        with:
+          context: flow
+          target: email
+          push: true
+          tags: ${{ needs.resolve.outputs.registry }}/uwflow-staging-email:${{ needs.resolve.outputs.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=staging-backend
+
+  frontend:
+    needs: resolve
+    runs-on: ${{ vars.STAGING_BUILD_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+      - id: bun
+        run: echo "version=$(cat frontend/.bun-version)" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # No PostHog key or Sentry token: staging must not report into
+      # production analytics or error tracking.
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          build-args: BUN_VERSION=${{ steps.bun.outputs.version }}
+          tags: ${{ needs.resolve.outputs.registry }}/uwflow-staging-frontend:${{ needs.resolve.outputs.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=staging-frontend
+          cache-to: type=gha,mode=max,scope=staging-frontend
+
+  deploy:
+    needs: [resolve, backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    permissions:
+      contents: read
+      packages: read      # the box pulls with this run's token
+      id-token: write     # AWS role that opens SSH to this runner only
+      pull-requests: write
+    env:
+      SHA: ${{ needs.resolve.outputs.sha }}
+      NAME: ${{ needs.resolve.outputs.name }}
+      PR: ${{ needs.resolve.outputs.pr }}
+      HOST: ${{ vars.STAGING_SSH_HOST }}
+      SG: ${{ vars.STAGING_SECURITY_GROUP_ID }}
+      RULE_PREFIX: github-actions-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            hasura
+            nginx
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.STAGING_AWS_ROLE_ARN }}
+          aws-region: ${{ vars.STAGING_AWS_REGION || 'us-east-2' }}
+
+      # The box only accepts SSH from its owner's IP. Open port 22 to this
+      # runner for the length of the job; the always() step below closes it.
+      - name: Open SSH to this runner
+        run: |
+          set -euo pipefail
+          # Rules left by a runner that died before cleanup (only one deploy runs at a time).
+          aws ec2 describe-security-groups --group-ids "$SG" --output json \
+            | python3 -c '
+          import json, sys
+          for perm in json.load(sys.stdin)["SecurityGroups"][0]["IpPermissions"]:
+              for r in perm.get("IpRanges", []):
+                  if r.get("Description", "").startswith(sys.argv[1]):
+                      print(r["CidrIp"])' "$RULE_PREFIX" \
+            | while read -r cidr; do
+                aws ec2 revoke-security-group-ingress --group-id "$SG" --protocol tcp --port 22 --cidr "$cidr" >/dev/null
+              done
+          ip="$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')"
+          echo "RUNNER_CIDR=$ip/32" >> "$GITHUB_ENV"
+          aws ec2 authorize-security-group-ingress --group-id "$SG" --ip-permissions \
+            "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$ip/32,Description=$RULE_PREFIX-$GITHUB_RUN_ID}]" >/dev/null
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/staging && chmod 0600 ~/.ssh/staging
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host staging
+            HostName $HOST
+            User ubuntu
+            IdentityFile ~/.ssh/staging
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+            ServerAliveInterval 30
+            ConnectTimeout 20
+          EOF
+          # The security group change can take a few seconds to apply.
+          for _ in 1 2 3 4 5 6; do
+            ssh staging status && exit 0
+            sleep 5
+          done
+          echo "::error::could not reach the staging box over SSH"; exit 1
+
+      - name: Let the box pull this run's images
+        # The arguments are meant to expand here; the box re-validates them.
+        run: |
+          # shellcheck disable=SC2029
+          printf '%s' "$GITHUB_TOKEN" | ssh staging login "$GITHUB_ACTOR"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Deploy
+        env:
+          REFRESH: ${{ inputs.refresh_data && 'refresh' || '' }}
+        run: |
+          # shellcheck disable=SC2029
+          tar -czf - hasura nginx | ssh staging deploy "$SHA" "$NAME" ${REFRESH:+"$REFRESH"}
+
+      - name: Smoke test on the box
+        run: ssh staging smoke
+
+      # End to end through Cloudflare, when a public URL is configured.
+      - name: Smoke test the public URL
+        if: vars.STAGING_URL != ''
+        env:
+          URL: ${{ vars.STAGING_URL }}
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 5 --retry-all-errors -o /dev/null "$URL/"
+          curl -fsS --retry 3 -H 'Content-Type: application/json' \
+            -d '{"query":"{ course(limit: 1) { code } }"}' "$URL/graphql" | grep -q '"code"'
+
+      - name: Container logs
+        if: failure()
+        run: ssh staging logs || true
+
+      - name: Status
+        if: always()
+        run: ssh staging status | tee -a "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Close SSH
+        if: always()
+        run: |
+          ssh staging logout || true
+          if [ -n "${RUNNER_CIDR:-}" ]; then
+            aws ec2 revoke-security-group-ingress --group-id "$SG" --protocol tcp --port 22 --cidr "$RUNNER_CIDR" >/dev/null
+          fi
+          rm -f ~/.ssh/staging
+
+      - name: Hand the staging slot to this deploy
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ vars.STAGING_URL }}
+        run: |
+          set -euo pipefail
+          # Only one PR can be on staging; drop the label from the rest.
+          gh pr list --repo "$GITHUB_REPOSITORY" --label "$STAGING_LABEL" --state open --json number --jq '.[].number' \
+            | while read -r other; do
+                [ "$other" = "$PR" ] && continue
+                gh pr edit "$other" --repo "$GITHUB_REPOSITORY" --remove-label "$STAGING_LABEL"
+                gh pr comment "$other" --repo "$GITHUB_REPOSITORY" \
+                  --body "Staging now runs ${PR:+#$PR}${PR:-main}; re-add the \`$STAGING_LABEL\` label to deploy this PR again."
+              done
+          if [ -n "$PR" ]; then
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none --body \
+              "Deployed \`${SHA:0:12}\` to staging${URL:+: $URL} ([run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)). Smoke tests passed."
+          fi

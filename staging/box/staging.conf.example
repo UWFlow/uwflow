@@ -1,0 +1,16 @@
+# /etc/uwflow-staging/staging.conf — sourced by uwflow-staging (root-owned, 0600).
+
+# Where the workflow pushes images: ghcr.io/<lowercase owner>. Images are
+# <registry>/uwflow-staging-{api,frontend,uw,email}:<commit sha>.
+STAGING_REGISTRY=ghcr.io/uwflow
+
+# Production host and backup directory to copy the newest
+# YYYY-MM-DD-pg-latest.dump from. PROD_HOST is a Host alias in
+# /etc/uwflow-staging/prod_ssh_config.
+PROD_HOST=uwflow-prod
+PROD_BACKUP_DIR=/home/ec2-user/backup
+
+# Loopback-only ports on the staging box (server-infra already uses 8080).
+STAGING_POSTGRES_PORT=15432
+STAGING_HASURA_PORT=18080
+STAGING_HTTPS_PORT=18443
