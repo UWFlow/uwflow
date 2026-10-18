@@ -2,6 +2,7 @@ package util
 
 import (
 	"strings"
+	"unicode"
 )
 
 func IsLowerCase(char byte) bool {
@@ -102,4 +103,15 @@ func ExpandNumberRange(input string) []int {
 		}
 	}
 	return numbers
+}
+
+// FormatCourseCode turns a stored code such as "cs135" into "CS 135".
+func FormatCourseCode(code string) string {
+	code = strings.ToUpper(code)
+	for i, r := range code {
+		if unicode.IsDigit(r) {
+			return code[:i] + " " + code[i:]
+		}
+	}
+	return code
 }

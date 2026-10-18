@@ -13,6 +13,7 @@ import (
 	"flow/importer/uw/api"
 	"flow/importer/uw/cron"
 	"flow/importer/uw/parts/course"
+	"flow/importer/uw/parts/embedding"
 	"flow/importer/uw/parts/term"
 )
 
@@ -49,7 +50,13 @@ func RunVacuum(state *state.State, vacuums ...VacuumFunc) bool {
 	return ok
 }
 
-var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll}
+// importEmbeddings runs after course import so new and edited courses are
+// searchable. It does not use the UW API client.
+func importEmbeddings(state *state.State, _ *api.Client) error {
+	return embedding.Refresh(context.Background(), state)
+}
+
+var HourlyFuncs = []ImportFunc{term.ImportAll, course.ImportAll, importEmbeddings}
 var VacuumFuncs = []VacuumFunc{term.Vacuum, course.Vacuum}
 
 // monitorSpec holds the Sentry-specific tuning for a scheduled action. The
@@ -146,6 +153,8 @@ func main() {
 	switch os.Args[1] {
 	case "courses":
 		RunImport(state, client, course.ImportAll)
+	case "embeddings":
+		RunImport(state, client, importEmbeddings)
 	case "hourly":
 		withMonitor("hourly", func() bool {
 			return RunImport(state, client, HourlyFuncs...)

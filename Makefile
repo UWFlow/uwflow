@@ -1,4 +1,4 @@
-.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum migrate test build-test docker-build-test logs clean
+.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-embeddings import-vacuum migrate test build-test docker-build-test logs clean
 
 # Frontend-only commands must not load backend credentials.
 .DEFAULT_GOAL := help
@@ -49,6 +49,12 @@ import-course: ## Run UW course importer job (rebuilds importer service)
 	@$(DOCKER_COMPOSE) up -d --build uw
 	@docker exec uw /app/uw hourly
 	@echo "Course import complete!"
+
+import-embeddings: ## Embed new or changed courses for semantic search (needs OPENAI_API_KEY)
+	@echo "Rebuilding and running course embedding job..."
+	@$(DOCKER_COMPOSE) up -d --build uw
+	@docker exec uw /app/uw embeddings
+	@echo "Course embeddings complete!"
 
 import-vacuum: ## Run UW importer vacuum job (rebuilds importer service)
 	@echo "Rebuilding and running vacuum job..."

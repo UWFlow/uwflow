@@ -75,10 +75,12 @@ Each of these components runs as a separate Docker container, orchestrated by `d
 3. **API**: Our API is a Go server that provides custom endpoints for our frontend to interact with.
   It is generally used for more complex operations that cannot be done with Hasura alone.
   This includes authentication, parsing for transcripts and calendars, webcal generation,
-  and dumping raw search data for the frontend to use for autocomplete.
+  dumping raw search data for the frontend to use for autocomplete,
+  and semantic course search over embeddings stored in Postgres.
 
 4. **UW Importer**: This is a cron job that runs on a schedule to import data from the UW API.
-  We use this to fetch updates for courses, instructors, and term schedules.
+  We use this to fetch updates for courses, instructors, and term schedules,
+  and to embed course text for semantic search when `OPENAI_API_KEY` is set.
 
 5. **Email**: This is a service that watches a "queue" in our Postgres database for emails to send.
   It sends emails by generating HTML documents and sending them using the Google SMTP service.

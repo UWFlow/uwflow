@@ -54,3 +54,14 @@ func TestExpandNumberRange(t *testing.T) {
 		want[i].Test(t, input, got, nil)
 	}
 }
+
+func TestFormatCourseCode(t *testing.T) {
+	inputs := []string{"cs135", "msci100a", "pd1", "noDigits"}
+	want := []util.Outcome{
+		{Value: "CS 135"}, {Value: "MSCI 100A"}, {Value: "PD 1"}, {Value: "NODIGITS"},
+	}
+	for i, input := range inputs {
+		got := util.FormatCourseCode(input)
+		want[i].Test(t, input, got, nil)
+	}
+}

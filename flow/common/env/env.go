@@ -9,6 +9,7 @@ import (
 // Variables from the OS environment are pulled in and stored here.
 // Field types must be either `string` or `[]byte`:
 // os.Getenv returns `string`, which can only be trivially cast to `[]byte`.
+// Fields tagged `optional:"true"` are left empty when the variable is unset.
 type Environment struct {
 	ApiPort string `from:"API_PORT"`
 
@@ -20,9 +21,12 @@ type Environment struct {
 	PostgresPort     string `from:"POSTGRES_PORT"`
 	PostgresUser     string `from:"POSTGRES_USER"`
 
-	RunMode		string `from:"RUN_MODE"`
+	RunMode string `from:"RUN_MODE"`
 
-	UWApiKeyv3	string `from:"UW_API_KEY_V3"`
+	UWApiKeyv3 string `from:"UW_API_KEY_V3"`
+
+	// Semantic search is disabled when this is empty.
+	OpenAIApiKey string `from:"OPENAI_API_KEY" optional:"true"`
 }
 
 // To avoid mind-numbing boilerplate, use reflection.
@@ -34,6 +38,9 @@ func Get(env interface{}) error {
 	for i := 0; i < envType.NumField(); i++ {
 		envKey := envType.Field(i).Tag.Get("from")
 		value, exists := os.LookupEnv(envKey)
+		if !exists && envType.Field(i).Tag.Get("optional") == "true" {
+			continue
+		}
 		if exists {
 			// Potentially cast to []byte if necessary. Why not have everything be a string?
 			// If a variable is conceptually a []byte, we expect to have to cast it everywhere.
