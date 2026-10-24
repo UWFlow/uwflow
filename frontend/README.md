@@ -66,7 +66,7 @@ proxy. Local development continues to use localhost endpoints.
 
 ## 📚 Documentation 📚
 
-- [Code style guide](docs/style-guide.md)
+- [Engineering styleguides](../styleguide/index.md)
 - [GraphQL and TypeScript code generation](docs/graphql.md)
 - [Using and creating modals](docs/modals.md)
 - [Creating new pages](docs/pages.md)

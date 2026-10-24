@@ -16,7 +16,7 @@ This directory is the canonical relational schema and GraphQL authorization cont
 
 ## For AI agents
 
-- Read `README.md` and `../styleguide/backend-styleguide.md` before making a schema change.
+- Read `README.md` and `../styleguide/backend/go.md` before making a schema change.
 - Create a new timestamped migration with `up.sql` and `down.sql`; never rewrite applied history.
 - Update registration, relationships, and every relevant role's select/insert/update/delete permissions.
 - Review constraints and indexes as part of the same change. Application validation does not replace database invariants.
@@ -24,4 +24,4 @@ This directory is the canonical relational schema and GraphQL authorization cont
 - Search `../frontend/src/graphql` for consumers and regenerate frontend types when the schema contract changes.
 - Do not put secrets in metadata or migration files.
 
-<!-- MANUAL: Add durable schema-specific notes below this line. -->
+Review changes with [backend review](../styleguide/backend/review.md).
