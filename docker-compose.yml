@@ -24,7 +24,7 @@ services:
     container_name: postgres
     command: postgres -c 'max_connections=256' -p $POSTGRES_PORT
     env_file: .env
-    image: postgres:15-alpine
+    image: postgres:15.19-alpine
     ports:
       - $POSTGRES_PORT:$POSTGRES_PORT
     restart: always
@@ -41,7 +41,7 @@ services:
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false" # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
-    image: hasura/graphql-engine:v2.25.1.cli-migrations-v3
+    image: hasura/graphql-engine:v2.49.2.cli-migrations-v3
     ports:
       - $HASURA_PORT:$HASURA_PORT
     restart: always

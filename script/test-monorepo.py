@@ -53,6 +53,7 @@ if os.getenv("FAIL_COMMAND") in sys.argv[1:]:
         self.assertEqual(len(calls), 4)
         for service, call in zip(("api", "email", "uw", "frontend"), calls):
             self.assertEqual(call["args"][0], "build")
+            self.assertIn("--pull", call["args"])
             self.assertIn(f"neuwflow/{service}:test-release", call["args"])
             self.assertIn(f"neuwflow/{service}:latest", call["args"])
             self.assertEqual(call["args"][-1], str(ROOT / ("frontend" if service == "frontend" else "flow")))

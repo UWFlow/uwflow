@@ -1,6 +1,6 @@
 module flow
 
-go 1.25.0
+go 1.27.3
 
 require (
 	github.com/getsentry/sentry-go v0.47.0

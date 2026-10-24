@@ -1,6 +1,6 @@
 ######## BUILD STAGE ########
 # Release image is alpine, so use alpine in builder also for ABI compatibility
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27.3-alpine AS builder
 
 WORKDIR /build
 
@@ -23,13 +23,13 @@ RUN cd importer/uw && go build
 RUN cd email && go build
 
 ######## DEV STAGE (for live reload with Air) ########
-FROM golang:1.25-alpine AS dev
+FROM golang:1.27.3-alpine AS dev
 
 WORKDIR /build
 
 # Install build dependencies separately so failures identify the failing step.
 RUN apk add --no-cache git g++ poppler-dev
-# Pin Air to a Go 1.25-compatible release; latest can require a newer toolchain.
+# Keep the development reloader reproducible instead of installing latest.
 RUN go install github.com/air-verse/air@v1.63.0
 
 # Copy go.mod and go.sum for dependency caching

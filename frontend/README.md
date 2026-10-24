@@ -14,6 +14,9 @@ under Bun, including lint, TypeScript, and Jest. Copy `.env.sample` to `.env.loc
 for browser configuration overrides. Backend credentials belong in the root
 `.env` and are not needed for frontend-only commands.
 
+Vercel's install and build commands explicitly select the same Bun version via
+`bunx`; they do not rely on the build image's default Bun version.
+
 Build the Docker image with `./script/build.sh frontend` from the repository root.
 It passes `.bun-version` to the Dockerfile as the required `BUN_VERSION` build argument.
 

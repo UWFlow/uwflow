@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun run build:vercel",
+  "buildCommand": "bunx bun@$(cat .bun-version) scripts/build.js",
   "outputDirectory": "build",
   "rewrites": [
     {
@@ -40,6 +40,6 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "bun install --frozen-lockfile",
+  "installCommand": "bunx bun@$(cat .bun-version) install --frozen-lockfile",
   "framework": null
 }
