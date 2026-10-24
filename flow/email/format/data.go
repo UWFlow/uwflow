@@ -42,8 +42,7 @@ type SubscribedItem struct {
 // RowID implements QueueItem.
 func (it *SubscribedItem) RowID() int { return it.ID }
 
-// InviteItem is a shared_group_invite addressed to someone who does not have
-// a Flow account yet.
+// InviteItem carries the mailbox-verification link for a group invitation.
 type InviteItem struct {
 	ID          int
 	Email       string

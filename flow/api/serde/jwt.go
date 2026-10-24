@@ -57,15 +57,12 @@ func globalKey(t *jwt.Token) (interface{}, error) {
 }
 
 func UserIdFromRequest(request *http.Request) (int, error) {
-	var tokenString string
-
-	if authStrings, ok := request.Header["Authorization"]; ok {
-		tokenString = strings.TrimPrefix(authStrings[0], "Bearer ")
-	} else {
-		return 0, fmt.Errorf("no authorization header")
+	auth := strings.Fields(request.Header.Get("Authorization"))
+	if len(auth) != 2 || !strings.EqualFold(auth[0], "Bearer") {
+		return 0, fmt.Errorf("expected bearer authorization")
 	}
-
-	token, err := jwt.ParseWithClaims(tokenString, new(CombinedClaims), globalKey)
+	token, err := jwt.ParseWithClaims(auth[1], new(CombinedClaims), globalKey,
+		jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return 0, WithEnum(ExpiredJwt, fmt.Errorf("expired token"))
@@ -83,5 +80,8 @@ func UserIdFromRequest(request *http.Request) (int, error) {
 		return 0, fmt.Errorf("invalid user id: %w", err)
 	}
 
+	if userId <= 0 {
+		return 0, fmt.Errorf("invalid user id")
+	}
 	return userId, nil
 }

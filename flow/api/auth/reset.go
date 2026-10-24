@@ -14,7 +14,7 @@ import (
 	"flow/common/util/random"
 )
 
-const verifyKeyLength = 6
+const verifyKeyLength = 32
 
 const updatePasswordResetQuery = `
 INSERT INTO queue.password_reset(user_id, secret_key, expiry)
@@ -100,7 +100,7 @@ func VerifyKey(tx *db.Tx, r *http.Request) error {
 }
 
 const selectExpiryQuery = `
-SELECT user_id, expiry FROM queue.password_reset WHERE secret_key = $1
+SELECT user_id, expiry FROM queue.password_reset WHERE secret_key = $1 FOR UPDATE
 `
 
 const deleteKeyQuery = `
@@ -118,7 +118,7 @@ func resetPassword(tx *db.Tx, key, password string) error {
 	if err != nil {
 		return serde.WithStatus(
 			http.StatusForbidden,
-			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("key %s does not exist: %w", key, err)),
+			serde.WithEnum(serde.InvalidResetKey, fmt.Errorf("reset key not found: %w", err)),
 		)
 	}
 

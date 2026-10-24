@@ -159,7 +159,7 @@ func extractUserEvents(conn *db.Conn, secretId string) ([]*postgresEvent, error)
 	var userId int
 	err := conn.QueryRow(userIdQuery, secretId).Scan(&userId)
 	if err != nil {
-		return nil, fmt.Errorf("no user with secret id %s", secretId)
+		return nil, fmt.Errorf("calendar secret not found")
 	}
 
 	rows, err := conn.Query(selectEventQuery, userId)
