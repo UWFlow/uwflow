@@ -28,3 +28,5 @@ Apply the [general review](../review.md) first. Use [React](react.md) and the
 - Test visible behavior through roles and labels.
 - Run frontend checks and a production build when changing primitives or build behavior.
 - Report visual checks and performance measurements separately from unit-test results.
+
+- Include before/after screenshots for visible changes using the [browser review guide](browser-review.md).

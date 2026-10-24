@@ -37,3 +37,12 @@ Apply these checks to every PR, then use the [backend](backend/review.md) and
 - Link to an existing rule instead of duplicating it.
 - Remove comments that narrate changes or repeat the code.
 - Describe the final behavior and relevant verification in the PR.
+
+## PR descriptions
+
+- Use bullets only. Lead with the concrete problem and resulting behavior.
+- Include relevant test results and material rollout limits. Keep the description proportional to the change.
+- Omit headings, chronological work logs, and repeated implementation detail.
+- For visible UI changes, include before/after screenshots as Markdown images in bullets, grouped by desktop and phone.
+- Skip screenshots for changes with no visible UI effect. Use the [browser review guide](frontend/browser-review.md) for capture and attachment.
+- For stacked PRs, link the prerequisite PR and describe only the current diff.

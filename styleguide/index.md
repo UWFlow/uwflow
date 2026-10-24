@@ -10,6 +10,7 @@ record local commands or constraints. Paths in this table start at the repo root
 | Hasura schema and permissions | [Go and data](backend/go.md#hasura-and-postgres), `hasura/AGENTS.md` | [Backend review](backend/review.md) |
 | React, state, GraphQL clients | [React](frontend/react.md) | [Frontend review](frontend/review.md) |
 | Components, styling, design comparisons | [Design system](frontend/design-system.md) | [Frontend review](frontend/review.md) |
+| Browser checks and screenshots | [Browser review](frontend/browser-review.md), `tools/browser/AGENTS.md` | [Frontend review](frontend/review.md) |
 | Build, deploy, runtime configuration | [General verification](general.md#verification), root `AGENTS.md` | [General review](review.md#runtime-and-deployment) |
 
 Keep guides short and specific to their topic. Put shared rules in `general.md`,

@@ -42,6 +42,6 @@ commands run from `frontend/` or through root `make frontend-*` targets. The
 Go commands run from `flow/`. Check the legacy `regtest/` imports before treating
 that suite as a gate.
 
-Create draft PRs. Describe the behavior, validation, and any deployment steps or
-limits. Do not install hooks or alter shared Git settings without considering
+Create draft PRs with [bullet-only descriptions](styleguide/review.md#pr-descriptions).
+For UI evidence, use the optional [browser tools](styleguide/frontend/browser-review.md). Do not install hooks or alter shared Git settings without considering
 other worktrees.
