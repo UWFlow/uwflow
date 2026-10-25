@@ -9,8 +9,8 @@ insert_permissions:
   # Yourself only, as a confirmed member, and only into a group you created.
   # That is exactly the nested insert that creates a group, and nothing else:
   # it cannot add anyone to a group, and cannot join a group you did not make.
-  # Invites are issued by POST /group/{id}/invite, which resolves the address
-  # server-side so the caller never learns whether an account exists.
+  # POST /group/{id}/invite emails a bearer secret; it never grants membership
+  # based on an editable profile email.
   - role: user
     permission:
       check:
@@ -48,7 +48,8 @@ select_permissions:
       # above, and is what the group list renders next to each group.
       allow_aggregations: true
 update_permissions:
-  # Accepting an invite, and only that: your own pending row, moved to member.
+  # Retained for client schema compatibility. The verified_members_only database
+  # constraint prevents pending rows; new invites use the emailed-secret API.
   - role: user
     permission:
       columns:

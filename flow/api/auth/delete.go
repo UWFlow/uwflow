@@ -41,6 +41,6 @@ func DeleteAccount(conn *db.Conn, w http.ResponseWriter, r *http.Request) error 
 		return fmt.Errorf("deleting user account: %w", err)
 	}
 
-	log.Printf("Deleted user %d: %s %s <%s>", userId, info.FirstName, info.LastName, *info.Email)
+	log.Printf("Deleted user %d", userId)
 	return err
 }

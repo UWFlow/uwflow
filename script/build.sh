@@ -23,6 +23,7 @@ done
 
 for target in "$@"; do
     args=(
+        --pull
         --tag "neuwflow/$target:$IMAGE_TAG"
         --tag "neuwflow/$target:latest"
         --label "org.opencontainers.image.revision=$REVISION"

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,21 +18,16 @@ type googleUserInfo struct {
 	PictureUrl *string `json:"picture"`
 }
 
-const googleApiUrl = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=%s"
+const googleApiUrl = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
 
-func getGoogleUserInfo(accessToken string) (*googleUserInfo, error) {
-	url := fmt.Sprintf(googleApiUrl, accessToken)
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("calling google api: %w", err)
-	}
-	if response.StatusCode >= 400 {
-		return nil, fmt.Errorf("calling google api: status: %d", response.StatusCode)
-	}
-	defer response.Body.Close()
-
+func getGoogleUserInfo(ctx context.Context, accessToken string) (*googleUserInfo, error) {
 	var res googleUserInfo
-	json.NewDecoder(response.Body).Decode(&res)
+	if err := fetchOAuthUser(ctx, googleApiUrl, accessToken, &res); err != nil {
+		return nil, err
+	}
+	if res.GoogleId == "" {
+		return nil, fmt.Errorf("provider returned no user ID")
+	}
 	return &res, nil
 }
 
@@ -65,8 +61,8 @@ JOIN "user" u
 WHERE ug.google_id = $1
 `
 
-func loginGoogle(tx *db.Tx, accessToken string) (*authResponse, error) {
-	googleUser, err := getGoogleUserInfo(accessToken)
+func loginGoogle(ctx context.Context, tx *db.Tx, accessToken string) (*authResponse, error) {
+	googleUser, err := getGoogleUserInfo(ctx, accessToken)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting user info: %w", err))
 	}
@@ -109,5 +105,5 @@ func LoginGoogle(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no access token"))
 	}
 
-	return loginGoogle(tx, body.AccessToken)
+	return loginGoogle(r.Context(), tx, body.AccessToken)
 }
