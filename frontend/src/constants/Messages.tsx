@@ -16,6 +16,7 @@ export const AUTH_ERRORS: MessageObject = {
 
 export const AUTH_FORM_ERRORS: MessageObject = {
   invalid_email: 'Please enter a valid email.',
+  email_domain_not_allowed: 'Sign up with your @uwaterloo.ca email.',
   empty_password: 'Please enter a password.',
   password_too_short: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
   passwords_dont_match: "Passwords don't match.",
