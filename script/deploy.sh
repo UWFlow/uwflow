@@ -9,7 +9,7 @@ if [[ $# -eq 0 ]]; then
 fi
 for service in "$@"; do
     case "$service" in
-        api|email|uw|frontend|hasura|postgres) ;;
+        api|email|uw|frontend|hasura|postgres|slackbot) ;;
         *) echo "Unknown deployment service: $service" >&2; exit 2 ;;
     esac
 done

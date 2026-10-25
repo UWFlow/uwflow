@@ -21,6 +21,7 @@ RUN go test ./...
 RUN cd api && go build
 RUN cd importer/uw && go build
 RUN cd email && go build
+RUN cd slackbot && go build
 
 ######## DEV STAGE (for live reload with Air) ########
 FROM golang:1.27.3-alpine AS dev
@@ -74,3 +75,14 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /build/email/email /app/email
 
 CMD ["/app/email"]
+
+
+######## RELEASE STAGE: SLACK BOT ########
+FROM alpine:latest AS slackbot
+
+# Slack, Anthropic, and AWS APIs are reached over TLS
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /build/slackbot/slackbot /app/slackbot
+
+CMD ["/app/slackbot"]

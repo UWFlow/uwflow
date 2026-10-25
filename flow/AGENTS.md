@@ -2,7 +2,7 @@
 
 ## Purpose
 
-One Go module builds the API, UW importer, and email worker. `common/` provides infrastructure shared by those binaries.
+One Go module builds the API, UW importer, email worker, and Slack data bot. `common/` provides infrastructure shared by those binaries.
 
 ## Directory map
 
@@ -11,6 +11,7 @@ One Go module builds the API, UW importer, and email worker. `common/` provides 
 | `api/` | Chi routes, auth, parsing, calendar/data endpoints, middleware, and response adapters |
 | `importer/uw/` | UW API client, schedule, conversion, staging, merge, and vacuum jobs |
 | `email/` | Queue processing, rendering, and SMTP delivery |
+| `slackbot/` | Slack Socket Mode bot that answers data questions with Claude and read-only SQL; see its README |
 | `common/db/` | Context-aware pgx pool and transaction wrappers |
 | `common/env/` | Environment loading shared across binaries |
 | `common/state/` | Process-level immutable/concurrency-safe dependencies |

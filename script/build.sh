@@ -16,8 +16,8 @@ fi
 # Reject invalid input before starting any builds.
 for target in "$@"; do
     case "$target" in
-        api|email|uw|frontend) ;;
-        *) echo "Unknown build target: $target (use api, email, uw, frontend)" >&2; exit 2 ;;
+        api|email|uw|frontend|slackbot) ;;
+        *) echo "Unknown build target: $target (use api, email, uw, frontend, slackbot)" >&2; exit 2 ;;
     esac
 done
 

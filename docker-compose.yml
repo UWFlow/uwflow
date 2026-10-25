@@ -62,6 +62,19 @@ services:
     env_file: .env
     image: neuwflow/email:${UWFLOW_IMAGE_TAG:-latest}
     restart: always
+  slackbot:
+    container_name: slackbot
+    depends_on:
+      - postgres
+    env_file: .env
+    environment:
+      # Slack, Anthropic, and database role credentials; see flow/slackbot/README.md.
+      SLACKBOT_SECRET_ID: ${SLACKBOT_SECRET_ID:-uwflow/slackbot}
+      AWS_REGION: ${SLACKBOT_AWS_REGION:-us-east-2}
+    image: neuwflow/slackbot:${UWFLOW_IMAGE_TAG:-latest}
+    # Opt-in: only started when named, so local setups need no Slack secrets.
+    profiles: [slackbot]
+    restart: always
 volumes:
   postgres:
     name: backend_postgres
