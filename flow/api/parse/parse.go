@@ -3,16 +3,21 @@ package parse
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
+	"flow/api/parse/anonymous"
 	"flow/api/parse/pdf"
 	"flow/api/parse/schedule"
 	"flow/api/parse/transcript"
 	"flow/api/serde"
 	"flow/common/db"
 	"flow/common/util"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/jackc/pgx/v5"
 )
 
 type transcriptResponse struct {
@@ -73,7 +78,51 @@ func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transc
 	return &response, nil
 }
 
-func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
+const selectContributedTermQuery = `
+SELECT last_term_id FROM user_grade_contribution WHERE user_id = $1
+`
+
+const upsertContributedTermQuery = `
+INSERT INTO user_grade_contribution(user_id, last_term_id) VALUES ($1, $2)
+ON CONFLICT (user_id) DO UPDATE SET last_term_id = EXCLUDED.last_term_id
+`
+
+// contributeGrades pools anonymized grades from terms this user has not yet
+// contributed. Only the latest contributed term is stored against the user;
+// the grades themselves are written later, mixed with other uploads.
+func contributeGrades(tx *db.Tx, pool *anonymous.Pool, summary *transcript.Summary, userId int) ([]anonymous.Record, error) {
+	var afterTermId int
+	err := tx.QueryRow(selectContributedTermQuery, userId).Scan(&afterTermId)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("reading contributed term: %w", err)
+	}
+
+	records, lastTermId := anonymous.Records(summary, afterTermId, anonymous.CryptoIntn)
+	if lastTermId == afterTermId {
+		return nil, nil
+	}
+
+	_, err = tx.Exec(upsertContributedTermQuery, userId, lastTermId)
+	if err != nil {
+		return nil, fmt.Errorf("writing contributed term: %w", err)
+	}
+	return pool.Add(records), nil
+}
+
+// shareDataField is the multipart form field set by the upload modal's
+// opt-in toggle. Anything other than "true" means the user did not opt in.
+const shareDataField = "share_anonymous_data"
+
+type TranscriptHandler struct {
+	conn *db.Conn
+	pool *anonymous.Pool
+}
+
+func NewTranscriptHandler(conn *db.Conn) *TranscriptHandler {
+	return &TranscriptHandler{conn: conn, pool: anonymous.NewPool(anonymous.CryptoIntn)}
+}
+
+func (h *TranscriptHandler) Handle(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("extracting user id: %w", err))
@@ -92,9 +141,18 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting to text: %w", err))
 	}
 
+	// Both anonymous grade collection and failure reports are opt-in.
+	optedIn := r.FormValue(shareDataField) == "true"
+
 	summary, err := transcript.Parse(text)
 	if err != nil {
+		if optedIn {
+			reportTranscriptFailure(sentry.CurrentHub().Client(), text, stageParse)
+		}
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
+	}
+	if optedIn && len(summary.TermSummaries) == 0 {
+		reportTranscriptFailure(sentry.CurrentHub().Client(), text, stageEmpty)
 	}
 
 	response, err := saveTranscript(tx, summary, userId)
@@ -102,7 +160,18 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	log.Printf("Imported transcript for user %d: %+v", userId, summary)
+	if optedIn {
+		batch, err := contributeGrades(tx, h.pool, summary, userId)
+		if err != nil {
+			return nil, err
+		}
+		if batch != nil {
+			go anonymous.Flush(h.conn, batch)
+		}
+	}
+
+	// Never log the summary: it contains the student number and grades.
+	log.Printf("Imported transcript for user %d: %d courses", userId, response.CoursesImported)
 	return response, nil
 }
 
