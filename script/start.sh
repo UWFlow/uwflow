@@ -7,7 +7,9 @@ DIR="$(dirname $(realpath $0))"
 
 # Bring backend environment variables into this script's scope
 cd "$BACKEND_DIR"
-export $(cat .env | xargs)
+set -a
+. ./.env
+set +a
 
 # Restart docker containers, rebuilding images as needed
 $PREFIX docker-compose down --remove-orphans
