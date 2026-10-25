@@ -1,0 +1,9 @@
+-- Course codes that UW has renamed, applied with `make course-renames`.
+--
+-- Add one line per rename as merge_course('<old code>', '<new code>'), using
+-- lowercase codes without spaces. The old code's row keeps its reviews and
+-- takes the new code; the old code stays searchable and its URL redirects.
+-- Each call does nothing once applied, so the whole file can be re-run.
+--
+-- Example:
+-- SELECT merge_course('cs135', 'cs145');

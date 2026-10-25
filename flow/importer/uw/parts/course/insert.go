@@ -22,13 +22,15 @@ WHERE course.code = delta.code
 AND NOT course.authoritative
 `
 
+// Former codes of renamed courses resolve through course_code_lookup,
+// so UW still listing an old code in past terms does not recreate it.
 const insertCourseQuery = `
 INSERT INTO course(code, name, description, prereqs, coreqs, antireqs)
 SELECT
   d.code, d.name, d.description, d.prereqs, d.coreqs, d.antireqs
 FROM work.course_delta d
-  LEFT JOIN course c ON c.code = d.code
-WHERE c.id IS NULL
+  LEFT JOIN course_code_lookup c ON c.code = d.code
+WHERE c.course_id IS NULL
 `
 
 func insertAllCourses(conn *db.Conn, courses []course) (*log.DbResult, error) {
@@ -97,10 +99,11 @@ WHERE course_id IN (SELECT course_id FROM work.course_prerequisite_delta)
 const insertPrereqQuery = `
 INSERT INTO course_prerequisite(course_id, prerequisite_id, is_corequisite)
 SELECT
-  c.id, p.id, d.is_coreq
+  c.course_id, p.course_id, d.is_coreq
 FROM work.course_prerequisite_delta d
-  JOIN course c ON c.code = d.course_code
-  JOIN course p ON p.code = d.prereq_code
+  JOIN course_code_lookup c ON c.code = d.course_code
+  JOIN course_code_lookup p ON p.code = d.prereq_code
+WHERE c.course_id != p.course_id
 ON CONFLICT (course_id, prerequisite_id) DO NOTHING
 `
 
@@ -166,10 +169,11 @@ WHERE course_id IN (SELECT course_id FROM work.course_antirequisite_delta)
 const insertAntireqQuery = `
 INSERT INTO course_antirequisite(course_id, antirequisite_id)
 SELECT
-  c.id, a.id
+  c.course_id, a.course_id
 FROM work.course_antirequisite_delta d
-  JOIN course c ON c.code = d.course_code
-  JOIN course a ON a.code = d.antireq_code
+  JOIN course_code_lookup c ON c.code = d.course_code
+  JOIN course_code_lookup a ON a.code = d.antireq_code
+WHERE c.course_id != a.course_id
 ON CONFLICT (course_id, antirequisite_id) DO NOTHING
 `
 
@@ -226,14 +230,14 @@ const truncateSectionQuery = `
 
 const updateSectionQuery = `
 UPDATE course_section SET
-  course_id = c.id,
+  course_id = c.course_id,
   section_name = delta.section_name,
   enrollment_capacity = delta.enrollment_capacity,
   enrollment_total = delta.enrollment_total,
   updated_at = delta.updated_at,
   is_online = delta.is_online
 FROM work.course_section_delta delta
-  JOIN course c ON c.code = delta.course_code
+  JOIN course_code_lookup c ON c.code = delta.course_code
 WHERE course_section.class_number = delta.class_number
   AND course_section.term_id = delta.term_id
 `
@@ -244,10 +248,10 @@ INSERT INTO course_section(
   enrollment_capacity, enrollment_total, updated_at, is_online
 )
 SELECT
-  d.class_number, c.id, d.section_name, d.term_id,
+  d.class_number, c.course_id, d.section_name, d.term_id,
   d.enrollment_capacity, d.enrollment_total, d.updated_at, d.is_online
 FROM work.course_section_delta d
-  JOIN course c ON c.code = d.course_code
+  JOIN course_code_lookup c ON c.code = d.course_code
   LEFT JOIN course_section cs
    ON cs.class_number = d.class_number
   AND cs.term_id = d.term_id

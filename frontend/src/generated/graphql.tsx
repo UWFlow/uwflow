@@ -1950,6 +1950,10 @@ export type Bigint_Comparison_Exp = {
 /** columns and relationships of "course" */
 export type Course = {
   __typename?: 'course';
+  /** An array relationship */
+  aliases: Array<Course_Alias>;
+  /** An aggregate relationship */
+  aliases_aggregate: Course_Alias_Aggregate;
   antireqs?: Maybe<Scalars['String']['output']>;
   /** An array relationship */
   antirequisites: Array<Course_Antirequisite>;
@@ -1992,6 +1996,24 @@ export type Course = {
   sections: Array<Course_Section>;
   /** An aggregate relationship */
   sections_aggregate: Course_Section_Aggregate;
+};
+
+/** columns and relationships of "course" */
+export type CourseAliasesArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+/** columns and relationships of "course" */
+export type CourseAliases_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
 };
 
 /** columns and relationships of "course" */
@@ -2169,6 +2191,306 @@ export type Course_Aggregate_Fields = {
 export type Course_Aggregate_FieldsCountArgs = {
   columns?: InputMaybe<Array<Course_Select_Column>>;
   distinct?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** columns and relationships of "course_alias" */
+export type Course_Alias = {
+  __typename?: 'course_alias';
+  code: Scalars['String']['output'];
+  /** An object relationship */
+  course: Course;
+  course_id: Scalars['Int']['output'];
+  created_at: Scalars['timestamptz']['output'];
+};
+
+/** aggregated selection of "course_alias" */
+export type Course_Alias_Aggregate = {
+  __typename?: 'course_alias_aggregate';
+  aggregate?: Maybe<Course_Alias_Aggregate_Fields>;
+  nodes: Array<Course_Alias>;
+};
+
+export type Course_Alias_Aggregate_Bool_Exp = {
+  count?: InputMaybe<Course_Alias_Aggregate_Bool_Exp_Count>;
+};
+
+export type Course_Alias_Aggregate_Bool_Exp_Count = {
+  arguments?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+  filter?: InputMaybe<Course_Alias_Bool_Exp>;
+  predicate: Int_Comparison_Exp;
+};
+
+/** aggregate fields of "course_alias" */
+export type Course_Alias_Aggregate_Fields = {
+  __typename?: 'course_alias_aggregate_fields';
+  avg?: Maybe<Course_Alias_Avg_Fields>;
+  count: Scalars['Int']['output'];
+  max?: Maybe<Course_Alias_Max_Fields>;
+  min?: Maybe<Course_Alias_Min_Fields>;
+  stddev?: Maybe<Course_Alias_Stddev_Fields>;
+  stddev_pop?: Maybe<Course_Alias_Stddev_Pop_Fields>;
+  stddev_samp?: Maybe<Course_Alias_Stddev_Samp_Fields>;
+  sum?: Maybe<Course_Alias_Sum_Fields>;
+  var_pop?: Maybe<Course_Alias_Var_Pop_Fields>;
+  var_samp?: Maybe<Course_Alias_Var_Samp_Fields>;
+  variance?: Maybe<Course_Alias_Variance_Fields>;
+};
+
+/** aggregate fields of "course_alias" */
+export type Course_Alias_Aggregate_FieldsCountArgs = {
+  columns?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  distinct?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** order by aggregate values of table "course_alias" */
+export type Course_Alias_Aggregate_Order_By = {
+  avg?: InputMaybe<Course_Alias_Avg_Order_By>;
+  count?: InputMaybe<Order_By>;
+  max?: InputMaybe<Course_Alias_Max_Order_By>;
+  min?: InputMaybe<Course_Alias_Min_Order_By>;
+  stddev?: InputMaybe<Course_Alias_Stddev_Order_By>;
+  stddev_pop?: InputMaybe<Course_Alias_Stddev_Pop_Order_By>;
+  stddev_samp?: InputMaybe<Course_Alias_Stddev_Samp_Order_By>;
+  sum?: InputMaybe<Course_Alias_Sum_Order_By>;
+  var_pop?: InputMaybe<Course_Alias_Var_Pop_Order_By>;
+  var_samp?: InputMaybe<Course_Alias_Var_Samp_Order_By>;
+  variance?: InputMaybe<Course_Alias_Variance_Order_By>;
+};
+
+/** input type for inserting array relation for remote table "course_alias" */
+export type Course_Alias_Arr_Rel_Insert_Input = {
+  data: Array<Course_Alias_Insert_Input>;
+  /** upsert condition */
+  on_conflict?: InputMaybe<Course_Alias_On_Conflict>;
+};
+
+/** aggregate avg on columns */
+export type Course_Alias_Avg_Fields = {
+  __typename?: 'course_alias_avg_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by avg() on columns of table "course_alias" */
+export type Course_Alias_Avg_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** Boolean expression to filter rows from the table "course_alias". All fields are combined with a logical 'AND'. */
+export type Course_Alias_Bool_Exp = {
+  _and?: InputMaybe<Array<Course_Alias_Bool_Exp>>;
+  _not?: InputMaybe<Course_Alias_Bool_Exp>;
+  _or?: InputMaybe<Array<Course_Alias_Bool_Exp>>;
+  code?: InputMaybe<String_Comparison_Exp>;
+  course?: InputMaybe<Course_Bool_Exp>;
+  course_id?: InputMaybe<Int_Comparison_Exp>;
+  created_at?: InputMaybe<Timestamptz_Comparison_Exp>;
+};
+
+/** unique or primary key constraints on table "course_alias" */
+export enum Course_Alias_Constraint {
+  /** unique or primary key constraint on columns "code" */
+  CourseAliasPkey = 'course_alias_pkey',
+}
+
+/** input type for incrementing numeric columns in table "course_alias" */
+export type Course_Alias_Inc_Input = {
+  course_id?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** input type for inserting data into table "course_alias" */
+export type Course_Alias_Insert_Input = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  course?: InputMaybe<Course_Obj_Rel_Insert_Input>;
+  course_id?: InputMaybe<Scalars['Int']['input']>;
+  created_at?: InputMaybe<Scalars['timestamptz']['input']>;
+};
+
+/** aggregate max on columns */
+export type Course_Alias_Max_Fields = {
+  __typename?: 'course_alias_max_fields';
+  code?: Maybe<Scalars['String']['output']>;
+  course_id?: Maybe<Scalars['Int']['output']>;
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+};
+
+/** order by max() on columns of table "course_alias" */
+export type Course_Alias_Max_Order_By = {
+  code?: InputMaybe<Order_By>;
+  course_id?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+};
+
+/** aggregate min on columns */
+export type Course_Alias_Min_Fields = {
+  __typename?: 'course_alias_min_fields';
+  code?: Maybe<Scalars['String']['output']>;
+  course_id?: Maybe<Scalars['Int']['output']>;
+  created_at?: Maybe<Scalars['timestamptz']['output']>;
+};
+
+/** order by min() on columns of table "course_alias" */
+export type Course_Alias_Min_Order_By = {
+  code?: InputMaybe<Order_By>;
+  course_id?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+};
+
+/** response of any mutation on the table "course_alias" */
+export type Course_Alias_Mutation_Response = {
+  __typename?: 'course_alias_mutation_response';
+  /** number of rows affected by the mutation */
+  affected_rows: Scalars['Int']['output'];
+  /** data from the rows affected by the mutation */
+  returning: Array<Course_Alias>;
+};
+
+/** on_conflict condition type for table "course_alias" */
+export type Course_Alias_On_Conflict = {
+  constraint: Course_Alias_Constraint;
+  update_columns?: Array<Course_Alias_Update_Column>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+/** Ordering options when selecting data from "course_alias". */
+export type Course_Alias_Order_By = {
+  code?: InputMaybe<Order_By>;
+  course?: InputMaybe<Course_Order_By>;
+  course_id?: InputMaybe<Order_By>;
+  created_at?: InputMaybe<Order_By>;
+};
+
+/** primary key columns input for table: course_alias */
+export type Course_Alias_Pk_Columns_Input = {
+  code: Scalars['String']['input'];
+};
+
+/** select columns of table "course_alias" */
+export enum Course_Alias_Select_Column {
+  /** column name */
+  Code = 'code',
+  /** column name */
+  CourseId = 'course_id',
+  /** column name */
+  CreatedAt = 'created_at',
+}
+
+/** input type for updating data in table "course_alias" */
+export type Course_Alias_Set_Input = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  course_id?: InputMaybe<Scalars['Int']['input']>;
+  created_at?: InputMaybe<Scalars['timestamptz']['input']>;
+};
+
+/** aggregate stddev on columns */
+export type Course_Alias_Stddev_Fields = {
+  __typename?: 'course_alias_stddev_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev() on columns of table "course_alias" */
+export type Course_Alias_Stddev_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** aggregate stddev_pop on columns */
+export type Course_Alias_Stddev_Pop_Fields = {
+  __typename?: 'course_alias_stddev_pop_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev_pop() on columns of table "course_alias" */
+export type Course_Alias_Stddev_Pop_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** aggregate stddev_samp on columns */
+export type Course_Alias_Stddev_Samp_Fields = {
+  __typename?: 'course_alias_stddev_samp_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by stddev_samp() on columns of table "course_alias" */
+export type Course_Alias_Stddev_Samp_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** Streaming cursor of the table "course_alias" */
+export type Course_Alias_Stream_Cursor_Input = {
+  /** Stream column input with initial value */
+  initial_value: Course_Alias_Stream_Cursor_Value_Input;
+  /** cursor ordering */
+  ordering?: InputMaybe<Cursor_Ordering>;
+};
+
+/** Initial value of the column from where the streaming should start */
+export type Course_Alias_Stream_Cursor_Value_Input = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  course_id?: InputMaybe<Scalars['Int']['input']>;
+  created_at?: InputMaybe<Scalars['timestamptz']['input']>;
+};
+
+/** aggregate sum on columns */
+export type Course_Alias_Sum_Fields = {
+  __typename?: 'course_alias_sum_fields';
+  course_id?: Maybe<Scalars['Int']['output']>;
+};
+
+/** order by sum() on columns of table "course_alias" */
+export type Course_Alias_Sum_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** update columns of table "course_alias" */
+export enum Course_Alias_Update_Column {
+  /** column name */
+  Code = 'code',
+  /** column name */
+  CourseId = 'course_id',
+  /** column name */
+  CreatedAt = 'created_at',
+}
+
+export type Course_Alias_Updates = {
+  /** increments the numeric columns with given value of the filtered values */
+  _inc?: InputMaybe<Course_Alias_Inc_Input>;
+  /** sets the columns of the filtered rows to the given values */
+  _set?: InputMaybe<Course_Alias_Set_Input>;
+  /** filter the rows which have to be updated */
+  where: Course_Alias_Bool_Exp;
+};
+
+/** aggregate var_pop on columns */
+export type Course_Alias_Var_Pop_Fields = {
+  __typename?: 'course_alias_var_pop_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by var_pop() on columns of table "course_alias" */
+export type Course_Alias_Var_Pop_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** aggregate var_samp on columns */
+export type Course_Alias_Var_Samp_Fields = {
+  __typename?: 'course_alias_var_samp_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by var_samp() on columns of table "course_alias" */
+export type Course_Alias_Var_Samp_Order_By = {
+  course_id?: InputMaybe<Order_By>;
+};
+
+/** aggregate variance on columns */
+export type Course_Alias_Variance_Fields = {
+  __typename?: 'course_alias_variance_fields';
+  course_id?: Maybe<Scalars['Float']['output']>;
+};
+
+/** order by variance() on columns of table "course_alias" */
+export type Course_Alias_Variance_Order_By = {
+  course_id?: InputMaybe<Order_By>;
 };
 
 /** columns and relationships of "course_antirequisite" */
@@ -2485,6 +2807,8 @@ export type Course_Bool_Exp = {
   _and?: InputMaybe<Array<Course_Bool_Exp>>;
   _not?: InputMaybe<Course_Bool_Exp>;
   _or?: InputMaybe<Array<Course_Bool_Exp>>;
+  aliases?: InputMaybe<Course_Alias_Bool_Exp>;
+  aliases_aggregate?: InputMaybe<Course_Alias_Aggregate_Bool_Exp>;
   antireqs?: InputMaybe<String_Comparison_Exp>;
   antirequisites?: InputMaybe<Course_Antirequisite_Bool_Exp>;
   antirequisites_aggregate?: InputMaybe<Course_Antirequisite_Aggregate_Bool_Exp>;
@@ -2527,6 +2851,7 @@ export type Course_Inc_Input = {
 
 /** input type for inserting data into table "course" */
 export type Course_Insert_Input = {
+  aliases?: InputMaybe<Course_Alias_Arr_Rel_Insert_Input>;
   antireqs?: InputMaybe<Scalars['String']['input']>;
   antirequisites?: InputMaybe<Course_Antirequisite_Arr_Rel_Insert_Input>;
   authoritative?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2595,6 +2920,7 @@ export type Course_On_Conflict = {
 
 /** Ordering options when selecting data from "course". */
 export type Course_Order_By = {
+  aliases_aggregate?: InputMaybe<Course_Alias_Aggregate_Order_By>;
   antireqs?: InputMaybe<Order_By>;
   antirequisites_aggregate?: InputMaybe<Course_Antirequisite_Aggregate_Order_By>;
   authoritative?: InputMaybe<Order_By>;
@@ -3572,6 +3898,7 @@ export type Course_Review_Upvote_Variance_Order_By = {
 /** columns and relationships of "course_search_index" */
 export type Course_Search_Index = {
   __typename?: 'course_search_index';
+  aliases?: Maybe<Scalars['_text']['output']>;
   code?: Maybe<Scalars['String']['output']>;
   course_id?: Maybe<Scalars['Int']['output']>;
   course_letters?: Maybe<Scalars['String']['output']>;
@@ -3632,6 +3959,7 @@ export type Course_Search_Index_Bool_Exp = {
   _and?: InputMaybe<Array<Course_Search_Index_Bool_Exp>>;
   _not?: InputMaybe<Course_Search_Index_Bool_Exp>;
   _or?: InputMaybe<Array<Course_Search_Index_Bool_Exp>>;
+  aliases?: InputMaybe<_Text_Comparison_Exp>;
   code?: InputMaybe<String_Comparison_Exp>;
   course_id?: InputMaybe<Int_Comparison_Exp>;
   course_letters?: InputMaybe<String_Comparison_Exp>;
@@ -3676,6 +4004,7 @@ export type Course_Search_Index_Min_Fields = {
 
 /** Ordering options when selecting data from "course_search_index". */
 export type Course_Search_Index_Order_By = {
+  aliases?: InputMaybe<Order_By>;
   code?: InputMaybe<Order_By>;
   course_id?: InputMaybe<Order_By>;
   course_letters?: InputMaybe<Order_By>;
@@ -3694,6 +4023,8 @@ export type Course_Search_Index_Order_By = {
 
 /** select columns of table "course_search_index" */
 export enum Course_Search_Index_Select_Column {
+  /** column name */
+  Aliases = 'aliases',
   /** column name */
   Code = 'code',
   /** column name */
@@ -3764,6 +4095,7 @@ export type Course_Search_Index_Stream_Cursor_Input = {
 
 /** Initial value of the column from where the streaming should start */
 export type Course_Search_Index_Stream_Cursor_Value_Input = {
+  aliases?: InputMaybe<Scalars['_text']['input']>;
   code?: InputMaybe<Scalars['String']['input']>;
   course_id?: InputMaybe<Scalars['Int']['input']>;
   course_letters?: InputMaybe<Scalars['String']['input']>;
@@ -4536,6 +4868,10 @@ export type Mutation_Root = {
   __typename?: 'mutation_root';
   /** delete data from the table: "course" */
   delete_course?: Maybe<Course_Mutation_Response>;
+  /** delete data from the table: "course_alias" */
+  delete_course_alias?: Maybe<Course_Alias_Mutation_Response>;
+  /** delete single row from the table: "course_alias" */
+  delete_course_alias_by_pk?: Maybe<Course_Alias>;
   /** delete data from the table: "course_antirequisite" */
   delete_course_antirequisite?: Maybe<Course_Antirequisite_Mutation_Response>;
   /** delete single row from the table: "course" */
@@ -4594,6 +4930,10 @@ export type Mutation_Root = {
   delete_user_shortlist?: Maybe<User_Shortlist_Mutation_Response>;
   /** insert data into the table: "course" */
   insert_course?: Maybe<Course_Mutation_Response>;
+  /** insert data into the table: "course_alias" */
+  insert_course_alias?: Maybe<Course_Alias_Mutation_Response>;
+  /** insert a single row into the table: "course_alias" */
+  insert_course_alias_one?: Maybe<Course_Alias>;
   /** insert data into the table: "course_antirequisite" */
   insert_course_antirequisite?: Maybe<Course_Antirequisite_Mutation_Response>;
   /** insert a single row into the table: "course_antirequisite" */
@@ -4674,6 +5014,14 @@ export type Mutation_Root = {
   insert_user_shortlist_one?: Maybe<User_Shortlist>;
   /** update data of the table: "course" */
   update_course?: Maybe<Course_Mutation_Response>;
+  /** update data of the table: "course_alias" */
+  update_course_alias?: Maybe<Course_Alias_Mutation_Response>;
+  /** update single row of the table: "course_alias" */
+  update_course_alias_by_pk?: Maybe<Course_Alias>;
+  /** update multiples rows of table: "course_alias" */
+  update_course_alias_many?: Maybe<
+    Array<Maybe<Course_Alias_Mutation_Response>>
+  >;
   /** update data of the table: "course_antirequisite" */
   update_course_antirequisite?: Maybe<Course_Antirequisite_Mutation_Response>;
   /** update multiples rows of table: "course_antirequisite" */
@@ -4807,6 +5155,16 @@ export type Mutation_Root = {
 /** mutation root */
 export type Mutation_RootDelete_CourseArgs = {
   where: Course_Bool_Exp;
+};
+
+/** mutation root */
+export type Mutation_RootDelete_Course_AliasArgs = {
+  where: Course_Alias_Bool_Exp;
+};
+
+/** mutation root */
+export type Mutation_RootDelete_Course_Alias_By_PkArgs = {
+  code: Scalars['String']['input'];
 };
 
 /** mutation root */
@@ -4955,6 +5313,18 @@ export type Mutation_RootDelete_User_ShortlistArgs = {
 export type Mutation_RootInsert_CourseArgs = {
   objects: Array<Course_Insert_Input>;
   on_conflict?: InputMaybe<Course_On_Conflict>;
+};
+
+/** mutation root */
+export type Mutation_RootInsert_Course_AliasArgs = {
+  objects: Array<Course_Alias_Insert_Input>;
+  on_conflict?: InputMaybe<Course_Alias_On_Conflict>;
+};
+
+/** mutation root */
+export type Mutation_RootInsert_Course_Alias_OneArgs = {
+  object: Course_Alias_Insert_Input;
+  on_conflict?: InputMaybe<Course_Alias_On_Conflict>;
 };
 
 /** mutation root */
@@ -5190,6 +5560,25 @@ export type Mutation_RootUpdate_CourseArgs = {
   _inc?: InputMaybe<Course_Inc_Input>;
   _set?: InputMaybe<Course_Set_Input>;
   where: Course_Bool_Exp;
+};
+
+/** mutation root */
+export type Mutation_RootUpdate_Course_AliasArgs = {
+  _inc?: InputMaybe<Course_Alias_Inc_Input>;
+  _set?: InputMaybe<Course_Alias_Set_Input>;
+  where: Course_Alias_Bool_Exp;
+};
+
+/** mutation root */
+export type Mutation_RootUpdate_Course_Alias_By_PkArgs = {
+  _inc?: InputMaybe<Course_Alias_Inc_Input>;
+  _set?: InputMaybe<Course_Alias_Set_Input>;
+  pk_columns: Course_Alias_Pk_Columns_Input;
+};
+
+/** mutation root */
+export type Mutation_RootUpdate_Course_Alias_ManyArgs = {
+  updates: Array<Course_Alias_Updates>;
 };
 
 /** mutation root */
@@ -6665,6 +7054,12 @@ export type Query_Root = {
   course: Array<Course>;
   /** fetch aggregated fields from the table: "course" */
   course_aggregate: Course_Aggregate;
+  /** fetch data from the table: "course_alias" */
+  course_alias: Array<Course_Alias>;
+  /** fetch aggregated fields from the table: "course_alias" */
+  course_alias_aggregate: Course_Alias_Aggregate;
+  /** fetch data from the table: "course_alias" using primary key columns */
+  course_alias_by_pk?: Maybe<Course_Alias>;
   /** fetch data from the table: "course_antirequisite" */
   course_antirequisite: Array<Course_Antirequisite>;
   /** fetch aggregated fields from the table: "course_antirequisite" */
@@ -6935,6 +7330,26 @@ export type Query_RootCourse_AggregateArgs = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   order_by?: InputMaybe<Array<Course_Order_By>>;
   where?: InputMaybe<Course_Bool_Exp>;
+};
+
+export type Query_RootCourse_AliasArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+export type Query_RootCourse_Alias_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+export type Query_RootCourse_Alias_By_PkArgs = {
+  code: Scalars['String']['input'];
 };
 
 export type Query_RootCourse_AntirequisiteArgs = {
@@ -9629,6 +10044,8 @@ export type Shared_Group_Bool_Exp = {
 
 /** unique or primary key constraints on table "shared_group" */
 export enum Shared_Group_Constraint {
+  /** unique or primary key constraint on columns "name", "created_by" */
+  SharedGroupCreatedByNameKey = 'shared_group_created_by_name_key',
   /** unique or primary key constraint on columns "id" */
   SharedGroupPkey = 'shared_group_pkey',
 }
@@ -10208,6 +10625,14 @@ export type Subscription_Root = {
   course: Array<Course>;
   /** fetch aggregated fields from the table: "course" */
   course_aggregate: Course_Aggregate;
+  /** fetch data from the table: "course_alias" */
+  course_alias: Array<Course_Alias>;
+  /** fetch aggregated fields from the table: "course_alias" */
+  course_alias_aggregate: Course_Alias_Aggregate;
+  /** fetch data from the table: "course_alias" using primary key columns */
+  course_alias_by_pk?: Maybe<Course_Alias>;
+  /** fetch data from the table in a streaming manner: "course_alias" */
+  course_alias_stream: Array<Course_Alias>;
   /** fetch data from the table: "course_antirequisite" */
   course_antirequisite: Array<Course_Antirequisite>;
   /** fetch aggregated fields from the table: "course_antirequisite" */
@@ -10578,6 +11003,32 @@ export type Subscription_RootCourse_AggregateArgs = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   order_by?: InputMaybe<Array<Course_Order_By>>;
   where?: InputMaybe<Course_Bool_Exp>;
+};
+
+export type Subscription_RootCourse_AliasArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+export type Subscription_RootCourse_Alias_AggregateArgs = {
+  distinct_on?: InputMaybe<Array<Course_Alias_Select_Column>>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  order_by?: InputMaybe<Array<Course_Alias_Order_By>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
+};
+
+export type Subscription_RootCourse_Alias_By_PkArgs = {
+  code: Scalars['String']['input'];
+};
+
+export type Subscription_RootCourse_Alias_StreamArgs = {
+  batch_size: Scalars['Int']['input'];
+  cursor: Array<InputMaybe<Course_Alias_Stream_Cursor_Input>>;
+  where?: InputMaybe<Course_Alias_Bool_Exp>;
 };
 
 export type Subscription_RootCourse_AntirequisiteArgs = {
@@ -12800,6 +13251,7 @@ export type CourseInfoFragment = {
   code: string;
   name: string;
   description: string | null;
+  aliases: Array<{ code: string }>;
   profs_teaching: Array<{
     prof: {
       id: number;
@@ -13270,6 +13722,7 @@ export type GetCourseQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
+  course_alias: Array<{ course: { code: string } }>;
 };
 
 export type GetCourseWithUserDataQueryVariables = Exact<{
@@ -13285,6 +13738,7 @@ export type GetCourseWithUserDataQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
+  course_alias: Array<{ course: { code: string } }>;
   user_shortlist: Array<{ course_id: number | null; user_id: number | null }>;
   user_course_taken: Array<{ term_id: number; course_id: number | null }>;
   queue_section_subscribed: Array<{ section_id: number; user_id: number }>;
@@ -13540,6 +13994,9 @@ export const CourseInfoFragmentDoc = gql`
     code
     name
     description
+    aliases {
+      code
+    }
     profs_teaching {
       prof {
         id
@@ -15040,6 +15497,11 @@ export const GetCourseDocument = gql`
       ...CourseRating
       ...CourseReviewDistribution
     }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        code
+      }
+    }
   }
   ${CourseInfoFragmentDoc}
   ${CourseScheduleFragmentDoc}
@@ -15136,6 +15598,11 @@ export const GetCourseWithUserDataDocument = gql`
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
+    }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        code
+      }
     }
     user_shortlist(
       where: { user_id: { _eq: $user_id }, course: { code: { _eq: $code } } }

@@ -13,6 +13,11 @@ export const GET_COURSE = gql`
       ...CourseRating
       ...CourseReviewDistribution
     }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        code
+      }
+    }
   }
   ${CourseFragment.courseInfo}
   ${CourseFragment.courseSchedule}
@@ -29,6 +34,11 @@ export const GET_COURSE_WITH_USER_DATA = gql`
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
+    }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        code
+      }
     }
     user_shortlist(
       where: { user_id: { _eq: $user_id }, course: { code: { _eq: $code } } }

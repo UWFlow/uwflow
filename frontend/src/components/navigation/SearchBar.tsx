@@ -271,7 +271,10 @@ const SearchBar = ({
           {highlightText(formatCourseCode(course.code.toUpperCase()))}
         </ColoredResultText>
         <Dash>&mdash;</Dash>
-        <EllipsisSpan>{highlightText(course.name, true)}</EllipsisSpan>
+        <EllipsisSpan>
+          {highlightText(course.name, true)}
+          {course.aliases && highlightText(` (formerly ${course.aliases})`)}
+        </EllipsisSpan>
       </ResultText>
       <Tooltip content={`Explore professors that teach ${course.code}`}>
         <ExploreSideButton
