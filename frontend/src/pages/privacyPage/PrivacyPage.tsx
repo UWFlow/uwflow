@@ -58,27 +58,28 @@ const PrivacyPage = () => (
         <PageBodyHeader>Transcripts</PageBodyHeader>
         <PageBodyParagraph>
           If you choose to upload a transcript, we store the courses you have
-          taken and your program on your account. We never store your GPA or
-          your marks on your account.
+          taken and your program on your account.
         </PageBodyParagraph>
         <PageBodyParagraph>
-          When you upload, you can choose to share your marks anonymously to
-          help us build course statistics. This is off unless you turn it on. If
-          you do, we keep an anonymous record of each mark: only the course,
-          term, and a range such as 80–89, which is randomly altered half of the
-          time before it is saved. These records contain no name, student
-          number, account, or time of upload, are mixed with records from other
-          students before being saved, and cannot be connected to each other or
-          to you. Because they cannot be traced back to you, they are not
-          removed when you delete your account.
+          When you upload, you can choose to also save your grades. This is off
+          unless you turn it on. If you do, we save to your account the grade
+          for each course, your term and cumulative GPA, and a copy of your
+          transcript with your name, student ID, and Ontario Education Number
+          blacked out. We black these out on our servers by turning each page
+          into an image, so the hidden text cannot be recovered, and we do not
+          keep the copy if we cannot confirm they were removed. We use your
+          saved grades to personalize recommendations for you, such as courses
+          or job opportunities. Only you can view them through your account, and
+          we do not share them with employers or other users. Uploading again
+          without this option, or deleting your account, removes them.
         </PageBodyParagraph>
         <PageBodyParagraph>
-          If you have chosen to share and we cannot read your transcript, we
-          send a redacted copy to our error monitoring service, Sentry, so we
-          can fix the problem. It keeps only the layout, terms, course codes,
-          program, and levels. Your grades, credits, GPA, averages, name,
-          student number, standing, and awards are removed on our servers before
-          it is sent, and it is not attached to your account.
+          If you have chosen to save your grades and we cannot read your
+          transcript, we send a redacted copy to our error monitoring service,
+          Sentry, so we can fix the problem. It keeps only the layout, terms,
+          course codes, program, and levels. Your grades, credits, GPA,
+          averages, name, student number, standing, and awards are removed on
+          our servers before it is sent, and it is not attached to your account.
         </PageBodyParagraph>
         <PageBodyHeader>Cookies and Web Beacons</PageBodyHeader>
         <PageBodyParagraph>

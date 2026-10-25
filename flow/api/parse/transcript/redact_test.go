@@ -100,6 +100,9 @@ func TestRedactFixtures(t *testing.T) {
 			}
 			want.StudentNumber = 0
 			for i := range want.TermSummaries {
+				// GPA lines are dropped from failure reports.
+				want.TermSummaries[i].TermGPA = ""
+				want.TermSummaries[i].CumulativeGPA = ""
 				for j, grade := range want.TermSummaries[i].Grades {
 					if grade != "" {
 						want.TermSummaries[i].Grades[j] = "GG"

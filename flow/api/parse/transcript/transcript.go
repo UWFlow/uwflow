@@ -19,6 +19,10 @@ type TermSummary struct {
 	// Grades[i] is the grade for Courses[i]: a mark like 87 or a code like CR.
 	// It is empty for courses that are still in progress.
 	Grades []string
+	// TermGPA and CumulativeGPA are percentages as printed, like 91.60.
+	// They are empty for terms that are still in progress.
+	TermGPA       string
+	CumulativeGPA string
 }
 
 type Summary struct {
@@ -37,8 +41,10 @@ var (
 	courseRegexp = regexp.MustCompile(`([A-Z]{2,})\x20{2,}(\d{1,3}\w*)\x20{2,}.*\n`)
 	creditRegexp = regexp.MustCompile(`\d.\d{2}`)
 	// Level may contain more than two letters or numbers.
-	levelRegexp     = regexp.MustCompile(`Level:\s+(\w{2,})`)
-	studentIdRegexp = regexp.MustCompile(`Student ID:\s+(\d+)`)
+	levelRegexp         = regexp.MustCompile(`Level:\s+(\w{2,})`)
+	studentIdRegexp     = regexp.MustCompile(`Student ID:\s+(\d+)`)
+	termGPARegexp       = regexp.MustCompile(`Term GPA\s+(\d+\.\d{2})`)
+	cumulativeGPARegexp = regexp.MustCompile(`Cumulative GPA\s+(\d+\.\d{2})`)
 	// Term names may show up in transcript comments which should be ignored.
 	// We only want terms that show up on their own line.
 	termRegexp = regexp.MustCompile(`(?m)^\s*(Fall|Winter|Spring)\s+(\d{4})\s*$`)
@@ -71,6 +77,15 @@ func extractGrade(courseLine string) string {
 	return grade
 }
 
+// findInSpan returns the first submatch of re within text[start:end], or "".
+func findInSpan(re *regexp.Regexp, text string, start, end int) string {
+	match := re.FindStringSubmatch(text[start:end])
+	if match == nil {
+		return ""
+	}
+	return match[1]
+}
+
 func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
 	terms := termRegexp.FindAllStringSubmatchIndex(text, -1)
@@ -89,6 +104,12 @@ func extractTermSummaries(text string) ([]TermSummary, error) {
 		}
 		history[i].TermId = term
 		history[i].Level = text[levels[i][2]:levels[i][3]]
+		end := len(text)
+		if i < len(terms)-1 {
+			end = terms[i+1][0]
+		}
+		history[i].TermGPA = findInSpan(termGPARegexp, text, terms[i][0], end)
+		history[i].CumulativeGPA = findInSpan(cumulativeGPARegexp, text, terms[i][0], end)
 		// Include courses that come before next term's heading
 		// except for the last term, which includes all remaining courses.
 		for ; j < len(courses) && (i == len(terms)-1 || courses[j][0] < terms[i+1][0]); j++ {

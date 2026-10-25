@@ -69,7 +69,7 @@ const TranscriptUploadModalContent = ({
   const [uploadState, setUploadState] =
     useState<DataUploadState>(AWAITING_UPLOAD);
   const [fileSizeError, setFileSizeError] = useState(false);
-  const [shareAnonymousData, setShareAnonymousData] = useState(false);
+  const [saveGrades, setSaveGrades] = useState(false);
 
   const handleTranscriptClick = () => {
     if (fileInputRef && fileInputRef.current) {
@@ -93,7 +93,7 @@ const TranscriptUploadModalContent = ({
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('share_anonymous_data', String(shareAnonymousData));
+    formData.append('save_grades', String(saveGrades));
     setUploadState(UPLOAD_PENDING);
     const [, status] = await makeAuthenticatedPOSTRequest<
       FormData,
@@ -218,7 +218,7 @@ const TranscriptUploadModalContent = ({
             </form>
             <TranscriptPrivacyPolicyWrapper>
               <PrivacyPolicyHeader>
-                We never save your grades to your account.
+                Your grades are only saved if you choose to.
               </PrivacyPolicyHeader>
               <PrivacyPolicyText>
                 {privacyText}
@@ -228,20 +228,22 @@ const TranscriptUploadModalContent = ({
                 for more information
               </PrivacyPolicyText>
               <label
-                htmlFor="share-anonymous-data"
+                htmlFor="save-grades"
                 className="mt-sm flex cursor-pointer items-start gap-sm text-sm text-dark2"
               >
                 <input
-                  id="share-anonymous-data"
+                  id="save-grades"
                   type="checkbox"
                   className="mt-xs cursor-pointer accent-primary"
-                  checked={shareAnonymousData}
-                  onChange={(e) => setShareAnonymousData(e.target.checked)}
+                  checked={saveGrades}
+                  onChange={(e) => setSaveGrades(e.target.checked)}
                 />
                 <span>
-                  Anonymously share my grades to help build course statistics.
-                  If my transcript can&apos;t be read, send a copy with grades,
-                  name, and student number removed so it can be fixed.
+                  Save my grades, GPA, and a copy of my transcript with my name
+                  and student number removed to my account, to personalize
+                  recommendations. Leave unchecked to remove grades saved
+                  before. If my transcript can&apos;t be read, send a copy with
+                  grades and identifiers removed so it can be fixed.
                 </span>
               </label>
             </TranscriptPrivacyPolicyWrapper>

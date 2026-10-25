@@ -1,0 +1,15 @@
+table:
+  name: user_term_gpa
+  schema: public
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - user_id
+        - term_id
+        - level
+        - term_gpa
+        - cumulative_gpa
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id

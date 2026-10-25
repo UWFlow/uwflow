@@ -78,7 +78,7 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 
 	router.Post(
 		"/parse/transcript",
-		serde.WithDbResponse(conn, parse.NewTranscriptHandler(conn).Handle, "transcript upload"),
+		serde.WithDbResponse(conn, parse.HandleTranscript, "transcript upload"),
 	)
 	router.Post(
 		"/parse/schedule",
