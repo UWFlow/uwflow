@@ -35,12 +35,11 @@ then
   warn ".env mentions 'localhost', but should likely reference Docker container"
 fi
 
-# Just source the file instead of awkward handrolled parsing
-. "$BACKEND_DIR/.env"
-
 # Bring backend environment variables into this script's scope
 cd "$BACKEND_DIR"
-export $(cat .env | xargs)
+set -a
+. ./.env
+set +a
 
 echo "============================================"
 echo "Setting up UWFlow for contributors"
