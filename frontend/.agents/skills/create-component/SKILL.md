@@ -9,9 +9,11 @@ Follow this when adding a new React component or changing existing UI.
 
 ## 1. File layout & conventions
 
-- Put components under `src/components/<feature>/ComponentName.tsx` (PascalCase
-  filename = component name).
-- Write a functional component with hooks and a `default export`.
+- Follow the ownership table in [React](../../../../styleguide/frontend/react.md).
+  Keep route-specific components under `src/pages/<feature>/` and shared
+  compositions under `src/components/<domain>/`.
+- Use functional components. Preserve feature export conventions; UI primitives
+  use named exports and existing lower-case filenames.
 - Type props with a TypeScript `interface` / `type`; avoid `any`.
 - Icons come from `react-feather` (e.g. `import { GitHub } from 'react-feather'`).
   In-app navigation uses `Link` from `react-router-dom`.

@@ -1,6 +1,6 @@
 # Style Guide
 
-> This is a legacy reference for existing styled-components code. For new or modified UI, `AGENTS.md` and `../styleguide/design-system-styleguide.md` are authoritative: use Tailwind and shared primitives, and do not add new styled-components.
+> Legacy reference for existing styled-components code. Follow the [design system guide](../../styleguide/frontend/design-system.md) for new and modified UI.
 
 ## Naming
 

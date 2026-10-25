@@ -23,3 +23,7 @@ __pycache__/
 .DS_Store
 .claude/settings.local.json
 .claude/worktrees/
+
+# Local review screenshots, browser state, and optional tooling dependencies
+/artifacts/
+/tools/browser/node_modules/
