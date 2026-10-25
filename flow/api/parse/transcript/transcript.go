@@ -16,6 +16,9 @@ type TermSummary struct {
 	Level string
 	// Course codes are similar to CS 145, STAT 920, PD 1, CHINA 120R.
 	Courses []string
+	// Grades[i] is the grade for Courses[i]: a mark like 87 or a code like CR.
+	// It is empty for courses that are still in progress.
+	Grades []string
 }
 
 type Summary struct {
@@ -54,6 +57,20 @@ func isTransferCredit(courseLine string) bool {
 	return len(matches) == 1
 }
 
+// extractGrade returns the last column of a past term courseLine,
+// or "" if the course has no grade yet.
+func extractGrade(courseLine string) string {
+	if len(creditRegexp.FindAllString(courseLine, -1)) != 2 {
+		return ""
+	}
+	fields := strings.Fields(courseLine)
+	grade := fields[len(fields)-1]
+	if creditRegexp.MatchString(grade) {
+		return ""
+	}
+	return grade
+}
+
 func extractTermSummaries(text string) ([]TermSummary, error) {
 	// Passing -1 means setting no upper limit on number of matches
 	terms := termRegexp.FindAllStringSubmatchIndex(text, -1)
@@ -77,7 +94,8 @@ func extractTermSummaries(text string) ([]TermSummary, error) {
 		for ; j < len(courses) && (i == len(terms)-1 || courses[j][0] < terms[i+1][0]); j++ {
 			// Some courses are transfer (AP/IB) credits.
 			// They were not taken at UW, so should not be imported.
-			if isTransferCredit(text[courses[j][0]:courses[j][1]]) {
+			courseLine := text[courses[j][0]:courses[j][1]]
+			if isTransferCredit(courseLine) {
 				continue
 			}
 			department := text[courses[j][2]:courses[j][3]]
@@ -86,6 +104,7 @@ func extractTermSummaries(text string) ([]TermSummary, error) {
 				history[i].Courses,
 				strings.ToLower(department+number),
 			)
+			history[i].Grades = append(history[i].Grades, extractGrade(courseLine))
 		}
 	}
 	return history, nil
