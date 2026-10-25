@@ -17,6 +17,7 @@ select_permissions:
         - name
         - has_prereqs
         - terms_with_online_sections
+        - aliases
       filter: {}
       allow_aggregations: true
   - role: user
@@ -33,6 +34,7 @@ select_permissions:
         - code
         - name
         - has_prereqs
-        - terms_with_online_sections 
+        - terms_with_online_sections
+        - aliases
       filter: {}
       allow_aggregations: true

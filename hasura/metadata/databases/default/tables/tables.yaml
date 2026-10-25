@@ -7,6 +7,7 @@
 - "!include aggregate_prof_rating.yaml"
 - "!include aggregate_prof_review_rating.yaml"
 - "!include public_course.yaml"
+- "!include public_course_alias.yaml"
 - "!include public_course_antirequisite.yaml"
 - "!include public_course_postrequisite.yaml"
 - "!include public_course_prerequisite.yaml"

@@ -30,7 +30,7 @@ WHERE term_id <= $1 AND user_id = $2
 
 const insertTranscriptQuery = `
 INSERT INTO user_course_taken(course_id, user_id, term_id, level)
-SELECT id, $2, $3, $4 FROM course WHERE code = $1
+SELECT course_id, $2, $3, $4 FROM course_code_lookup WHERE code = $1
 `
 
 func saveTranscript(tx *db.Tx, summary *transcript.Summary, userId int) (*transcriptResponse, error) {

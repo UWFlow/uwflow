@@ -7,6 +7,9 @@ const CourseFragment = {
       code
       name
       description
+      aliases {
+        code
+      }
       profs_teaching {
         prof {
           id
