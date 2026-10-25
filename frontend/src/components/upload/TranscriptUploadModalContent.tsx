@@ -49,8 +49,8 @@ import {
 } from './styles/DataUploadModals';
 
 const privacyText = `
-  Flow only uses your transcript so you can easily import your course
-  history and leave reviews for courses you have taken. See our`;
+  Flow uses your transcript so you can easily import your course history
+  and leave reviews for courses you have taken. See our`;
 
 export type TranscriptUploadModalContentProps = {
   onAfterUploadSuccess?: () => void;
@@ -69,6 +69,7 @@ const TranscriptUploadModalContent = ({
   const [uploadState, setUploadState] =
     useState<DataUploadState>(AWAITING_UPLOAD);
   const [fileSizeError, setFileSizeError] = useState(false);
+  const [shareAnonymousData, setShareAnonymousData] = useState(false);
 
   const handleTranscriptClick = () => {
     if (fileInputRef && fileInputRef.current) {
@@ -92,6 +93,7 @@ const TranscriptUploadModalContent = ({
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('share_anonymous_data', String(shareAnonymousData));
     setUploadState(UPLOAD_PENDING);
     const [, status] = await makeAuthenticatedPOSTRequest<
       FormData,
@@ -216,7 +218,7 @@ const TranscriptUploadModalContent = ({
             </form>
             <TranscriptPrivacyPolicyWrapper>
               <PrivacyPolicyHeader>
-                We do not store your grades.
+                We never save your grades to your account.
               </PrivacyPolicyHeader>
               <PrivacyPolicyText>
                 {privacyText}
@@ -225,6 +227,23 @@ const TranscriptUploadModalContent = ({
                 </PrivacyPolicyLink>
                 for more information
               </PrivacyPolicyText>
+              <label
+                htmlFor="share-anonymous-data"
+                className="mt-sm flex cursor-pointer items-start gap-sm text-sm text-dark2"
+              >
+                <input
+                  id="share-anonymous-data"
+                  type="checkbox"
+                  className="mt-xs cursor-pointer accent-primary"
+                  checked={shareAnonymousData}
+                  onChange={(e) => setShareAnonymousData(e.target.checked)}
+                />
+                <span>
+                  Anonymously share my grades to help build course statistics.
+                  If my transcript can&apos;t be read, send a copy with grades,
+                  name, and student number removed so it can be fixed.
+                </span>
+              </label>
             </TranscriptPrivacyPolicyWrapper>
           </ScheduleStep3Wrapper>
         </StepWrapper>

@@ -16,6 +16,7 @@ import (
 	"flow/common/db"
 	"flow/common/util"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -108,6 +109,10 @@ func contributeGrades(tx *db.Tx, pool *anonymous.Pool, summary *transcript.Summa
 	return pool.Add(records), nil
 }
 
+// shareDataField is the multipart form field set by the upload modal's
+// opt-in toggle. Anything other than "true" means the user did not opt in.
+const shareDataField = "share_anonymous_data"
+
 type TranscriptHandler struct {
 	conn *db.Conn
 	pool *anonymous.Pool
@@ -136,9 +141,18 @@ func (h *TranscriptHandler) Handle(tx *db.Tx, r *http.Request) (interface{}, err
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("converting to text: %w", err))
 	}
 
+	// Both anonymous grade collection and failure reports are opt-in.
+	optedIn := r.FormValue(shareDataField) == "true"
+
 	summary, err := transcript.Parse(text)
 	if err != nil {
+		if optedIn {
+			reportTranscriptFailure(sentry.CurrentHub().Client(), text, stageParse)
+		}
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
+	}
+	if optedIn && len(summary.TermSummaries) == 0 {
+		reportTranscriptFailure(sentry.CurrentHub().Client(), text, stageEmpty)
 	}
 
 	response, err := saveTranscript(tx, summary, userId)
@@ -146,12 +160,14 @@ func (h *TranscriptHandler) Handle(tx *db.Tx, r *http.Request) (interface{}, err
 		return nil, err
 	}
 
-	batch, err := contributeGrades(tx, h.pool, summary, userId)
-	if err != nil {
-		return nil, err
-	}
-	if batch != nil {
-		go anonymous.Flush(h.conn, batch)
+	if optedIn {
+		batch, err := contributeGrades(tx, h.pool, summary, userId)
+		if err != nil {
+			return nil, err
+		}
+		if batch != nil {
+			go anonymous.Flush(h.conn, batch)
+		}
 	}
 
 	// Never log the summary: it contains the student number and grades.
