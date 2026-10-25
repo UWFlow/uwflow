@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,23 +22,18 @@ type fbUserInfo struct {
 
 const (
 	baseFacebookUrl    = "https://graph.facebook.com"
-	facebookUserUrl    = baseFacebookUrl + "/me?fields=first_name,last_name,email&access_token=%s"
+	facebookUserUrl    = baseFacebookUrl + "/me?fields=first_name,last_name,email"
 	facebookPictureUrl = baseFacebookUrl + "/%s/picture?type=large"
 )
 
-func getFacebookUserInfo(accessToken string) (*fbUserInfo, error) {
-	url := fmt.Sprintf(facebookUserUrl, accessToken)
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("calling graph api: %w", err)
-	}
-	if response.StatusCode >= 400 {
-		return nil, fmt.Errorf("calling graph api: status: %d", response.StatusCode)
-	}
-	defer response.Body.Close()
-
+func getFacebookUserInfo(ctx context.Context, accessToken string) (*fbUserInfo, error) {
 	var fbUser fbUserInfo
-	json.NewDecoder(response.Body).Decode(&fbUser)
+	if err := fetchOAuthUser(ctx, facebookUserUrl, accessToken, &fbUser); err != nil {
+		return nil, err
+	}
+	if fbUser.FbId == "" {
+		return nil, fmt.Errorf("provider returned no user ID")
+	}
 	fbUser.PictureUrl = fmt.Sprintf(facebookPictureUrl, fbUser.FbId)
 	return &fbUser, nil
 }
@@ -72,8 +68,8 @@ FROM secret.user_fb uf
 WHERE uf.fb_id = $1
 `
 
-func loginFacebook(tx *db.Tx, accessToken string) (*authResponse, error) {
-	fbUser, err := getFacebookUserInfo(accessToken)
+func loginFacebook(ctx context.Context, tx *db.Tx, accessToken string) (*authResponse, error) {
+	fbUser, err := getFacebookUserInfo(ctx, accessToken)
 	if err != nil {
 		return nil, serde.WithStatus(http.StatusUnauthorized, fmt.Errorf("getting user info: %w", err))
 	}
@@ -123,5 +119,5 @@ func LoginFacebook(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("no access token"))
 	}
 
-	return loginFacebook(tx, body.AccessToken)
+	return loginFacebook(r.Context(), tx, body.AccessToken)
 }

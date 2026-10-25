@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	apienv "flow/api/env"
@@ -120,5 +121,59 @@ func TestAcceptEmailInviteRecipient(t *testing.T) {
 			_, err = accept(2, "0123456789abcdef0123456789abcdef")
 			assertStatus(err, http.StatusNotFound)
 		})
+	}
+}
+
+func TestInviteRequiresMailboxProof(t *testing.T) {
+	host := os.Getenv("TEST_POSTGRES_HOST")
+	if host == "" {
+		t.Skip("set TEST_POSTGRES_HOST to run PostgreSQL integration tests")
+	}
+	conn, err := db.ConnectPool(context.Background(), &commonenv.Environment{PostgresHost: host, PostgresPort: "5432", PostgresUser: "postgres", PostgresDatabase: "postgres"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := conn.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+ CREATE TEMP TABLE "user" (id integer PRIMARY KEY, email text) ON COMMIT DROP;
+ CREATE TEMP TABLE shared_group (id integer PRIMARY KEY, name text, created_by integer) ON COMMIT DROP;
+ CREATE TEMP TABLE shared_group_member (group_id integer,user_id integer,status text,PRIMARY KEY(group_id,user_id)) ON COMMIT DROP;
+ CREATE TEMP TABLE shared_group_invite (group_id integer,invited_email text,invited_by integer,UNIQUE(group_id,invited_email)) ON COMMIT DROP;
+ INSERT INTO "user" VALUES(1,'owner@example.com'),(2,'victim@example.com');
+ INSERT INTO shared_group VALUES(9,'Test group',1);
+ INSERT INTO shared_group_member VALUES(9,1,'member');`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := apienv.Global.JwtKey
+	apienv.Global.JwtKey = []byte("test-invite-signing-key")
+	defer func() { apienv.Global.JwtKey = old }()
+	token, err := serde.NewSignedJwt(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		r := httptest.NewRequest("POST", "/group/9/invite", strings.NewReader(`{"email":"Victim@Example.com"}`))
+		r.Header.Set("Authorization", "Bearer "+token)
+		route := chi.NewRouteContext()
+		route.URLParams.Add("id", "9")
+		r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, route))
+		if _, err := Invite(tx, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var members, invites int
+	if err := tx.QueryRow(`SELECT count(*) FROM shared_group_member WHERE user_id=2`).Scan(&members); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.QueryRow(`SELECT count(*) FROM shared_group_invite WHERE invited_email='victim@example.com'`).Scan(&invites); err != nil {
+		t.Fatal(err)
+	}
+	if members != 0 || invites != 1 {
+		t.Fatalf("unverified account received membership: members=%d email invites=%d", members, invites)
 	}
 }

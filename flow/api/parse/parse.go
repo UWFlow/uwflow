@@ -102,7 +102,7 @@ func HandleTranscript(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	log.Printf("Imported transcript for user %d: %+v", userId, summary)
+	log.Printf("Imported transcript for user %d", userId)
 	return response, nil
 }
 
@@ -215,6 +215,6 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, fmt.Errorf("saving: %w", err)
 	}
 
-	log.Printf("Imported schedule for user %d: %+v", userId, summary)
+	log.Printf("Imported schedule for user %d", userId)
 	return response, nil
 }
