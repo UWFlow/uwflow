@@ -5,7 +5,9 @@ DIR="$(dirname $(realpath $0))"
 
 # Bring backend environment variables into this script's scope
 cd "$BACKEND_DIR"
-export $(cat .env | xargs)
+set -a
+. ./.env
+set +a
 
 echo "============================================"
 echo "Adding dummy professor data"

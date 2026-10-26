@@ -18,10 +18,10 @@ One Go module builds the API, UW importer, and email worker. `common/` provides 
 
 ## For AI agents
 
-- Read `../styleguide/backend-styleguide.md` before changing Go behavior.
+- Read `../styleguide/backend/go.md` before changing Go behavior.
 - Keep feature policy out of `common/`; shared code must serve more than one binary and remain policy-neutral.
 - Adding a field to the shared environment affects every consumer. Update `.env.sample` and compose configuration together.
 - `api/parse/pdf/pdftotext.cc` is a native CGO bridge with Poppler build/runtime requirements. Verify changes in Docker.
 - Run commands from this directory: `gofmt` changed files, focused `go test`, then `go test ./...` and `go build ./...`.
 
-<!-- MANUAL: Add durable package-specific notes below this line. -->
+Review changes with [backend review](../styleguide/backend/review.md).

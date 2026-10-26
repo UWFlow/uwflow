@@ -272,9 +272,8 @@ func attachMeetings(tx *db.Tx, sectionIds []int, byId map[int]*sharedClass) erro
 	return rows.Err()
 }
 
-// Invite resolves an email to Flow accounts server-side and adds pending
-// memberships for any matches. The response is always "sent" so the endpoint
-// cannot be used to probe which emails have accounts.
+// Invite always requires proof of mailbox access, even for existing accounts.
+// Profile email addresses are editable and are not proof of identity.
 func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {
@@ -303,50 +302,28 @@ func Invite(tx *db.Tx, r *http.Request) (interface{}, error) {
 		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("enter a valid email"))
 	}
 
-	// A pending shared_group_member row is the invite for an existing account.
-	// user.email is not unique, so invite every matching account instead of
-	// choosing one arbitrarily. If there is no account yet, retain the address
-	// in shared_group_invite so the mail service can invite them to sign up.
-	// Both paths return the same response to prevent account enumeration.
 	if _, err := tx.Exec(
 		`SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, email,
 	); err != nil {
 		return nil, fmt.Errorf("locking invited email: %w", err)
 	}
 	_, err = tx.Exec(`
-		WITH matching_accounts AS MATERIALIZED (
-			SELECT id FROM "user" WHERE LOWER(email) = $2
-		), added_members AS (
-			INSERT INTO shared_group_member (group_id, user_id, status)
-			SELECT $1, a.id, 'pending'
-			FROM matching_accounts a
-			WHERE (
-				SELECT COUNT(*) FROM shared_group_member m
-				WHERE m.user_id = a.id AND m.status = 'pending'
-			) < 20
-			ON CONFLICT (group_id, user_id) DO NOTHING
-		), removed_mail_invite AS (
-			DELETE FROM shared_group_invite
-			WHERE group_id = $1 AND invited_email = $2
-				AND EXISTS (SELECT 1 FROM matching_accounts)
-		)
 		INSERT INTO shared_group_invite (group_id, invited_email, invited_by)
 		SELECT $1, $2, $3
-		WHERE NOT EXISTS (SELECT 1 FROM matching_accounts)
-			AND (
+		WHERE (
 				SELECT COUNT(*) FROM shared_group_invite i
 				WHERE i.invited_email = $2
 			) < 20
 		ON CONFLICT (group_id, invited_email) DO NOTHING
 	`, gid, email, userId)
 	if err != nil {
-		return nil, fmt.Errorf("adding pending member: %w", err)
+		return nil, fmt.Errorf("queueing group invitation: %w", err)
 	}
 	return map[string]interface{}{"status": "sent"}, nil
 }
 
-// AcceptEmailInvite consumes the bearer secret sent to an address without an
-// account and makes the authenticated recipient a confirmed group member.
+// AcceptEmailInvite consumes the emailed bearer secret and makes the
+// authenticated recipient a confirmed group member.
 func AcceptEmailInvite(tx *db.Tx, r *http.Request) (interface{}, error) {
 	userId, err := serde.UserIdFromRequest(r)
 	if err != nil {

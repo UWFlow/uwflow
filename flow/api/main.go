@@ -35,7 +35,7 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		// Responses are typically JSON, with the notable exception of webcal.
 		// We set the most common type here and override it as necessary.
 		chi_middleware.SetHeader("Content-Type", "application/json"),
-		chi_middleware.Logger,
+		middleware.Request,
 		chi_middleware.Recoverer,
 		chi_middleware.RequestID,
 		chi_middleware.Timeout(10*time.Second),
@@ -137,7 +137,13 @@ func main() {
 	router := setupRouter(conn)
 	socket := ":" + env.Global.ApiPort
 
-	err = http.ListenAndServe(socket, router)
+	server := &http.Server{
+		Addr: socket, Handler: router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	err = server.ListenAndServe()
 	// The server is not expected to return: report this as a fatal event.
 	// log.Fatalf calls os.Exit, which skips deferred calls, so flush here
 	// synchronously rather than deferring it.
