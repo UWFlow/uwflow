@@ -1,4 +1,4 @@
-.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum migrate test build-test docker-build-test logs clean
+.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum course-renames migrate test build-test docker-build-test logs clean
 
 # Frontend-only commands must not load backend credentials.
 .DEFAULT_GOAL := help
@@ -55,6 +55,11 @@ import-vacuum: ## Run UW importer vacuum job (rebuilds importer service)
 	@$(DOCKER_COMPOSE) up -d --build uw
 	@docker exec uw /app/uw vacuum
 	@echo "Vacuum complete!"
+
+course-renames: ## Apply maintainer-declared course renames in hasura/course_renames.sql
+	@echo "Applying course renames..."
+	@docker exec -i postgres psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -p $(POSTGRES_PORT) < hasura/course_renames.sql
+	@echo "Course renames applied!"
 
 migrate: ## Apply Hasura migrations
 	@echo "Applying Hasura migrations..."

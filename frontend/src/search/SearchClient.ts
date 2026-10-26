@@ -13,10 +13,11 @@ import { formatCourseCode } from 'utils/Misc';
 const RATING_MULTIPLIER = 0.1;
 const MAX_AUTOCOMPLETE_LENGTH = 50;
 
-export type IndexedCourse = Omit<SearchDataCourse, 'profs'> & {
+export type IndexedCourse = Omit<SearchDataCourse, 'profs' | 'aliases'> & {
   code: string;
   fullText: string;
   profs: string;
+  aliases: string;
 };
 
 export type IndexedProf = Omit<SearchDataProf, 'courses'> & {
@@ -46,12 +47,13 @@ const searchOptions = {
 
 const courseOptions: Fuzzysort.KeysOptions<IndexedCourse> = {
   ...searchOptions,
-  keys: ['fullText', 'code', 'profs'],
+  keys: ['fullText', 'code', 'profs', 'aliases'],
   scoreFn: (a) =>
     Math.max(
       a[0] ? a[0].score : -10000,
       a[1] ? a[1].score : -10000,
       a[2] ? a[2].score - 50 : -10000,
+      a[3] ? a[3].score : -10000,
     ),
 };
 
@@ -187,6 +189,9 @@ class SearchClient {
         code: formatCourseCode(course.code),
         fullText: `${formatCourseCode(course.code)} — ${course.name}`,
         profs: course.profs === null ? '' : course.profs.join(' '),
+        aliases: (course.aliases || [])
+          .map((alias) => formatCourseCode(alias))
+          .join(', '),
       };
     });
 

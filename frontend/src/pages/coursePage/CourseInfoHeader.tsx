@@ -21,6 +21,7 @@ import {
   CourseName,
   CourseNameWrapper,
   Description,
+  FormerCodes,
   RatingsSection,
   RedditSearchButton,
   RedditSearchButtonText,
@@ -70,6 +71,14 @@ const CourseInfoHeader = ({
           <CourseName ratingBoxWidth={RATING_BOX_WIDTH}>
             {course.name}
           </CourseName>
+          {course.aliases.length > 0 && (
+            <FormerCodes>
+              Formerly{' '}
+              {course.aliases
+                .map((alias) => formatCourseCode(alias.code))
+                .join(', ')}
+            </FormerCodes>
+          )}
         </CourseNameWrapper>
       </CourseCodeAndNameSection>
       <CourseDescriptionSection>

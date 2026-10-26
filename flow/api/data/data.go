@@ -13,6 +13,8 @@ type course struct {
 	Name        string   `json:"name"`
 	Profs       []string `json:"profs"`
 	RatingCount int      `json:"rating_count"`
+	// Former codes of a renamed course
+	Aliases []string `json:"aliases"`
 }
 
 type prof struct {
@@ -31,7 +33,9 @@ type dumpResponse struct {
 const courseQuery = `
 SELECT
   c.id, c.code, c.name, cr.filled_count AS review_count,
-  COALESCE(ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL), ARRAY[]::TEXT[]) AS profs
+  COALESCE(ARRAY_AGG(p.name) FILTER (WHERE p.id IS NOT NULL), ARRAY[]::TEXT[]) AS profs,
+  COALESCE((SELECT ARRAY_AGG(ca.code ORDER BY ca.code) FROM course_alias ca WHERE ca.course_id = c.id),
+    ARRAY[]::TEXT[]) AS aliases
 FROM course c
  INNER JOIN aggregate.course_rating cr ON cr.course_id = c.id
   LEFT JOIN prof_teaches_course pc ON pc.course_id = c.id
@@ -60,7 +64,7 @@ func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 	var response dumpResponse
 	for rows.Next() {
 		var c course
-		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.RatingCount, &c.Profs)
+		err = rows.Scan(&c.Id, &c.Code, &c.Name, &c.RatingCount, &c.Profs, &c.Aliases)
 		if err != nil {
 			return nil, fmt.Errorf("reading course row: %w", err)
 		}

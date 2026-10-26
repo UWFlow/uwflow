@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useSelector } from 'react-redux';
-import { useRouteMatch } from 'react-router-dom';
+import { Redirect, useRouteMatch } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import {
   CourseInfoFragment,
@@ -14,6 +14,7 @@ import {
   GetCourseWithUserDataQuery,
   ReviewInfoFragment,
 } from 'generated/graphql';
+import { getCoursePageRoute } from 'Routes';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import Button from 'components/input/Button';
@@ -211,6 +212,9 @@ const CoursePage = () => {
     </CoursePageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
+  ) : data.course.length === 0 && data.course_alias.length > 0 ? (
+    // Former code of a renamed course
+    <Redirect to={getCoursePageRoute(data.course_alias[0].course.code)} />
   ) : data.course.length === 0 ? (
     <NotFoundPage text={NOT_FOUND.course} />
   ) : (
