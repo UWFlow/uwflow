@@ -21,6 +21,11 @@ var resetInfo = queueInfo{
 	writeQuery: `UPDATE queue.password_reset SET seen_at = NOW() WHERE user_id = $1`,
 }
 
+var verifyInfo = queueInfo{
+	scanFunc:   scanVerify,
+	writeQuery: `UPDATE queue.email_verify SET seen_at = NOW() WHERE user_id = $1`,
+}
+
 var subscribedInfo = queueInfo{
 	scanFunc:   scanSubscribed,
 	writeQuery: `UPDATE queue.section_subscribed SET seen_at = NOW() WHERE id = $1`,

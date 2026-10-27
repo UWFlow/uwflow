@@ -17,14 +17,15 @@ type emailLoginRequest struct {
 }
 
 const selectUserQuery = `
-SELECT user_id, password_hash FROM secret.user_email WHERE email = $1
+SELECT user_id, password_hash, verified FROM secret.user_email WHERE email = $1
 `
 
 func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error) {
 	var response authResponse
 	var hash []byte
+	var verified bool
 
-	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &hash)
+	err := tx.QueryRow(selectUserQuery, email).Scan(&response.UserId, &hash, &verified)
 	if err != nil {
 		return nil, serde.WithEnum(serde.EmailNotRegistered, fmt.Errorf("email not registered: %s: %v", email, err))
 	}
@@ -32,6 +33,10 @@ func loginEmail(tx *db.Tx, email string, password []byte) (*authResponse, error)
 	err = bcrypt.CompareHashAndPassword(hash, password)
 	if err != nil {
 		return nil, serde.WithEnum(serde.EmailWrongPassword, fmt.Errorf("comparing hash and password: %w", err))
+	}
+
+	if !verified {
+		return nil, serde.WithEnum(serde.EmailNotVerified, fmt.Errorf("email not verified: %s", email))
 	}
 
 	response.Token, err = serde.NewSignedJwt(response.UserId)
@@ -62,7 +67,7 @@ func LoginEmail(tx *db.Tx, r *http.Request) (interface{}, error) {
 }
 
 const insertUserEmailQuery = `
-INSERT INTO secret.user_email(user_id, email, password_hash) VALUES ($1, $2, $3)
+INSERT INTO secret.user_email(user_id, email, password_hash, verified) VALUES ($1, $2, $3, FALSE)
 `
 
 func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, error) {
@@ -80,6 +85,13 @@ func registerEmail(tx *db.Tx, user *userInfo, password []byte) (*authResponse, e
 	if err != nil {
 		return nil, serde.WithEnum(serde.EmailTaken, fmt.Errorf("inserting user_email: %w", err))
 	}
+
+	// New email accounts must verify before they can log in. Queue a code and
+	// withhold the token so the client cannot proceed until VerifyEmail succeeds.
+	if err := writeVerifyCode(tx, response.UserId); err != nil {
+		return nil, err
+	}
+	response.Token = ""
 
 	return response, nil
 }
