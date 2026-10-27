@@ -23,5 +23,6 @@ This directory is the canonical relational schema and GraphQL authorization cont
 - Apply forward migration and metadata locally, exercise the affected query/mutation under realistic roles, then test rollback.
 - Search `../frontend/src/graphql` for consumers and regenerate frontend types when the schema contract changes.
 - Do not put secrets in metadata or migration files.
+- The Slack data bot reads Postgres as `uwflow_slackbot` (see `1792955077386_slackbot_read_access`). A new table it should read needs `GRANT SELECT ... TO uwflow_slackbot` in its own migration; one holding personal data should not be granted.
 
 Review changes with [backend review](../styleguide/backend/review.md).
