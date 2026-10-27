@@ -33,7 +33,7 @@ export const courseColumns: ColumnOverride[] = [
           {cell.value}
           {otherCodes.length > 0 && (
             <AlsoKnownAs>
-              {` (also known as ${otherCodes
+              {` (same course as ${otherCodes
                 .map(formatCourseCode)
                 .join(', ')})`}
             </AlsoKnownAs>
