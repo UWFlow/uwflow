@@ -28,20 +28,31 @@ GRANT SELECT (id, program, join_source, join_date) ON "user" TO uwflow_slackbot;
 -- allows counting.
 REVOKE SELECT ON review_author, review_user_id FROM uwflow_slackbot;
 
--- The bot LISTENs on uwflow_activity and posts a card for each new review and
--- signup. The payload is "<kind>:<id>"; it reads the rows through the role above.
+-- The bot LISTENs on uwflow_activity and posts a card for each new review,
+-- signup, and shortlisted course. Trigger arguments are the event kind, then
+-- the column(s) identifying the row; the payload is "<kind>:<key>" with
+-- multi-column keys joined by commas. The bot reads the rows through the role
+-- above.
 CREATE OR REPLACE FUNCTION slackbot_notify_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
+DECLARE
+  key text;
 BEGIN
-  PERFORM pg_notify('uwflow_activity', TG_ARGV[0] || ':' || NEW.id);
+  SELECT string_agg(to_jsonb(NEW) ->> col, ',' ORDER BY n) INTO key
+  FROM unnest(TG_ARGV[1:]) WITH ORDINALITY AS args(col, n);
+  PERFORM pg_notify('uwflow_activity', TG_ARGV[0] || ':' || key);
   RETURN NULL;
 END
 $$;
 
 CREATE OR REPLACE TRIGGER slackbot_review_activity
   AFTER INSERT ON review
-  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('review');
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('review', 'id');
 
 CREATE OR REPLACE TRIGGER slackbot_signup_activity
   AFTER INSERT ON "user"
-  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('signup');
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('signup', 'id');
+
+CREATE OR REPLACE TRIGGER slackbot_shortlist_activity
+  AFTER INSERT ON user_shortlist
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('shortlist', 'user_id', 'course_id');

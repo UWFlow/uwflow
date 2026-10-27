@@ -1,3 +1,4 @@
+DROP TRIGGER IF EXISTS slackbot_shortlist_activity ON user_shortlist;
 DROP TRIGGER IF EXISTS slackbot_signup_activity ON "user";
 DROP TRIGGER IF EXISTS slackbot_review_activity ON review;
 DROP FUNCTION IF EXISTS slackbot_notify_activity();
