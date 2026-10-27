@@ -5,5 +5,8 @@
 -- takes the new code; the old code stays searchable and its URL redirects.
 -- Each call does nothing once applied, so the whole file can be re-run.
 --
+-- The order only picks which code is canonical (the course page URL and display
+-- name); searching either code finds the course and both share reviews.
+--
 -- Example:
--- SELECT merge_course('cs135', 'cs145');
+-- SELECT merge_course('msci211', 'mse211');
