@@ -17,7 +17,7 @@ export type IndexedCourse = Omit<SearchDataCourse, 'profs' | 'aliases'> & {
   code: string;
   fullText: string;
   profs: string;
-  // The course's other codes, shown as "also known as"
+  // The course's other codes, shown as "same course as"
   otherCodes: string;
 };
 
