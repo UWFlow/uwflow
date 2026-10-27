@@ -29,11 +29,11 @@ GRANT SELECT (id, program, join_source, join_date) ON "user" TO uwflow_slackbot;
 REVOKE SELECT ON review_author, review_user_id FROM uwflow_slackbot;
 
 -- The bot LISTENs on uwflow_activity and posts a card for each new review and
--- signup. The payload is only the kind; it reads the rows through the role above.
+-- signup. The payload is "<kind>:<id>"; it reads the rows through the role above.
 CREATE OR REPLACE FUNCTION slackbot_notify_activity() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM pg_notify('uwflow_activity', TG_ARGV[0]);
+  PERFORM pg_notify('uwflow_activity', TG_ARGV[0] || ':' || NEW.id);
   RETURN NULL;
 END
 $$;
