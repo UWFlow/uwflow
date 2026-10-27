@@ -13,7 +13,6 @@ import { formatCourseCode } from 'utils/Misc';
 import { Distribution } from 'utils/Ratings';
 
 import {
-  AlsoKnownAs,
   CourseCode,
   CourseCodeAndNameSection,
   CourseCodeAndStar,
@@ -29,7 +28,6 @@ import {
 } from './styles/CourseInfoHeader';
 
 type CourseInfoHeaderProps = {
-  // The code the visitor came in with; may be a renamed course's other code
   displayCode: string;
   course: CourseInfoFragment &
     CourseRatingFragment &
@@ -50,7 +48,6 @@ const CourseInfoHeader = ({
   const { liked, easy, useful, filled_count, comment_count } =
     course.rating ?? ({} as NonNullable<typeof course.rating>);
   const redditSearchTerm = displayCode.replace(/\s+/g, '').toLowerCase();
-  // A renamed course has several interchangeable codes; show the others
   const otherCodes = [course.code, ...course.aliases.map((a) => a.code)].filter(
     (code) => code !== displayCode,
   );
@@ -79,10 +76,9 @@ const CourseInfoHeader = ({
             {course.name}
           </CourseName>
           {otherCodes.length > 0 && (
-            <AlsoKnownAs>
-              Same course as{' '}
-              {otherCodes.map((code) => formatCourseCode(code)).join(', ')}
-            </AlsoKnownAs>
+            <div className="text-body text-light2 mt-xs">
+              Same course as {otherCodes.map(formatCourseCode).join(', ')}
+            </div>
           )}
         </CourseNameWrapper>
       </CourseCodeAndNameSection>

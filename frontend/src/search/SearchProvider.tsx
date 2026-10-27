@@ -78,19 +78,9 @@ const SearchProvider = ({ searchWorker, children }: SearchProviderProps) => {
   }, [shouldReindex, searchWorker]);
 
   return (
-    <SearchContext.Consumer>
-      {(context) => {
-        if (context.searchWorker !== searchWorker) {
-          context = { ...context, searchWorker };
-        }
-
-        return (
-          <SearchContext.Provider value={context}>
-            {children}
-          </SearchContext.Provider>
-        );
-      }}
-    </SearchContext.Consumer>
+    <SearchContext.Provider value={{ searchWorker }}>
+      {children}
+    </SearchContext.Provider>
   );
 };
 

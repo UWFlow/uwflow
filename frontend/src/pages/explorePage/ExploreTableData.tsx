@@ -5,7 +5,7 @@ import { ColumnOverride } from 'components/display/Table';
 import { CourseSearchResult } from 'types/Common';
 import { formatCourseCode, processRating } from 'utils/Misc';
 
-import { AlsoKnownAs, CourseCode, ProfName } from './styles/ExplorePage';
+import { CourseCode, ProfName } from './styles/ExplorePage';
 
 export const courseColumns: ColumnOverride[] = [
   {
@@ -32,11 +32,11 @@ export const courseColumns: ColumnOverride[] = [
         <>
           {cell.value}
           {otherCodes.length > 0 && (
-            <AlsoKnownAs>
+            <span className="text-dark2">
               {` (same course as ${otherCodes
                 .map(formatCourseCode)
                 .join(', ')})`}
-            </AlsoKnownAs>
+            </span>
           )}
         </>
       );

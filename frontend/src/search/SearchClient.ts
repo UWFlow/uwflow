@@ -1,4 +1,5 @@
 import fuzzysort from 'fuzzysort';
+import uniqBy from 'lodash/uniqBy';
 import LZString from 'lz-string';
 
 import { BACKEND_ENDPOINT, SEARCH_DATA_ENDPOINT } from 'constants/Api';
@@ -14,10 +15,8 @@ const RATING_MULTIPLIER = 0.1;
 const MAX_AUTOCOMPLETE_LENGTH = 50;
 
 export type IndexedCourse = Omit<SearchDataCourse, 'profs' | 'aliases'> & {
-  code: string;
   fullText: string;
   profs: string;
-  // The course's other codes, shown as "same course as"
   otherCodes: string;
 };
 
@@ -131,17 +130,11 @@ class SearchClient {
       );
     }
 
-    // Reranking by rating count
-    // A renamed course is indexed once per code so the result shows the code
-    // that was searched; keep only its best match.
-    const seenCourseIds = new Set<number>();
-    const sortedCourses = weightByRatings(courseResults)
-      .filter((res) => {
-        if (seenCourseIds.has(res.obj.id)) return false;
-        seenCourseIds.add(res.obj.id);
-        return true;
-      })
-      .slice(0, 4);
+    // Keep the best matching code for each course after rating-based ranking.
+    const sortedCourses = uniqBy(
+      weightByRatings(courseResults),
+      (result) => result.obj.id,
+    ).slice(0, 4);
 
     const sortedProfs = weightByRatings(profResults).slice(0, 2);
 
@@ -178,7 +171,6 @@ class SearchClient {
     }
 
     // Parse data
-    const courseCodeSet = new Set<string>([]);
     const courseCodeRatings: { [key: string]: number } = {};
 
     // Every code of a renamed course gets its own entry, so each is searchable
@@ -189,44 +181,30 @@ class SearchClient {
       return allCodes.map((code) => {
         const formattedCode = formatCourseCode(code);
         const courseLetters = formattedCode.split(' ')[0];
-        courseCodeSet.add(courseLetters);
 
-        // Track total number of ratings for reranking by popularity
-        if (
-          !Object.prototype.hasOwnProperty.call(
-            courseCodeRatings,
-            courseLetters,
-          )
-        ) {
-          courseCodeRatings[courseLetters] = 0;
-        }
-        courseCodeRatings[courseLetters] += course.rating_count;
+        courseCodeRatings[courseLetters] =
+          (courseCodeRatings[courseLetters] ?? 0) + course.rating_count;
 
         return {
           ...course,
           code: formattedCode,
           fullText: `${formattedCode} — ${course.name}`,
-          profs: course.profs === null ? '' : course.profs.join(' '),
+          profs: course.profs?.join(' ') ?? '',
           otherCodes: allCodes
             .filter((other) => other !== code)
-            .map((other) => formatCourseCode(other))
+            .map(formatCourseCode)
             .join(', '),
         };
       });
     });
 
-    const profs = (parsedSearchData.profs || []).map((prof) => {
-      return {
-        ...prof,
-        courses:
-          prof.courses === null
-            ? ''
-            : prof.courses.map((course) => formatCourseCode(course)).join(' '),
-      };
-    });
+    const profs = (parsedSearchData.profs || []).map((prof) => ({
+      ...prof,
+      courses: prof.courses?.map(formatCourseCode).join(' ') ?? '',
+    }));
 
-    const courseCodes = Array.from(courseCodeSet).map((code) =>
-      Object({ code, rating_count: courseCodeRatings[code] }),
+    const courseCodes = Object.entries(courseCodeRatings).map(
+      ([code, rating_count]) => ({ code, rating_count }),
     );
 
     // Swap old indices with new

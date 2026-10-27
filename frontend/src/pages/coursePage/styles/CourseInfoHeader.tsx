@@ -94,12 +94,6 @@ export const CourseName = styled.div<{ ratingBoxWidth: number }>`
   `}
 `;
 
-export const AlsoKnownAs = styled.div`
-  ${Body}
-  color: ${({ theme }) => theme.light2};
-  margin-top: 4px;
-`;
-
 export const CourseDescriptionSection = styled.div`
   display: flex;
   flex-direction: column;

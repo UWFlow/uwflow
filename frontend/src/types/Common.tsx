@@ -41,9 +41,7 @@ export type SearchFilterStateKey = keyof SearchFilterState;
 
 export type CourseSearchResult = {
   id: number;
-  // The course's code that best matches the search; renamed courses have several
   code: string;
-  // The course's other codes
   otherCodes: string[];
   name: string;
   ratings: number;

@@ -89,10 +89,6 @@ export const CourseCode = styled(RouterLink)`
   ${Hover()}
 `;
 
-export const AlsoKnownAs = styled.span`
-  color: ${({ theme }) => theme.dark2};
-`;
-
 export const ProfName = styled(RouterLink)`
   ${Link}
   color: ${({ theme }) => theme.professors};
