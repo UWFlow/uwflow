@@ -141,3 +141,9 @@ $ hasura metadata reload --admin-secret "HASURA_GRAPHQL_ADMIN_SECRET"
 ```sh 
 $ hasura migrate apply --down 1 --admin-secret "HASURA_GRAPHQL_ADMIN_SECRET"
 ```
+
+## Renamed course codes
+
+Renames are declared in `course_renames.sql` as `SELECT merge_course('<old>', '<new>');` and applied with `make course-renames` (or by piping the file into `psql`). The file is idempotent, so re-run it in every environment (local, staging, production) after `hasura migrate apply`; a freshly created database starts without any renames until you do.
+
+`tests/merge_course.sql` checks `merge_course` against a disposable database with all migrations applied. It rolls back and prints no `FAILED` errors when it passes.
