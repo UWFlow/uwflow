@@ -1,12 +1,3 @@
--- Course codes that UW has renamed, applied with `make course-renames`.
---
--- Add one line per rename as merge_course('<old code>', '<new code>'), using
--- lowercase codes without spaces. The old code's row keeps its reviews and
--- takes the new code; the old code stays searchable and its URL redirects.
--- Each call does nothing once applied, so the whole file can be re-run.
---
--- The order only picks which code is canonical (the course page URL and display
--- name); searching either code finds the course and both share reviews.
---
--- Example:
+-- Run with `make course-renames` after migrations in each environment.
+-- Calls are idempotent; start each rename from the course's current code.
 -- SELECT merge_course('msci211', 'mse211');

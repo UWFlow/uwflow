@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   CourseScheduleFragment,
   GetCourseWithUserDataQuery,
-  Prof,
-  Section_Meeting,
 } from 'generated/graphql';
 import moment from 'moment/moment';
 
@@ -27,20 +25,7 @@ import { courseScheduleTableColumns } from './CourseScheduleTableColumns';
  * the existing time-of-day grouping for the course summary.
  */
 
-type Meeting = Pick<
-  Section_Meeting,
-  | 'days'
-  | 'start_date'
-  | 'end_date'
-  | 'start_seconds'
-  | 'end_seconds'
-  | 'location'
-  | 'is_closed'
-  | 'is_cancelled'
-  | 'is_tba'
-> & {
-  prof?: Pick<Prof, 'id' | 'code' | 'name'> | null;
-};
+type Meeting = CourseScheduleFragment['sections'][number]['meetings'][number];
 
 type TimeRange = {
   days: string[];
@@ -51,7 +36,7 @@ type TimeRange = {
 type InfoGroup = {
   time: string;
   location?: string | null;
-  prof?: Pick<Prof, 'id' | 'code' | 'name'> | object;
+  prof?: NonNullable<Meeting['prof']> | object;
   timeRanges: TimeRange[];
   cancelled: boolean;
   isTba: boolean;
