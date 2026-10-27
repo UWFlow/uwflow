@@ -2,9 +2,10 @@ import React from 'react';
 import { getCoursePageRoute, getProfPageRoute } from 'Routes';
 
 import { ColumnOverride } from 'components/display/Table';
+import { CourseSearchResult } from 'types/Common';
 import { formatCourseCode, processRating } from 'utils/Misc';
 
-import { CourseCode, ProfName } from './styles/ExplorePage';
+import { AlsoKnownAs, CourseCode, ProfName } from './styles/ExplorePage';
 
 export const courseColumns: ColumnOverride[] = [
   {
@@ -25,6 +26,21 @@ export const courseColumns: ColumnOverride[] = [
     Header: 'Course name',
     accessor: 'name',
     align: 'left',
+    Cell: ({ cell, row }) => {
+      const { otherCodes = [] } = row.original as CourseSearchResult;
+      return (
+        <>
+          {cell.value}
+          {otherCodes.length > 0 && (
+            <AlsoKnownAs>
+              {` (also known as ${otherCodes
+                .map(formatCourseCode)
+                .join(', ')})`}
+            </AlsoKnownAs>
+          )}
+        </>
+      );
+    },
   },
   {
     Header: 'Ratings',

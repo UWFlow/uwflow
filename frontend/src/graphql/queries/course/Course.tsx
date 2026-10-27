@@ -4,19 +4,19 @@ import CourseFragment from 'graphql/fragments/CourseFragment';
 import ProfFragment from 'graphql/fragments/ProfFragment';
 import ReviewFragment from 'graphql/fragments/ReviewFragment';
 
+// A renamed course's codes are interchangeable, so $code may be any of them.
 export const GET_COURSE = gql`
   query getCourse($code: String) {
-    course(where: { code: { _eq: $code } }) {
+    course(
+      where: {
+        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+      }
+    ) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
-    }
-    course_alias(where: { code: { _eq: $code } }) {
-      course {
-        code
-      }
     }
   }
   ${CourseFragment.courseInfo}
@@ -28,33 +28,49 @@ export const GET_COURSE = gql`
 
 export const GET_COURSE_WITH_USER_DATA = gql`
   query getCourseWithUserData($code: String, $user_id: Int) {
-    course(where: { code: { _eq: $code } }) {
+    course(
+      where: {
+        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+      }
+    ) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
     }
-    course_alias(where: { code: { _eq: $code } }) {
-      course {
-        code
-      }
-    }
     user_shortlist(
-      where: { user_id: { _eq: $user_id }, course: { code: { _eq: $code } } }
+      where: {
+        user_id: { _eq: $user_id }
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
+      }
     ) {
       course_id
       user_id
     }
     user_course_taken(
-      where: { course: { code: { _eq: $code } }, user_id: { _eq: $user_id } }
+      where: {
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
+        user_id: { _eq: $user_id }
+      }
     ) {
       term_id
       course_id
     }
     queue_section_subscribed(
       where: {
-        section: { course: { code: { _eq: $code } } }
+        section: {
+          course: {
+            _or: [
+              { code: { _eq: $code } }
+              { aliases: { code: { _eq: $code } } }
+            ]
+          }
+        }
         user_id: { _eq: $user_id }
       }
     ) {
@@ -63,7 +79,9 @@ export const GET_COURSE_WITH_USER_DATA = gql`
     }
     review(
       where: {
-        course: { code: { _eq: $code } }
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
         user: { user_id: { _eq: $user_id } }
       }
     ) {

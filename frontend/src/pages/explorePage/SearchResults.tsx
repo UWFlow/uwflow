@@ -78,7 +78,29 @@ const compare = (a: SortValue, b: SortValue, desc: boolean): number => {
   return desc ? (a as number) - (b as number) : (b as number) - (a as number);
 };
 
+// Hasura sends a Postgres text[] as a `{a,b}` string or as an array.
+const parseCodes = (codes: unknown): string[] => {
+  if (Array.isArray(codes)) return codes;
+  if (typeof codes === 'string') {
+    return codes.replace(/[{}"]/g, '').split(',').filter(Boolean);
+  }
+  return [];
+};
+
+// A renamed course has interchangeable codes: show the one the user searched
+// for, falling back to the course's current code.
+const pickDisplayCode = (codes: string[], query: string) => {
+  const searched = query.toLowerCase().replace(/\s+/g, '');
+  if (!searched) return codes[0];
+  return (
+    codes.find((code) => code.startsWith(searched)) ??
+    codes.find((code) => searched.startsWith(code.replace(/\d+.*$/, ''))) ??
+    codes[0]
+  );
+};
+
 type SearchResultsProps = {
+  query: string;
   filterState: SearchFilterState;
   setFilterState: Dispatch<SetStateAction<SearchFilterState>>;
   error: boolean;
@@ -91,6 +113,7 @@ type SearchResultsProps = {
 };
 
 const SearchResults = ({
+  query,
   filterState,
   setFilterState,
   data,
@@ -125,19 +148,24 @@ const SearchResults = ({
       ? (data as ExploreAllQuery).prof_search_index
       : (data as ExploreQuery).search_profs;
 
-    const newCourses: CourseSearchResult[] = allCourses.map((result) => ({
-      id: result.course_id ?? 0,
-      code: result.code ?? '',
-      name: result.name ?? '',
-      ratings: result.ratings,
-      liked: result.liked,
-      easy: result.easy,
-      useful: result.useful,
-      terms: result.terms,
-      terms_with_seats: result.terms_with_seats,
-      has_prereqs: result.has_prereqs ? result.has_prereqs?.valueOf() : false,
-      terms_with_online_section: result.terms_with_online_sections,
-    }));
+    const newCourses: CourseSearchResult[] = allCourses.map((result) => {
+      const codes = [result.code ?? '', ...parseCodes(result.aliases)];
+      const code = pickDisplayCode(codes, query);
+      return {
+        id: result.course_id ?? 0,
+        code,
+        otherCodes: codes.filter((other) => other !== code),
+        name: result.name ?? '',
+        ratings: result.ratings,
+        liked: result.liked,
+        easy: result.easy,
+        useful: result.useful,
+        terms: result.terms,
+        terms_with_seats: result.terms_with_seats,
+        has_prereqs: result.has_prereqs ? result.has_prereqs?.valueOf() : false,
+        terms_with_online_section: result.terms_with_online_sections,
+      };
+    });
 
     const newProfs: ProfSearchResult[] = allProfs.map((result) => ({
       id: result.prof_id ?? 0,
@@ -154,7 +182,7 @@ const SearchResults = ({
 
     setCourses(newCourses);
     setProfs(newProfs);
-  }, [data, exploreAll]);
+  }, [data, exploreAll, query]);
 
   const courseCodeRegex = useMemo(() => {
     let regexStr = '';

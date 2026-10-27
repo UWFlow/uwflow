@@ -199,6 +199,7 @@ const ExplorePageContent = ({
       <ColumnWrapper>
         <Column1>
           <SearchResults
+            query={query}
             filterState={filterState}
             setFilterState={setFilterState}
             data={data}

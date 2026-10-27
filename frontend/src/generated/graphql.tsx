@@ -13426,6 +13426,7 @@ export type CourseSearchFragment = {
   course_id: number | null;
   name: string | null;
   code: string | null;
+  aliases: any;
   useful: any;
   terms: any;
   terms_with_seats: any;
@@ -13722,7 +13723,6 @@ export type GetCourseQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
-  course_alias: Array<{ course: { code: string } }>;
 };
 
 export type GetCourseWithUserDataQueryVariables = Exact<{
@@ -13738,7 +13738,6 @@ export type GetCourseWithUserDataQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
-  course_alias: Array<{ course: { code: string } }>;
   user_shortlist: Array<{ course_id: number | null; user_id: number | null }>;
   user_course_taken: Array<{ term_id: number; course_id: number | null }>;
   queue_section_subscribed: Array<{ section_id: number; user_id: number }>;
@@ -14244,6 +14243,7 @@ export const CourseSearchFragmentDoc = gql`
     course_id
     name
     code
+    aliases
     useful
     terms
     terms_with_seats
@@ -15490,17 +15490,16 @@ export type Delete_Prof_Review_VoteMutationOptions = Apollo.BaseMutationOptions<
 >;
 export const GetCourseDocument = gql`
   query getCourse($code: String) {
-    course(where: { code: { _eq: $code } }) {
+    course(
+      where: {
+        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+      }
+    ) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
-    }
-    course_alias(where: { code: { _eq: $code } }) {
-      course {
-        code
-      }
     }
   }
   ${CourseInfoFragmentDoc}
@@ -15592,33 +15591,49 @@ export type GetCourseQueryResult = Apollo.QueryResult<
 >;
 export const GetCourseWithUserDataDocument = gql`
   query getCourseWithUserData($code: String, $user_id: Int) {
-    course(where: { code: { _eq: $code } }) {
+    course(
+      where: {
+        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+      }
+    ) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
     }
-    course_alias(where: { code: { _eq: $code } }) {
-      course {
-        code
-      }
-    }
     user_shortlist(
-      where: { user_id: { _eq: $user_id }, course: { code: { _eq: $code } } }
+      where: {
+        user_id: { _eq: $user_id }
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
+      }
     ) {
       course_id
       user_id
     }
     user_course_taken(
-      where: { course: { code: { _eq: $code } }, user_id: { _eq: $user_id } }
+      where: {
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
+        user_id: { _eq: $user_id }
+      }
     ) {
       term_id
       course_id
     }
     queue_section_subscribed(
       where: {
-        section: { course: { code: { _eq: $code } } }
+        section: {
+          course: {
+            _or: [
+              { code: { _eq: $code } }
+              { aliases: { code: { _eq: $code } } }
+            ]
+          }
+        }
         user_id: { _eq: $user_id }
       }
     ) {
@@ -15627,7 +15642,9 @@ export const GetCourseWithUserDataDocument = gql`
     }
     review(
       where: {
-        course: { code: { _eq: $code } }
+        course: {
+          _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
+        }
         user: { user_id: { _eq: $user_id } }
       }
     ) {

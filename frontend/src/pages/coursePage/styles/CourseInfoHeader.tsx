@@ -94,9 +94,9 @@ export const CourseName = styled.div<{ ratingBoxWidth: number }>`
   `}
 `;
 
-export const FormerCodes = styled.div`
+export const AlsoKnownAs = styled.div`
   ${Body}
-  color: ${({ theme }) => theme.light2};
+  color: ${({ theme }) => theme.dark2};
   margin-top: 4px;
 `;
 

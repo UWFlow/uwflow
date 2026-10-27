@@ -273,7 +273,8 @@ const SearchBar = ({
         <Dash>&mdash;</Dash>
         <EllipsisSpan>
           {highlightText(course.name, true)}
-          {course.aliases && highlightText(` (formerly ${course.aliases})`)}
+          {course.otherCodes &&
+            highlightText(` (also known as ${course.otherCodes})`)}
         </EllipsisSpan>
       </ResultText>
       <Tooltip content={`Explore professors that teach ${course.code}`}>

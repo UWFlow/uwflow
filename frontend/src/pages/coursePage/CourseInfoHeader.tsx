@@ -13,6 +13,7 @@ import { formatCourseCode } from 'utils/Misc';
 import { Distribution } from 'utils/Ratings';
 
 import {
+  AlsoKnownAs,
   CourseCode,
   CourseCodeAndNameSection,
   CourseCodeAndStar,
@@ -21,7 +22,6 @@ import {
   CourseName,
   CourseNameWrapper,
   Description,
-  FormerCodes,
   RatingsSection,
   RedditSearchButton,
   RedditSearchButtonText,
@@ -29,6 +29,8 @@ import {
 } from './styles/CourseInfoHeader';
 
 type CourseInfoHeaderProps = {
+  // The code the visitor came in with; may be a renamed course's other code
+  displayCode: string;
   course: CourseInfoFragment &
     CourseRatingFragment &
     CourseReviewDistributionFragment;
@@ -41,12 +43,17 @@ type CourseInfoHeaderProps = {
 
 const CourseInfoHeader = ({
   course,
+  displayCode,
   shortlisted,
   distributions,
 }: CourseInfoHeaderProps) => {
   const { liked, easy, useful, filled_count, comment_count } =
     course.rating ?? ({} as NonNullable<typeof course.rating>);
-  const redditSearchTerm = course.code.replace(/\s+/g, '').toLowerCase();
+  const redditSearchTerm = displayCode.replace(/\s+/g, '').toLowerCase();
+  // A renamed course has several interchangeable codes; show the others
+  const otherCodes = [course.code, ...course.aliases.map((a) => a.code)].filter(
+    (code) => code !== displayCode,
+  );
   const redditSearchUrl = `https://www.reddit.com/r/uwaterloo/search/?q=${encodeURIComponent(
     redditSearchTerm,
   )}`;
@@ -56,7 +63,7 @@ const CourseInfoHeader = ({
       <CourseCodeAndNameSection>
         <CourseCodeAndStar>
           <CourseCode ratingBoxWidth={RATING_BOX_WIDTH}>
-            {formatCourseCode(course.code)}
+            {formatCourseCode(displayCode)}
           </CourseCode>
           <StarAlignmentWrapper>
             <ShortlistStar
@@ -71,13 +78,11 @@ const CourseInfoHeader = ({
           <CourseName ratingBoxWidth={RATING_BOX_WIDTH}>
             {course.name}
           </CourseName>
-          {course.aliases.length > 0 && (
-            <FormerCodes>
-              Formerly{' '}
-              {course.aliases
-                .map((alias) => formatCourseCode(alias.code))
-                .join(', ')}
-            </FormerCodes>
+          {otherCodes.length > 0 && (
+            <AlsoKnownAs>
+              Also known as{' '}
+              {otherCodes.map((code) => formatCourseCode(code)).join(', ')}
+            </AlsoKnownAs>
           )}
         </CourseNameWrapper>
       </CourseCodeAndNameSection>

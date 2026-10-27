@@ -6,6 +6,7 @@ const SearchFragment = {
       course_id
       name
       code
+      aliases
       useful
       terms
       terms_with_seats

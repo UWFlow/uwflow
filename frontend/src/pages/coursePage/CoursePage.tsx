@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useSelector } from 'react-redux';
-import { Redirect, useRouteMatch } from 'react-router-dom';
+import { useRouteMatch } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import {
   CourseInfoFragment,
@@ -14,7 +14,6 @@ import {
   GetCourseWithUserDataQuery,
   ReviewInfoFragment,
 } from 'generated/graphql';
-import { getCoursePageRoute } from 'Routes';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import Button from 'components/input/Button';
@@ -55,6 +54,7 @@ export type Course = CourseInfoFragment &
 
 type CoursePageContentProps = {
   course: Course;
+  displayCode: string;
   userEmail?: string | null;
   userReview?: ReviewInfoFragment;
   sectionSubscriptions?: GetCourseWithUserDataQuery['queue_section_subscribed'];
@@ -64,6 +64,7 @@ type CoursePageContentProps = {
 
 const CoursePageContent = ({
   course,
+  displayCode,
   userReview,
   sectionSubscriptions = [],
   shortlisted = false,
@@ -116,6 +117,7 @@ const CoursePageContent = ({
     <>
       <CourseInfoHeader
         course={course}
+        displayCode={displayCode}
         shortlisted={shortlisted}
         distributions={{
           useful: usefulDistribution,
@@ -131,7 +133,7 @@ const CoursePageContent = ({
               <CourseReviewQuestionBox>
                 <CourseQuestionTextAndToggle>
                   <CourseReviewQuestionText>
-                    What do you think of {formatCourseCode(course.code)}?
+                    What do you think of {formatCourseCode(displayCode)}?
                   </CourseReviewQuestionText>
                   <LikeCourseToggle
                     courseCode={course.code}
@@ -158,7 +160,7 @@ const CoursePageContent = ({
         </Column1>
         <Column2>
           <CourseRequisites
-            courseCode={course.code}
+            courseCode={displayCode}
             prereqs={course.prereqs}
             antireqs={course.antireqs}
             coreqs={course.coreqs}
@@ -187,6 +189,14 @@ const CoursePage = () => {
     GetCourseQueryVariables
   >(query, { variables });
 
+  // A renamed course keeps one page per code; show the code in the URL
+  const displayCodeFor = (course: Course) =>
+    [course.code, ...course.aliases.map((alias) => alias.code)].includes(
+      courseCode,
+    )
+      ? courseCode
+      : course.code;
+
   const renderContent = (
     queryData: GetCourseQuery | GetCourseWithUserDataQuery,
   ) => {
@@ -195,6 +205,7 @@ const CoursePage = () => {
       return (
         <CoursePageContent
           course={dataWithUser.course[0]}
+          displayCode={displayCodeFor(dataWithUser.course[0])}
           userEmail={dataWithUser.user[0].email}
           userReview={dataWithUser.review[0]}
           userCourseTaken={dataWithUser.user_course_taken.length > 0}
@@ -203,7 +214,12 @@ const CoursePage = () => {
         />
       );
     }
-    return <CoursePageContent course={queryData.course[0]} />;
+    return (
+      <CoursePageContent
+        course={queryData.course[0]}
+        displayCode={displayCodeFor(queryData.course[0])}
+      />
+    );
   };
 
   return loading ? (
@@ -212,22 +228,19 @@ const CoursePage = () => {
     </CoursePageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.course.length === 0 && data.course_alias.length > 0 ? (
-    // Former code of a renamed course
-    <Redirect to={getCoursePageRoute(data.course_alias[0].course.code)} />
   ) : data.course.length === 0 ? (
     <NotFoundPage text={NOT_FOUND.course} />
   ) : (
     <CoursePageWrapper>
       <Helmet>
         <title>
-          {formatCourseCode(data.course[0].code)} - {data.course[0].name} - UW
-          Flow
+          {formatCourseCode(displayCodeFor(data.course[0]))} -{' '}
+          {data.course[0].name} - UW Flow
         </title>
         <meta name="description" content={data.course[0].description ?? ''} />
         <meta
           property="og:title"
-          content={`${formatCourseCode(data.course[0].code)} - ${
+          content={`${formatCourseCode(displayCodeFor(data.course[0]))} - ${
             data.course[0].name
           } - UW Flow`}
         />
