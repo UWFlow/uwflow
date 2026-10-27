@@ -10,7 +10,7 @@ import Textbox from 'components/input/Textbox';
 import { BACKEND_ENDPOINT, EMAIL_AUTH_REGISTER_ENDPOINT } from 'constants/Api';
 import { MIN_PASSWORD_LENGTH } from 'constants/Auth';
 import { AUTH_FORM_ERRORS } from 'constants/Messages';
-import { validateEmail } from 'utils/Email';
+import { isSignupEmailAllowed, validateEmail } from 'utils/Email';
 
 import {
   Error,
@@ -44,6 +44,7 @@ const SignupContent = ({
 }: SignupContentProps) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [emailError, setEmailError] = useState(false);
+  const [emailDomainError, setEmailDomainError] = useState(false);
   const [firstNameError, setFirstNameError] = useState(false);
   const [lastNameError, setLastNameError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
@@ -58,14 +59,17 @@ const SignupContent = ({
 
   const validateFields = () => {
     const emailValid = validateEmail(formState.email);
+    const emailDomainAllowed = isSignupEmailAllowed(formState.email);
     setFirstNameError(formState.firstName === '');
     setLastNameError(formState.lastName === '');
     setEmailError(!emailValid);
+    setEmailDomainError(emailValid && !emailDomainAllowed);
     setPasswordError(formState.password.length < MIN_PASSWORD_LENGTH);
     setConfirmPasswordError(formState.password !== formState.confirmPassword);
 
     return (
       emailValid &&
+      emailDomainAllowed &&
       formState.firstName !== '' &&
       formState.lastName !== '' &&
       formState.password.length >= MIN_PASSWORD_LENGTH &&
@@ -99,6 +103,9 @@ const SignupContent = ({
           <FormError>{AUTH_FORM_ERRORS.empty_last_name}</FormError>
         )}
         {emailError && <FormError>{AUTH_FORM_ERRORS.invalid_email}</FormError>}
+        {emailDomainError && (
+          <FormError>{AUTH_FORM_ERRORS.email_domain_not_allowed}</FormError>
+        )}
         {passwordError && (
           <FormError>{AUTH_FORM_ERRORS.password_too_short}</FormError>
         )}
@@ -136,12 +143,13 @@ const SignupContent = ({
         <TextboxWrapper>
           <Textbox
             options={{ width: '100%', type: 'email' }}
-            placeholder="Email"
-            error={emailError}
+            placeholder="UWaterloo Email"
+            error={emailError || emailDomainError}
             text={formState.email}
             setText={(value) => {
               setEmail(value);
               setEmailError(false);
+              setEmailDomainError(false);
             }}
           />
         </TextboxWrapper>

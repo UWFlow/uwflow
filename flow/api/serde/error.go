@@ -20,6 +20,8 @@ const (
 	EmailTaken = "email_taken"
 	// Email is too short
 	EmailTooShort = "email_too_short"
+	// Email is not a University of Waterloo address (also emitted by Google/Facebook signup)
+	EmailDomainNotAllowed = "email_domain_not_allowed"
 	// Password is too short (this is also emitted by password reset)
 	PasswordTooShort = "password_too_short"
 

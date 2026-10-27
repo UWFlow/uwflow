@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 
 	"flow/api/serde"
 	"flow/common/db"
@@ -28,6 +30,17 @@ type authResponse struct {
 	IsNew  bool   `json:"is_new"`
 }
 
+// New accounts are restricted to University of Waterloo email addresses
+const AllowedSignupDomain = "uwaterloo.ca"
+
+func isAllowedSignupEmail(email *string) bool {
+	if email == nil {
+		return false
+	}
+	normalized := strings.ToLower(strings.TrimSpace(*email))
+	return strings.HasSuffix(normalized, "@"+AllowedSignupDomain)
+}
+
 const insertUserQuery = `
 INSERT INTO "user"(secret_id, email, first_name, last_name, join_source, picture_url)
 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
@@ -43,6 +56,13 @@ UPDATE "user" SET picture_url = $2 WHERE id = $1
 
 func InsertUser(tx *db.Tx, user *userInfo) (*authResponse, error) {
 	var response authResponse
+
+	if !isAllowedSignupEmail(user.Email) {
+		return nil, serde.WithStatus(
+			http.StatusForbidden,
+			serde.WithEnum(serde.EmailDomainNotAllowed, fmt.Errorf("signup email is not @%s", AllowedSignupDomain)),
+		)
+	}
 
 	secretId, err := random.String(SecretIdLength, random.Uppercase)
 	if err != nil {
