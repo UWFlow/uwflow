@@ -40,6 +40,8 @@ services:
       HASURA_GRAPHQL_ENABLE_CONSOLE: "false" # Must be run manually to track migrations
       HASURA_GRAPHQL_ENABLE_TELEMETRY: "false" # Why is this even enabled by default?!
       HASURA_GRAPHQL_JWT_SECRET: '{"type": "HS256", "key": "${HASURA_GRAPHQL_JWT_KEY}"}'
+      # Listen where ports/nginx expect, so hosts with 8080 taken can move it in .env.
+      HASURA_GRAPHQL_SERVER_PORT: $HASURA_PORT
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $HASURA_GRAPHQL_UNAUTHORIZED_ROLE
     image: hasura/graphql-engine:v2.49.2.cli-migrations-v3
     ports:
