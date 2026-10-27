@@ -28,8 +28,17 @@ GRANT SELECT (id, program, join_source, join_date) ON "user" TO uwflow_slackbot;
 -- allows counting.
 REVOKE SELECT ON review_author, review_user_id FROM uwflow_slackbot;
 
--- The bot LISTENs on uwflow_activity and posts a card for each new review,
--- signup, and shortlisted course. Trigger arguments are the event kind, then
+-- Invites: not the invitee's email or the bearer secret that joins the group.
+REVOKE SELECT ON shared_group_invite FROM uwflow_slackbot;
+GRANT SELECT (id, group_id, invited_by, created_at, mailed_at) ON shared_group_invite TO uwflow_slackbot;
+
+-- Seat-opening alert subscriptions, for the activity feed; nothing else in queue.
+REVOKE ALL ON ALL TABLES IN SCHEMA queue FROM uwflow_slackbot;
+GRANT USAGE ON SCHEMA queue TO uwflow_slackbot;
+GRANT SELECT ON queue.section_subscribed TO uwflow_slackbot;
+
+-- The bot LISTENs on uwflow_activity and posts a card for each user action
+-- below. Trigger arguments are the event kind, then
 -- the column(s) identifying the row; the payload is "<kind>:<key>" with
 -- multi-column keys joined by commas. The bot reads the rows through the role
 -- above.
@@ -56,3 +65,37 @@ CREATE OR REPLACE TRIGGER slackbot_signup_activity
 CREATE OR REPLACE TRIGGER slackbot_shortlist_activity
   AFTER INSERT ON user_shortlist
   FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('shortlist', 'user_id', 'course_id');
+
+CREATE OR REPLACE TRIGGER slackbot_course_upvote_activity
+  AFTER INSERT ON course_review_upvote
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('upvote', 'review_id', 'user_id');
+
+CREATE OR REPLACE TRIGGER slackbot_prof_upvote_activity
+  AFTER INSERT ON prof_review_upvote
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('upvote', 'review_id', 'user_id');
+
+-- Transcript imports and schedule uploads insert a row per course or section;
+-- the bot collapses each user's burst into one card.
+CREATE OR REPLACE TRIGGER slackbot_transcript_activity
+  AFTER INSERT ON user_course_taken
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('transcript', 'user_id');
+
+CREATE OR REPLACE TRIGGER slackbot_schedule_activity
+  AFTER INSERT ON user_schedule
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('schedule', 'user_id');
+
+CREATE OR REPLACE TRIGGER slackbot_swap_activity
+  AFTER INSERT ON user_schedule_swap
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('swap', 'user_id', 'source_section_id', 'replacement_section_id');
+
+CREATE OR REPLACE TRIGGER slackbot_group_activity
+  AFTER INSERT ON shared_group
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('group', 'id');
+
+CREATE OR REPLACE TRIGGER slackbot_group_join_activity
+  AFTER INSERT ON shared_group_member
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('group_join', 'group_id', 'user_id');
+
+CREATE OR REPLACE TRIGGER slackbot_seat_alert_activity
+  AFTER INSERT ON queue.section_subscribed
+  FOR EACH ROW EXECUTE FUNCTION slackbot_notify_activity('seat_alert', 'id');

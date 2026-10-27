@@ -1,3 +1,11 @@
+DROP TRIGGER IF EXISTS slackbot_seat_alert_activity ON queue.section_subscribed;
+DROP TRIGGER IF EXISTS slackbot_group_join_activity ON shared_group_member;
+DROP TRIGGER IF EXISTS slackbot_group_activity ON shared_group;
+DROP TRIGGER IF EXISTS slackbot_swap_activity ON user_schedule_swap;
+DROP TRIGGER IF EXISTS slackbot_schedule_activity ON user_schedule;
+DROP TRIGGER IF EXISTS slackbot_transcript_activity ON user_course_taken;
+DROP TRIGGER IF EXISTS slackbot_prof_upvote_activity ON prof_review_upvote;
+DROP TRIGGER IF EXISTS slackbot_course_upvote_activity ON course_review_upvote;
 DROP TRIGGER IF EXISTS slackbot_shortlist_activity ON user_shortlist;
 DROP TRIGGER IF EXISTS slackbot_signup_activity ON "user";
 DROP TRIGGER IF EXISTS slackbot_review_activity ON review;
