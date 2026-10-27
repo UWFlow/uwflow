@@ -82,7 +82,6 @@ const CourseInfoHeader = ({
             <AlsoKnownAs>
               Same course as{' '}
               {otherCodes.map((code) => formatCourseCode(code)).join(', ')}
-              {' · reviews and ratings are shared'}
             </AlsoKnownAs>
           )}
         </CourseNameWrapper>
