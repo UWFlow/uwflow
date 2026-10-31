@@ -5,18 +5,25 @@ import ProfFragment from 'graphql/fragments/ProfFragment';
 import ReviewFragment from 'graphql/fragments/ReviewFragment';
 
 // A renamed course's codes are interchangeable, so $code may be any of them.
+// The course is looked up by code and by alias separately: an `_or` across the
+// two can't use either index and makes Postgres scan and JIT-compile the query.
 export const GET_COURSE = gql`
   query getCourse($code: String) {
-    course(
-      where: {
-        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
-      }
-    ) {
+    course(where: { code: { _eq: $code } }) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
+    }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        ...CourseInfo
+        ...CourseSchedule
+        ...CourseRequirements
+        ...CourseRating
+        ...CourseReviewDistribution
+      }
     }
   }
   ${CourseFragment.courseInfo}
@@ -28,16 +35,21 @@ export const GET_COURSE = gql`
 
 export const GET_COURSE_WITH_USER_DATA = gql`
   query getCourseWithUserData($code: String, $user_id: Int) {
-    course(
-      where: {
-        _or: [{ code: { _eq: $code } }, { aliases: { code: { _eq: $code } } }]
-      }
-    ) {
+    course(where: { code: { _eq: $code } }) {
       ...CourseInfo
       ...CourseSchedule
       ...CourseRequirements
       ...CourseRating
       ...CourseReviewDistribution
+    }
+    course_alias(where: { code: { _eq: $code } }) {
+      course {
+        ...CourseInfo
+        ...CourseSchedule
+        ...CourseRequirements
+        ...CourseRating
+        ...CourseReviewDistribution
+      }
     }
     user_shortlist(
       where: {

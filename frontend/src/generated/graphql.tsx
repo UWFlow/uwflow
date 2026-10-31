@@ -483,6 +483,13 @@ export type GetCourseQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
+  course_alias: Array<{
+    course: CourseInfoFragment &
+      CourseScheduleFragment &
+      CourseRequirementsFragment &
+      CourseRatingFragment &
+      CourseReviewDistributionFragment;
+  }>;
 };
 
 export type GetCourseWithUserDataQueryVariables = Exact<{
@@ -498,6 +505,13 @@ export type GetCourseWithUserDataQuery = {
       CourseRatingFragment &
       CourseReviewDistributionFragment
   >;
+  course_alias: Array<{
+    course: CourseInfoFragment &
+      CourseScheduleFragment &
+      CourseRequirementsFragment &
+      CourseRatingFragment &
+      CourseReviewDistributionFragment;
+  }>;
   user_shortlist: Array<{ course_id: number | null; user_id: number | null }>;
   user_course_taken: Array<{ term_id: number; course_id: number | null }>;
   queue_section_subscribed: Array<{ section_id: number; user_id: number }>;
