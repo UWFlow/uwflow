@@ -42,6 +42,7 @@ export type SearchFilterStateKey = keyof SearchFilterState;
 export type CourseSearchResult = {
   id: number;
   code: string;
+  otherCodes: string[];
   name: string;
   ratings: number;
   liked: number;

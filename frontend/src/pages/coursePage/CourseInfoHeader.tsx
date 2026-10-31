@@ -28,6 +28,7 @@ import {
 } from './styles/CourseInfoHeader';
 
 type CourseInfoHeaderProps = {
+  displayCode: string;
   course: CourseInfoFragment &
     CourseRatingFragment &
     CourseReviewDistributionFragment;
@@ -40,12 +41,16 @@ type CourseInfoHeaderProps = {
 
 const CourseInfoHeader = ({
   course,
+  displayCode,
   shortlisted,
   distributions,
 }: CourseInfoHeaderProps) => {
   const { liked, easy, useful, filled_count, comment_count } =
     course.rating ?? ({} as NonNullable<typeof course.rating>);
-  const redditSearchTerm = course.code.replace(/\s+/g, '').toLowerCase();
+  const redditSearchTerm = displayCode.replace(/\s+/g, '').toLowerCase();
+  const otherCodes = [course.code, ...course.aliases.map((a) => a.code)].filter(
+    (code) => code !== displayCode,
+  );
   const redditSearchUrl = `https://www.reddit.com/r/uwaterloo/search/?q=${encodeURIComponent(
     redditSearchTerm,
   )}`;
@@ -55,7 +60,7 @@ const CourseInfoHeader = ({
       <CourseCodeAndNameSection>
         <CourseCodeAndStar>
           <CourseCode ratingBoxWidth={RATING_BOX_WIDTH}>
-            {formatCourseCode(course.code)}
+            {formatCourseCode(displayCode)}
           </CourseCode>
           <StarAlignmentWrapper>
             <ShortlistStar
@@ -70,6 +75,11 @@ const CourseInfoHeader = ({
           <CourseName ratingBoxWidth={RATING_BOX_WIDTH}>
             {course.name}
           </CourseName>
+          {otherCodes.length > 0 && (
+            <div className="text-body text-light2 mt-xs">
+              Same course as {otherCodes.map(formatCourseCode).join(', ')}
+            </div>
+          )}
         </CourseNameWrapper>
       </CourseCodeAndNameSection>
       <CourseDescriptionSection>

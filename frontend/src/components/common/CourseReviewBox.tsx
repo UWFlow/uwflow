@@ -4,7 +4,7 @@ import { Trash2 } from 'react-feather';
 import { toast } from 'react-toastify';
 import { useMutation, useQuery } from '@apollo/client';
 import {
-  Course,
+  CourseInfoFragment,
   CourseReviewProfsQuery,
   CourseReviewsWithUserDataQueryVariables,
   DeleteReviewMutation,
@@ -107,7 +107,7 @@ const CourseReviewBoxContent = ({
 
   const buildDefaultReview = useCallback(
     (
-      course: Course,
+      course: Pick<CourseInfoFragment, 'id'>,
       userReview: ReviewInfoFragment | null,
     ): ReviewDisplayData => {
       let combinedProfs: ReviewProfsFragment['prof'][] = [];
@@ -621,7 +621,10 @@ const CourseReviewBoxContent = ({
 };
 
 export interface CourseReviewBoxProps {
-  courseReviews: { course: Course; review: ReviewInfoFragment }[];
+  courseReviews: {
+    course: Pick<CourseInfoFragment, 'id' | 'code'>;
+    review: ReviewInfoFragment;
+  }[];
   showCourseDropdown: boolean;
   initialSelectedCourseIndex: number;
   onCancel: () => void;

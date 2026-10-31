@@ -1,9 +1,4 @@
-import {
-  Aggregate_Course_Easy_Buckets,
-  Aggregate_Course_Useful_Buckets,
-  Aggregate_Prof_Clear_Buckets,
-  Aggregate_Prof_Engaging_Buckets,
-} from 'generated/graphql';
+import { CourseReviewDistributionFragment } from 'generated/graphql';
 
 export type Distribution = {
   hasDistribution: boolean;
@@ -17,14 +12,8 @@ export type Buckets = Array<{
   count: number;
 }>;
 
-type AggregatedBucket =
-  | Aggregate_Course_Easy_Buckets
-  | Aggregate_Course_Useful_Buckets
-  | Aggregate_Prof_Clear_Buckets
-  | Aggregate_Prof_Engaging_Buckets;
-
 export const createOrderedBuckets = (
-  buckets: Array<AggregatedBucket>,
+  buckets: CourseReviewDistributionFragment['course_easy_buckets'],
 ): Buckets => {
   // Create a map of existing values to counts
   const bucketMap = buckets.reduce<{ [key: number]: number }>((acc, bucket) => {

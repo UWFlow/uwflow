@@ -8,7 +8,11 @@ import React, {
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import SearchWorker from 'worker-loader!search/search.worker';
 
-import { LAST_INDEXED_ID, SEARCH_DATA_ID } from 'constants/Search';
+import {
+  LAST_INDEXED_ID,
+  LEGACY_SEARCH_KEYS,
+  SEARCH_DATA_ID,
+} from 'constants/Search';
 import { millisecondsPerDay } from 'utils/Misc';
 
 type SearchContextType = {
@@ -29,6 +33,9 @@ const SearchProvider = ({ searchWorker, children }: SearchProviderProps) => {
   const [shouldReindex, setShouldReindex] = useState(false);
 
   useEffect(() => {
+    // Drop caches written before course aliases were added to the dump
+    LEGACY_SEARCH_KEYS.forEach((key) => localStorage.removeItem(key));
+
     // Build indices
     searchWorker.postMessage({
       type: 'build',
@@ -71,19 +78,9 @@ const SearchProvider = ({ searchWorker, children }: SearchProviderProps) => {
   }, [shouldReindex, searchWorker]);
 
   return (
-    <SearchContext.Consumer>
-      {(context) => {
-        if (context.searchWorker !== searchWorker) {
-          context = { ...context, searchWorker };
-        }
-
-        return (
-          <SearchContext.Provider value={context}>
-            {children}
-          </SearchContext.Provider>
-        );
-      }}
-    </SearchContext.Consumer>
+    <SearchContext.Provider value={{ searchWorker }}>
+      {children}
+    </SearchContext.Provider>
   );
 };
 

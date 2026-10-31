@@ -1,0 +1,3 @@
+-- Run with `make course-renames` after migrations in each environment.
+-- Calls are idempotent; start each rename from the course's current code.
+-- SELECT merge_course('msci211', 'mse211');

@@ -54,6 +54,8 @@ export type SearchDataCourse = {
   name: string;
   profs: string[];
   rating_count: number;
+  // Former codes of a renamed course; missing from data cached by older clients
+  aliases?: string[];
 };
 
 export type SearchDataProf = {

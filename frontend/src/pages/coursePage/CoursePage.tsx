@@ -54,6 +54,7 @@ export type Course = CourseInfoFragment &
 
 type CoursePageContentProps = {
   course: Course;
+  displayCode: string;
   userEmail?: string | null;
   userReview?: ReviewInfoFragment;
   sectionSubscriptions?: GetCourseWithUserDataQuery['queue_section_subscribed'];
@@ -63,6 +64,7 @@ type CoursePageContentProps = {
 
 const CoursePageContent = ({
   course,
+  displayCode,
   userReview,
   sectionSubscriptions = [],
   shortlisted = false,
@@ -115,6 +117,7 @@ const CoursePageContent = ({
     <>
       <CourseInfoHeader
         course={course}
+        displayCode={displayCode}
         shortlisted={shortlisted}
         distributions={{
           useful: usefulDistribution,
@@ -130,7 +133,7 @@ const CoursePageContent = ({
               <CourseReviewQuestionBox>
                 <CourseQuestionTextAndToggle>
                   <CourseReviewQuestionText>
-                    What do you think of {formatCourseCode(course.code)}?
+                    What do you think of {formatCourseCode(displayCode)}?
                   </CourseReviewQuestionText>
                   <LikeCourseToggle
                     courseCode={course.code}
@@ -157,7 +160,7 @@ const CoursePageContent = ({
         </Column1>
         <Column2>
           <CourseRequisites
-            courseCode={course.code}
+            courseCode={displayCode}
             prereqs={course.prereqs}
             antireqs={course.antireqs}
             coreqs={course.coreqs}
@@ -186,53 +189,45 @@ const CoursePage = () => {
     GetCourseQueryVariables
   >(query, { variables });
 
-  const renderContent = (
-    queryData: GetCourseQuery | GetCourseWithUserDataQuery,
-  ) => {
-    if (isLoggedIn) {
-      const dataWithUser = queryData as GetCourseWithUserDataQuery;
-      return (
-        <CoursePageContent
-          course={dataWithUser.course[0]}
-          userEmail={dataWithUser.user[0].email}
-          userReview={dataWithUser.review[0]}
-          userCourseTaken={dataWithUser.user_course_taken.length > 0}
-          shortlisted={dataWithUser.user_shortlist.length > 0}
-          sectionSubscriptions={dataWithUser.queue_section_subscribed}
-        />
-      );
-    }
-    return <CoursePageContent course={queryData.course[0]} />;
-  };
+  if (loading) {
+    return (
+      <CoursePageWrapper>
+        <LoadingSpinner />
+      </CoursePageWrapper>
+    );
+  }
+  if (error || !data) return <NotFoundPage text={DEFAULT_ERROR} title="" />;
+  if (!data.course.length) return <NotFoundPage text={NOT_FOUND.course} />;
 
-  return loading ? (
-    <CoursePageWrapper>
-      <LoadingSpinner />
-    </CoursePageWrapper>
-  ) : error || !data ? (
-    <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.course.length === 0 ? (
-    <NotFoundPage text={NOT_FOUND.course} />
-  ) : (
+  const course = data.course[0];
+  const displayCode = [
+    course.code,
+    ...course.aliases.map(({ code }) => code),
+  ].includes(courseCode)
+    ? courseCode
+    : course.code;
+  const title = `${formatCourseCode(displayCode)} - ${course.name} - UW Flow`;
+  const userData = isLoggedIn
+    ? (data as GetCourseWithUserDataQuery)
+    : undefined;
+
+  return (
     <CoursePageWrapper>
       <Helmet>
-        <title>
-          {formatCourseCode(data.course[0].code)} - {data.course[0].name} - UW
-          Flow
-        </title>
-        <meta name="description" content={data.course[0].description ?? ''} />
-        <meta
-          property="og:title"
-          content={`${formatCourseCode(data.course[0].code)} - ${
-            data.course[0].name
-          } - UW Flow`}
-        />
-        <meta
-          property="og:description"
-          content={data.course[0].description ?? ''}
-        />
+        <title>{title}</title>
+        <meta name="description" content={course.description ?? ''} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={course.description ?? ''} />
       </Helmet>
-      {renderContent(data)}
+      <CoursePageContent
+        course={course}
+        displayCode={displayCode}
+        userEmail={userData?.user[0].email}
+        userReview={userData?.review[0]}
+        userCourseTaken={!!userData?.user_course_taken.length}
+        shortlisted={!!userData?.user_shortlist.length}
+        sectionSubscriptions={userData?.queue_section_subscribed}
+      />
     </CoursePageWrapper>
   );
 };
