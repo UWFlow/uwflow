@@ -1,5 +1,10 @@
-import React, { useEffect } from 'react';
-import { AlertTriangle, CheckCircle, MousePointer } from 'react-feather';
+import React, { useEffect, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  ChevronDown,
+  MousePointer,
+} from 'react-feather';
 import { Link as RouterLink } from 'react-router-dom';
 import { SwapCourseSectionFragment } from 'generated/graphql';
 import { getCoursePageRoute, getProfPageRoute } from 'Routes';
@@ -108,7 +113,7 @@ const SectionName = ({
   classNumber: number;
   hasConflict: boolean;
 }) => (
-  <div className="flex flex-col gap-xs">
+  <div className="flex items-baseline gap-2">
     <span
       className={cn(
         'text-sm font-semibold',
@@ -117,9 +122,8 @@ const SectionName = ({
     >
       {sectionName}
     </span>
-    <span className={cn('text-xs', hasConflict ? 'text-dark3' : 'text-dark2')}>
-      Quest class number:{' '}
-      <strong className="font-semibold">{classNumber}</strong>
+    <span className="text-xs text-dark3" title="Quest class number">
+      Class #{classNumber}
     </span>
   </div>
 );
@@ -143,18 +147,18 @@ const MeetingInstructor = ({
     <div className="min-w-0">
       {professor.code ? (
         <RouterLink
-          className="text-sm font-semibold text-professors underline underline-offset-2"
+          className="text-xs font-semibold text-professors underline underline-offset-2"
           to={getProfPageRoute(professor.code)}
         >
           {professor.name}
         </RouterLink>
       ) : (
-        <span className="text-sm font-semibold text-dark2">
+        <span className="text-xs font-semibold text-dark2">
           {professor.name}
         </span>
       )}
       {stats && (
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-dark2">
+        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-dark2">
           {stats.clear !== undefined && stats.clear !== null && (
             <span>
               <strong className="text-dark1">
@@ -198,11 +202,13 @@ const MeetingLine = ({
   meeting: SwapMeeting;
   professorStatsById?: Record<number, ProfessorSwapStats | undefined>;
 }) => (
-  <div className="grid gap-1 text-xs text-dark2">
-    <div className="text-dark1">
+  <div className="grid gap-0.5 text-xs text-dark2">
+    <div className="text-sm text-dark1">
       <span>{formatDays(meeting.days) || 'No days listed'}</span>
-      <span className="mx-1">·</span>
-      <span>{getMeetingTime(meeting)}</span>
+      <span className="mx-1 text-dark3">·</span>
+      <span className="whitespace-nowrap font-semibold tabular-nums">
+        {getMeetingTime(meeting)}
+      </span>
     </div>
     {meeting.location && <div className="text-dark3">{meeting.location}</div>}
     <MeetingInstructor
@@ -273,62 +279,99 @@ const ScheduleSectionRow = ({
       onPointerLeave={clearPreview}
       tabIndex={0}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <SectionName
-          classNumber={section.class_number}
-          hasConflict={hasConflict}
-          sectionName={section.section_name}
-        />
-        {isEnrolled && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-            <CheckCircle aria-hidden="true" size={14} />
-            Enrolled
-          </span>
-        )}
-        {!isEnrolled && hasConflict && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-darkRed">
-            <AlertTriangle aria-hidden="true" size={14} />
-            Conflicts
-          </span>
-        )}
-      </div>
-      <div className="grid gap-2">
-        {section.meetings.length === 0 ? (
-          <div className="text-xs text-dark3">No meeting times listed</div>
-        ) : (
-          section.meetings.map((meeting, index) => (
-            <MeetingLine
-              key={`${section.id}-${index}`}
-              meeting={meeting}
-              professorStatsById={professorStatsById}
-            />
-          ))
-        )}
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="text-xs text-dark2">
-          <strong
-            className={cn(
-              'font-semibold',
-              openSeats === 0 ? 'text-darkRed' : 'text-dark1',
-            )}
-          >
-            {openSeats}
-          </strong>{' '}
-          of {section.enrollment_capacity} {openSeats === 0 ? 'seats' : 'open'}
+      <div className="flex items-start justify-between gap-3">
+        <div className="grid min-w-0 flex-1 gap-1.5">
+          <SectionName
+            classNumber={section.class_number}
+            hasConflict={hasConflict}
+            sectionName={section.section_name}
+          />
+          {section.meetings.length === 0 ? (
+            <div className="text-xs text-dark3">No meeting times listed</div>
+          ) : (
+            section.meetings.map((meeting, index) => (
+              <MeetingLine
+                key={`${section.id}-${index}`}
+                meeting={meeting}
+                professorStatsById={professorStatsById}
+              />
+            ))
+          )}
         </div>
-        {!isEnrolled && !hasConflict && (
-          <Button
-            className="h-8 font-bold"
-            onClick={() => onSwitchSection(section.id)}
-            size="sm"
-            type="button"
-            variant="accent"
-          >
-            Choose section
-          </Button>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          {isEnrolled ? (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+              <CheckCircle aria-hidden="true" size={14} />
+              Enrolled
+            </span>
+          ) : hasConflict ? (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-darkRed">
+              <AlertTriangle aria-hidden="true" size={14} />
+              Conflicts
+            </span>
+          ) : (
+            <Button
+              aria-label={`Choose ${section.section_name}`}
+              className="h-7 px-3 text-sm font-bold"
+              onClick={() => onSwitchSection(section.id)}
+              size="sm"
+              type="button"
+              variant="accent"
+            >
+              Choose
+            </Button>
+          )}
+          <div className="whitespace-nowrap text-xs text-dark3">
+            <strong
+              className={cn(
+                'font-semibold tabular-nums',
+                openSeats === 0 ? 'text-darkRed' : 'text-dark1',
+              )}
+            >
+              {openSeats === 0 ? 'Full' : openSeats}
+            </strong>
+            {openSeats > 0 && ` / ${section.enrollment_capacity} open`}
+          </div>
+        </div>
       </div>
+    </div>
+  );
+};
+
+// Conflicting sections can't be chosen, so they sit collapsed below the
+// choosable ones instead of interleaving with them.
+const ConflictGroup = ({
+  count,
+  children,
+}: {
+  count: number;
+  children: React.ReactNode;
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-0 border-t border-solid border-light3">
+      <button
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center justify-between gap-2 border-none bg-light1 px-4 py-2.5 font-inter text-xs font-semibold text-dark2 hover:text-dark1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+        onClick={() => setOpen((prev) => !prev)}
+        type="button"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <AlertTriangle aria-hidden="true" size={14} />
+          {count} section{count === 1 ? '' : 's'} conflict
+          {count === 1 ? 's' : ''} with your schedule
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={cn('transition-transform', open && 'rotate-180')}
+          size={16}
+        />
+      </button>
+      {open && (
+        <div className="border-0 border-t border-solid border-light3">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
@@ -370,8 +413,35 @@ const ScheduleSwapPanel = ({
     return () => onPreviewChange(null);
   }, [onPreviewChange, selectedCourseId, selectedTermId, sectionType]);
 
+  // Enrolled first, then choosable, with conflicts folded away at the bottom.
+  const enrolledSections = sections.filter((s) =>
+    enrolledSectionIds.includes(s.id),
+  );
+  const conflictSections = sections.filter(
+    (s) =>
+      !enrolledSectionIds.includes(s.id) && conflictSectionIds.includes(s.id),
+  );
+  const openSections = sections.filter(
+    (s) =>
+      !enrolledSectionIds.includes(s.id) && !conflictSectionIds.includes(s.id),
+  );
+
+  const renderRow = (section: SwapCourseSectionFragment) =>
+    selectedCourse && (
+      <ScheduleSectionRow
+        course={selectedCourse}
+        hasConflict={conflictSectionIds.includes(section.id)}
+        isEnrolled={enrolledSectionIds.includes(section.id)}
+        key={section.id}
+        onPreviewChange={onPreviewChange}
+        onSwitchSection={onSwitchSection}
+        professorStatsById={professorStatsById}
+        section={section}
+      />
+    );
+
   return (
-    <aside className="w-full overflow-hidden rounded border border-solid border-light3 bg-white shadow-box tablet:max-w-[360px]">
+    <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded border border-solid border-light3 bg-white shadow-box tablet:max-w-[360px]">
       {isLoading ? (
         <div className="flex min-h-[178px] items-center justify-center p-4">
           <LoadingSpinner />
@@ -381,8 +451,8 @@ const ScheduleSwapPanel = ({
           <EmptyState />
         </div>
       ) : (
-        <div>
-          <div className="flex items-start justify-between gap-3 border-0 border-b border-solid border-light3 px-4 py-3">
+        <>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-0 border-b border-solid border-light3 px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
                 <h2 className="m-0 text-md font-semibold">
@@ -407,22 +477,28 @@ const ScheduleSwapPanel = ({
               No sections are listed for this term.
             </div>
           ) : (
-            <div>
-              {sections.map((section) => (
-                <ScheduleSectionRow
-                  course={selectedCourse}
-                  hasConflict={conflictSectionIds.includes(section.id)}
-                  isEnrolled={enrolledSectionIds.includes(section.id)}
-                  key={section.id}
-                  onPreviewChange={onPreviewChange}
-                  onSwitchSection={onSwitchSection}
-                  professorStatsById={professorStatsById}
-                  section={section}
-                />
-              ))}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {enrolledSections.map(renderRow)}
+              {openSections.map(renderRow)}
+              {openSections.length === 0 && (
+                <div className="border-0 border-t border-solid border-light3 px-4 py-4 text-center text-xs text-dark3">
+                  {conflictSections.length > 0
+                    ? 'No other section fits your schedule.'
+                    : 'No other sections to swap into.'}
+                </div>
+              )}
+              {conflictSections.length > 0 && (
+                <ConflictGroup
+                  // Collapse again when the panel switches course or type.
+                  key={`${selectedCourse.id}|${sectionType}|${selectedTermId}`}
+                  count={conflictSections.length}
+                >
+                  {conflictSections.map(renderRow)}
+                </ConflictGroup>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
     </aside>
   );
