@@ -197,9 +197,9 @@ const CoursePage = () => {
     );
   }
   if (error || !data) return <NotFoundPage text={DEFAULT_ERROR} title="" />;
-  if (!data.course.length) return <NotFoundPage text={NOT_FOUND.course} />;
+  const course = data.course[0] ?? data.course_alias[0]?.course;
+  if (!course) return <NotFoundPage text={NOT_FOUND.course} />;
 
-  const course = data.course[0];
   const displayCode = [
     course.code,
     ...course.aliases.map(({ code }) => code),

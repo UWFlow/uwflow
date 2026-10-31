@@ -160,10 +160,10 @@ const SearchResults = ({
         liked: result.liked,
         easy: result.easy,
         useful: result.useful,
-        terms: result.terms,
-        terms_with_seats: result.terms_with_seats,
+        terms: result.terms ?? [],
+        terms_with_seats: result.terms_with_seats ?? [],
         has_prereqs: result.has_prereqs ? result.has_prereqs?.valueOf() : false,
-        terms_with_online_section: result.terms_with_online_sections,
+        terms_with_online_section: result.terms_with_online_sections ?? [],
       };
     });
 
