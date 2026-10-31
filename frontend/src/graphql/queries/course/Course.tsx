@@ -7,6 +7,8 @@ import ReviewFragment from 'graphql/fragments/ReviewFragment';
 // A renamed course's codes are interchangeable, so $code may be any of them.
 // The course is looked up by code and by alias separately: an `_or` across the
 // two can't use either index and makes Postgres scan and JIT-compile the query.
+// The user-specific fields below keep the `_or` because they are narrowed by
+// user_id first, so it only checks that user's few rows.
 export const GET_COURSE = gql`
   query getCourse($code: String) {
     course(where: { code: { _eq: $code } }) {
