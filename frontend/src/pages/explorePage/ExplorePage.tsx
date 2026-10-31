@@ -141,7 +141,7 @@ const ExplorePageContent = ({
     const parsedProfCourses = allProfs
       .reduce((acc: string[], result) => {
         return acc.concat(
-          result.course_codes
+          (result.course_codes ?? [])
             .filter((code: string) => !seenCourses.has(code))
             .map((code: string) => {
               seenCourses.add(code);

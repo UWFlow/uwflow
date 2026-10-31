@@ -38,7 +38,7 @@ export type CourseScheduleFragment = {
     term_id: number;
     updated_at: any;
     meetings: Array<{
-      days: any;
+      days: Array<string>;
       start_date: any;
       end_date: any;
       start_seconds: number | null;
@@ -186,13 +186,13 @@ export type CourseSearchFragment = {
   course_id: number | null;
   name: string | null;
   code: string | null;
-  aliases: any;
+  aliases: Array<string> | null;
   useful: any;
-  terms: any;
-  terms_with_seats: any;
-  terms_with_online_sections: any;
+  terms: Array<number> | null;
+  terms_with_seats: Array<number> | null;
+  terms_with_online_sections: Array<number> | null;
   ratings: any;
-  prof_ids: any;
+  prof_ids: Array<number> | null;
   liked: any;
   easy: any;
   has_prereqs: boolean | null;
@@ -203,8 +203,8 @@ export type ProfSearchFragment = {
   name: string | null;
   code: string | null;
   clear: any;
-  course_ids: any;
-  course_codes: any;
+  course_ids: Array<number> | null;
+  course_codes: Array<string> | null;
   engaging: any;
   liked: any;
   ratings: any;
@@ -245,7 +245,7 @@ export type UserScheduleFragment = {
         end_seconds: number | null;
       }>;
       meetings: Array<{
-        days: any;
+        days: Array<string>;
         end_date: any;
         end_seconds: number | null;
         is_cancelled: boolean;
@@ -605,7 +605,7 @@ export type SwapCourseSectionFragment = {
     end_seconds: number | null;
   }>;
   meetings: Array<{
-    days: any;
+    days: Array<string>;
     end_date: any;
     end_seconds: number | null;
     is_cancelled: boolean;
