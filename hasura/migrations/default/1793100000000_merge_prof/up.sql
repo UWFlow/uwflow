@@ -15,14 +15,6 @@ CREATE TABLE prof_merge (
   CHECK (from_prof_id <> into_prof_id)
 );
 
-CREATE FUNCTION add_prof_alias(prof_code TEXT, alias TEXT)
-RETURNS VOID AS $$
-  INSERT INTO prof_alias(prof_id, name)
-  SELECT id, alias FROM prof WHERE code = prof_code AND name <> alias
-  ON CONFLICT DO NOTHING;
-  REFRESH MATERIALIZED VIEW materialized.prof_search_index;
-$$ LANGUAGE sql;
-
 -- Moves the from prof's reviews and sections to the into prof and makes its
 -- name an alias. The importer maps its code through prof_remap. Idempotent.
 CREATE FUNCTION merge_prof(from_code TEXT, into_code TEXT)
@@ -45,12 +37,13 @@ RETURNS VOID AS $$
     UPDATE section_meeting SET prof_id = keep_id WHERE prof_id = drop_id;
     INSERT INTO prof_merge VALUES (drop_id, keep_id, moved);
     INSERT INTO prof_remap VALUES (from_code, keep_id) ON CONFLICT (code) DO UPDATE SET prof_id = keep_id;
+    INSERT INTO prof_alias SELECT keep_id, name FROM prof WHERE id = drop_id ON CONFLICT DO NOTHING;
 
     REFRESH MATERIALIZED VIEW materialized.prof_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_review_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_teaches_course;
     REFRESH MATERIALIZED VIEW materialized.course_search_index;
-    PERFORM add_prof_alias(into_code, (SELECT name FROM prof WHERE id = drop_id));
+    REFRESH MATERIALIZED VIEW materialized.prof_search_index;
   END;
 $$ LANGUAGE plpgsql;
 

@@ -80,6 +80,5 @@ RETURNS SETOF prof_search_index AS $$
 $$ LANGUAGE plpgsql STABLE;
 
 DROP FUNCTION merge_prof;
-DROP FUNCTION add_prof_alias;
 DROP TABLE prof_merge;
 DROP TABLE prof_alias;
