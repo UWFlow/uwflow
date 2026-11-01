@@ -178,6 +178,7 @@ const SearchResults = ({
       clear: result.clear,
       engaging: result.engaging,
       courses: new Set<string>(result.course_codes),
+      aliases: parseCodes(result.aliases),
     }));
 
     setCourses(newCourses);

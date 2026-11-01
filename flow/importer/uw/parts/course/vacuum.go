@@ -21,6 +21,10 @@ WHERE NOT EXISTS (
     UNION ALL
     SELECT FROM section_meeting
     WHERE prof_id = p.id
+    UNION ALL
+    -- merged profs are kept for the merge ledger
+    SELECT FROM prof_merge
+    WHERE p.id IN (from_prof_id, into_prof_id)
 );
 `
 

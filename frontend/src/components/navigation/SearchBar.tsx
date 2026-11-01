@@ -309,7 +309,10 @@ const SearchBar = ({
           {highlightText(prof.name)}
         </ColoredResultText>
         <Dash>&mdash;</Dash>
-        <EllipsisSpan>Professor</EllipsisSpan>
+        <EllipsisSpan>
+          Professor
+          {prof.aliases && highlightText(` (also known as ${prof.aliases})`)}
+        </EllipsisSpan>
       </ResultText>
       <Tooltip content={`Explore courses taught by ${prof.name}`}>
         <ExploreSideButton

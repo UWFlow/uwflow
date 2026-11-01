@@ -331,7 +331,7 @@ INSERT INTO section_meeting(
   is_cancelled, is_closed, is_tba
 )
 SELECT
-  s.id, COALESCE(pr.prof_id, p.id),
+  s.id, COALESCE(pr.prof_id, pm.into_prof_id, p.id),
   d.location, d.start_seconds, d.end_seconds,
   d.start_date, d.end_date, d.days,
   d.is_cancelled, d.is_closed, d.is_tba
@@ -345,6 +345,9 @@ FROM work.section_meeting_delta d
     ON pr.code = d.prof_code
   LEFT JOIN prof p
     ON p.code = d.prof_code
+  -- a merged-away prof teaches as the prof it was merged into
+  LEFT JOIN prof_merge pm
+    ON pm.from_prof_id = p.id
 `
 
 func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error) {
@@ -393,15 +396,13 @@ func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error)
 
 const truncateProfQuery = `TRUNCATE work.prof_delta`
 
-// Profs have nothing to update: name and code are their identifiers.
-// Remapped codes belong to a merged prof (see merge_prof) and are not recreated.
+// Profs have nothing to update: name and code are their identifiers
 const insertProfQuery = `
 INSERT INTO prof(name, code)
 SELECT d.name, d.code
 FROM work.prof_delta d
   LEFT JOIN prof p ON p.code = d.code
-  LEFT JOIN prof_remap pr ON pr.code = d.code
-WHERE p.id IS NULL AND pr.code IS NULL
+WHERE p.id IS NULL
 `
 
 func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {

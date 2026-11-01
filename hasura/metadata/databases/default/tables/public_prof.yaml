@@ -12,6 +12,13 @@ object_relationships:
           name: prof_rating
           schema: aggregate
 array_relationships:
+  - name: merged_from
+    using:
+      foreign_key_constraint_on:
+        column: into_prof_id
+        table:
+          name: prof_merge
+          schema: public
   - name: prof_clear_buckets
     using:
       manual_configuration:

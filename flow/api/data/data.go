@@ -23,6 +23,8 @@ type prof struct {
 	Name        string   `json:"name"`
 	Courses     []string `json:"courses"`
 	RatingCount int      `json:"rating_count"`
+	// Names of profs merged into this one
+	Aliases []string `json:"aliases"`
 }
 
 type dumpResponse struct {
@@ -46,11 +48,15 @@ GROUP BY c.id, cr.filled_count
 const profQuery = `
 SELECT
   p.id, p.code, p.name, pr.filled_count AS review_count,
-  COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses
+  COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses,
+  COALESCE((SELECT ARRAY_AGG(mp.name ORDER BY mp.name)
+    FROM prof_merge pm JOIN prof mp ON mp.id = pm.from_prof_id
+    WHERE pm.into_prof_id = p.id), ARRAY[]::TEXT[]) AS aliases
 FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
   LEFT JOIN course c ON c.id = pc.course_id
+WHERE NOT EXISTS(SELECT FROM prof_merge WHERE from_prof_id = p.id)
 GROUP BY p.id, pr.filled_count
 `
 
@@ -79,7 +85,7 @@ func HandleSearch(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	for rows.Next() {
 		var p prof
-		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.RatingCount, &p.Courses)
+		err = rows.Scan(&p.Id, &p.Code, &p.Name, &p.RatingCount, &p.Courses, &p.Aliases)
 		if err != nil {
 			return nil, fmt.Errorf("reading prof row: %w", err)
 		}

@@ -88,7 +88,12 @@ export type CourseReviewDistributionFragment = {
   course_easy_buckets: Array<{ value: any; count: any }>;
 };
 
-export type ProfInfoFragment = { id: number; name: string; code: string };
+export type ProfInfoFragment = {
+  id: number;
+  name: string;
+  code: string;
+  merged_from: Array<{ from_prof: { name: string } }>;
+};
 
 export type ProfCoursesTaughtFragment = {
   id: number;
@@ -205,6 +210,7 @@ export type ProfSearchFragment = {
   clear: any;
   course_ids: Array<number> | null;
   course_codes: Array<string> | null;
+  aliases: Array<string> | null;
   engaging: any;
   liked: any;
   ratings: any;
@@ -678,6 +684,12 @@ export type GetProfQuery = {
       ProfRatingFragment &
       ProfReviewDistributionFragment
   >;
+  prof_merge: Array<{
+    into_prof: ProfInfoFragment &
+      ProfCoursesTaughtFragment &
+      ProfRatingFragment &
+      ProfReviewDistributionFragment;
+  }>;
 };
 
 export type ProfReviewsQueryVariables = Exact<{

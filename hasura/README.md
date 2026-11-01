@@ -148,4 +148,4 @@ Renames are declared in `course_renames.sql` as `SELECT merge_course('<old>', '<
 
 ## Duplicate profs
 
-When one person appears under two prof codes, declare the merge in `prof_merges.sql` as `SELECT merge_prof('<from>', '<into>');` and apply it with `make prof-merges`. The from prof's reviews and sections move to the into prof, and its code is kept in `prof_remap` so the importer maps it there instead of recreating it. Like course renames, re-run it in every environment after `hasura migrate apply`.
+When one person appears under two prof codes, declare the merge in `prof_merges.sql` as `SELECT merge_prof('<from>', '<into>');` and apply it with `make prof-merges`. Both prof rows are kept and the merge is recorded in the `prof_merge` ledger: the from prof's reviews and sections move to the into prof (the moved review ids are stored so a merge can be undone by hand), search shows only the into prof with the from prof's name as "also known as", the from prof's URL shows the into prof, and the importer sends the from prof's sections to the into prof. Like course renames, re-run it in every environment after `hasura migrate apply`.

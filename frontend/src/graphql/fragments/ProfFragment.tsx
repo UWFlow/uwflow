@@ -6,6 +6,11 @@ const ProfFragment = {
       id
       name
       code
+      merged_from {
+        from_prof {
+          name
+        }
+      }
     }
   `,
   profCoursesTaught: gql`

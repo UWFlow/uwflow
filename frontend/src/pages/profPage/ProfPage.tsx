@@ -85,24 +85,27 @@ export const ProfPage = () => {
     variables: { code: profCode },
   });
 
+  // A merged-away prof row still exists, so check the merge ledger first
+  const prof = data?.prof_merge[0]?.into_prof ?? data?.prof[0];
+
   return loading ? (
     <ProfPageWrapper>
       <LoadingSpinner />
     </ProfPageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.prof.length === 0 ? (
+  ) : !prof ? (
     <NotFoundPage text={NOT_FOUND.prof} />
   ) : (
     <ProfPageWrapper>
       <Helmet>
-        <title>{data.prof[0].name} - UW Flow</title>
+        <title>{prof.name} - UW Flow</title>
         <meta
           name="description"
-          content={`Professor ${data.prof[0].name} at the University of Waterloo.`}
+          content={`Professor ${prof.name} at the University of Waterloo.`}
         />
       </Helmet>
-      <ProfPageContent prof={data.prof[0]} />
+      <ProfPageContent prof={prof} />
     </ProfPageWrapper>
   );
 };

@@ -1,0 +1,23 @@
+table:
+  name: prof_merge
+  schema: public
+object_relationships:
+  - name: from_prof
+    using:
+      foreign_key_constraint_on: from_prof_id
+  - name: into_prof
+    using:
+      foreign_key_constraint_on: into_prof_id
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - from_prof_id
+        - into_prof_id
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - from_prof_id
+        - into_prof_id
+      filter: {}
