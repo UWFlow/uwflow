@@ -1,8 +1,42 @@
+-- Names a prof is also known as. Search matches them and prof pages list them.
+-- Filled by rename_prof and merge_prof.
+CREATE TABLE prof_alias (
+  prof_id INT NOT NULL
+    REFERENCES prof(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  name TEXT NOT NULL
+    CONSTRAINT prof_alias_name_length CHECK (LENGTH(name) <= 256),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (prof_id, name)
+);
+
+-- A prof whose name changed (e.g. Karen Yeats -> Rowan "Ren" Yeats) keeps its
+-- row and code; the former name becomes an alias.
+-- Idempotent, and works if the name was already changed by hand.
+CREATE FUNCTION rename_prof(prof_code TEXT, former_name TEXT, new_name TEXT)
+RETURNS VOID AS $$
+  DECLARE
+    keep_id INT;
+  BEGIN
+    SELECT id INTO keep_id FROM prof WHERE code = LOWER(prof_code);
+    IF keep_id IS NULL THEN
+      RAISE EXCEPTION 'rename_prof: no prof with code %', prof_code;
+    END IF;
+
+    UPDATE prof SET name = new_name WHERE id = keep_id AND name <> new_name;
+    DELETE FROM prof_alias WHERE prof_id = keep_id AND name = new_name;
+    INSERT INTO prof_alias(prof_id, name) VALUES (keep_id, former_name)
+    ON CONFLICT DO NOTHING;
+
+    REFRESH MATERIALIZED VIEW materialized.prof_search_index;
+  END;
+$$ LANGUAGE plpgsql;
+
 -- Duplicate profs: when the same person shows up under two codes (e.g.
 -- josh_neufeld and josh_d_neufeld), a maintainer calls merge_prof(from, into).
 -- Both prof rows are kept. The merge is recorded in the prof_merge ledger, the
--- from prof's reviews and sections move to the into prof, and search shows one
--- prof whose other names are listed as aliases.
+-- from prof's reviews and sections move to the into prof, and its names become
+-- aliases of the into prof.
 CREATE TABLE prof_merge (
   -- A prof can be merged away at most once
   from_prof_id INT PRIMARY KEY
@@ -69,6 +103,14 @@ RETURNS VOID AS $$
     INSERT INTO prof_merge(from_prof_id, into_prof_id, review_ids)
     VALUES (drop_id, keep_id, moved);
 
+    INSERT INTO prof_alias(prof_id, name)
+    SELECT keep_id, name FROM prof WHERE id = drop_id
+    UNION
+    SELECT keep_id, name FROM prof_alias WHERE prof_id = drop_id
+    EXCEPT
+    SELECT keep_id, name FROM prof WHERE id = keep_id
+    ON CONFLICT DO NOTHING;
+
     REFRESH MATERIALIZED VIEW materialized.prof_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_review_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_teaches_course;
@@ -77,8 +119,8 @@ RETURNS VOID AS $$
   END;
 $$ LANGUAGE plpgsql;
 
--- Recreate the search index: merged-away profs are left out, and their names
--- are searchable on, and listed as aliases of, the prof they were merged into
+-- Recreate the search index: merged-away profs are left out, and aliases are
+-- searchable and listed
 DROP FUNCTION search_courses;
 DROP FUNCTION search_profs;
 DROP VIEW prof_search_index;
@@ -101,15 +143,12 @@ SELECT
     FILTER (WHERE materialized.prof_teaches_course.course_id IS NOT NULL)) course_id
     LEFT JOIN course on course.id = course_id),
     ARRAY[]::TEXT[])                          AS course_codes,
-  -- names of profs merged into this one, see merge_prof
-  COALESCE((SELECT ARRAY_AGG(p.name ORDER BY p.name)
-    FROM prof_merge pm JOIN prof p ON p.id = pm.from_prof_id
-    WHERE pm.into_prof_id = prof.id),
+  COALESCE((SELECT ARRAY_AGG(pa.name ORDER BY pa.name)
+    FROM prof_alias pa WHERE pa.prof_id = prof.id),
     ARRAY[]::TEXT[])                          AS aliases,
   to_tsvector('simple', prof.name) ||
-  to_tsvector('simple', COALESCE((SELECT STRING_AGG(p.name, ' ')
-    FROM prof_merge pm JOIN prof p ON p.id = pm.from_prof_id
-    WHERE pm.into_prof_id = prof.id), ''))
+  to_tsvector('simple', COALESCE((SELECT STRING_AGG(pa.name, ' ')
+    FROM prof_alias pa WHERE pa.prof_id = prof.id), ''))
                                               AS document
 FROM prof
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.prof_id = prof.id

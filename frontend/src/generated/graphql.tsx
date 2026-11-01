@@ -92,7 +92,7 @@ export type ProfInfoFragment = {
   id: number;
   name: string;
   code: string;
-  merged_from: Array<{ from_prof: { name: string } }>;
+  aliases: Array<{ name: string }>;
 };
 
 export type ProfCoursesTaughtFragment = {

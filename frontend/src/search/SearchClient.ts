@@ -206,7 +206,7 @@ class SearchClient {
     const profs = (parsedSearchData.profs || []).map((prof) => ({
       ...prof,
       courses: prof.courses?.map(formatCourseCode).join(' ') ?? '',
-      // Names of merged profs, matched like the prof's own name
+      // Other names of the prof, matched like its own name
       aliases: prof.aliases?.join(', ') ?? '',
     }));
 

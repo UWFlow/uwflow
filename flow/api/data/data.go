@@ -23,7 +23,7 @@ type prof struct {
 	Name        string   `json:"name"`
 	Courses     []string `json:"courses"`
 	RatingCount int      `json:"rating_count"`
-	// Names of profs merged into this one
+	// Other names of this prof, see prof_alias
 	Aliases []string `json:"aliases"`
 }
 
@@ -49,9 +49,8 @@ const profQuery = `
 SELECT
   p.id, p.code, p.name, pr.filled_count AS review_count,
   COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses,
-  COALESCE((SELECT ARRAY_AGG(mp.name ORDER BY mp.name)
-    FROM prof_merge pm JOIN prof mp ON mp.id = pm.from_prof_id
-    WHERE pm.into_prof_id = p.id), ARRAY[]::TEXT[]) AS aliases
+  COALESCE((SELECT ARRAY_AGG(pa.name ORDER BY pa.name)
+    FROM prof_alias pa WHERE pa.prof_id = p.id), ARRAY[]::TEXT[]) AS aliases
 FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id

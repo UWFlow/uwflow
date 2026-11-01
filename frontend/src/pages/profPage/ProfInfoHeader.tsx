@@ -41,7 +41,7 @@ const ProfInfoHeader = ({ prof, distributions }: ProfInfoHeaderProps) => {
       filled_count: 0,
       comment_count: 0,
     };
-  const aliases = prof.merged_from.map((m) => m.from_prof.name);
+  const aliases = prof.aliases.map((alias) => alias.name);
 
   return (
     <ProfInfoHeaderWrapper>

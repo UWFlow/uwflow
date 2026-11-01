@@ -12,12 +12,12 @@ object_relationships:
           name: prof_rating
           schema: aggregate
 array_relationships:
-  - name: merged_from
+  - name: aliases
     using:
       foreign_key_constraint_on:
-        column: into_prof_id
+        column: prof_id
         table:
-          name: prof_merge
+          name: prof_alias
           schema: public
   - name: prof_clear_buckets
     using:

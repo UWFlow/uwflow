@@ -81,3 +81,5 @@ $$ LANGUAGE plpgsql STABLE;
 
 DROP FUNCTION merge_prof;
 DROP TABLE prof_merge;
+DROP FUNCTION rename_prof;
+DROP TABLE prof_alias;

@@ -64,7 +64,7 @@ export type SearchDataProf = {
   name: string;
   courses: string[];
   rating_count: number;
-  // Names of profs merged into this one; missing from data cached by older clients
+  // Other names of this prof; missing from data cached by older clients
   aliases?: string[];
 };
 
