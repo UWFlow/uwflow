@@ -2,7 +2,7 @@ import React from 'react';
 import { getCoursePageRoute, getProfPageRoute } from 'Routes';
 
 import { ColumnOverride } from 'components/display/Table';
-import { CourseSearchResult, ProfSearchResult } from 'types/Common';
+import { CourseSearchResult } from 'types/Common';
 import { formatCourseCode, processRating } from 'utils/Misc';
 
 import { CourseCode, ProfName } from './styles/ExplorePage';
@@ -76,21 +76,11 @@ export const profColumns: ColumnOverride[] = [
     Header: 'Professor name',
     accessor: 'code_name',
     align: 'left',
-    Cell: ({ cell, row }) => {
-      const { aliases = [] } = row.original as ProfSearchResult;
-      return (
-        <>
-          <ProfName to={getProfPageRoute(cell.value.code)}>
-            {cell.value.name}
-          </ProfName>
-          {aliases.length > 0 && (
-            <span className="text-dark2">
-              {` (also known as ${aliases.join(', ')})`}
-            </span>
-          )}
-        </>
-      );
-    },
+    Cell: ({ cell }) => (
+      <ProfName to={getProfPageRoute(cell.value.code)}>
+        {cell.value.name}
+      </ProfName>
+    ),
   },
   {
     Header: 'Ratings',

@@ -22,7 +22,6 @@ export type IndexedCourse = Omit<SearchDataCourse, 'profs' | 'aliases'> & {
 
 export type IndexedProf = Omit<SearchDataProf, 'courses' | 'aliases'> & {
   courses: string;
-  aliases: string;
 };
 
 export type IndexedCourseCode = {
@@ -59,13 +58,9 @@ const courseOptions: Fuzzysort.KeysOptions<IndexedCourse> = {
 
 const profOptions: Fuzzysort.KeysOptions<IndexedProf> = {
   ...searchOptions,
-  keys: ['name', 'courses', 'aliases'],
+  keys: ['name', 'courses'],
   scoreFn: (a) =>
-    Math.max(
-      a[0] ? a[0].score : -10000,
-      a[1] ? a[1].score - 50 : -10000,
-      a[2] ? a[2].score : -10000,
-    ),
+    Math.max(a[0] ? a[0].score : -10000, a[1] ? a[1].score - 50 : -10000),
 };
 
 const courseCodeOptions: Fuzzysort.KeyOptions = {
@@ -203,12 +198,16 @@ class SearchClient {
       });
     });
 
-    const profs = (parsedSearchData.profs || []).map((prof) => ({
-      ...prof,
-      courses: prof.courses?.map(formatCourseCode).join(' ') ?? '',
-      // Other names of the prof, matched like its own name
-      aliases: prof.aliases?.join(', ') ?? '',
-    }));
+    // Every name a prof goes by gets its own entry, all linking to the same
+    // prof page.
+    const profs = (parsedSearchData.profs || []).flatMap(
+      ({ aliases, ...prof }) =>
+        [prof.name, ...(aliases || [])].map((name) => ({
+          ...prof,
+          name,
+          courses: prof.courses?.map(formatCourseCode).join(' ') ?? '',
+        })),
+    );
 
     const courseCodes = Object.entries(courseCodeRatings).map(
       ([code, rating_count]) => ({ code, rating_count }),

@@ -297,7 +297,7 @@ const SearchBar = ({
   ) => (
     <SearchResult
       onClick={() => goToProf(prof.code)}
-      key={prof.code}
+      key={`${prof.code}:${prof.name}`}
       ref={ref}
       isLanding={isLanding}
     >
@@ -309,10 +309,7 @@ const SearchBar = ({
           {highlightText(prof.name)}
         </ColoredResultText>
         <Dash>&mdash;</Dash>
-        <EllipsisSpan>
-          Professor
-          {prof.aliases && highlightText(` (also known as ${prof.aliases})`)}
-        </EllipsisSpan>
+        <EllipsisSpan>Professor</EllipsisSpan>
       </ResultText>
       <Tooltip content={`Explore courses taught by ${prof.name}`}>
         <ExploreSideButton

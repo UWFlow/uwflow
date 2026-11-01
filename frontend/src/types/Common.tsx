@@ -65,7 +65,6 @@ export type ProfSearchResult = {
   clear: number;
   engaging: number;
   courses: Set<string>;
-  aliases: string[];
 };
 
 /* Profile Page */
