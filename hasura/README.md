@@ -145,3 +145,7 @@ $ hasura migrate apply --down 1 --admin-secret "HASURA_GRAPHQL_ADMIN_SECRET"
 ## Renamed course codes
 
 Renames are declared in `course_renames.sql` as `SELECT merge_course('<old>', '<new>');` and applied with `make course-renames` (or by piping the file into `psql`). The file is idempotent, so re-run it in every environment (local, staging, production) after `hasura migrate apply`; a freshly created database starts without any renames until you do.
+
+## Duplicate profs
+
+When one person appears under two prof codes, declare the merge in `prof_merges.sql` as `SELECT merge_prof('<from>', '<into>');` and apply it with `make prof-merges`. The from prof's reviews and sections move to the into prof, and its code is kept in `prof_remap` so the importer maps it there instead of recreating it. Like course renames, re-run it in every environment after `hasura migrate apply`.
