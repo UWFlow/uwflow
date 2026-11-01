@@ -1,0 +1,16 @@
+table:
+  name: prof_alias
+  schema: public
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - prof_id
+        - name
+      filter: {}
+  - role: user
+    permission:
+      columns:
+        - prof_id
+        - name
+      filter: {}

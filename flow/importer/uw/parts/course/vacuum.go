@@ -21,6 +21,9 @@ WHERE NOT EXISTS (
     UNION ALL
     SELECT FROM section_meeting
     WHERE prof_id = p.id
+    UNION ALL
+    SELECT FROM prof_merge
+    WHERE p.id IN (from_prof_id, into_prof_id)
 );
 `
 

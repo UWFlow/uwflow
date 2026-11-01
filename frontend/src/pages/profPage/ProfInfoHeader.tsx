@@ -47,6 +47,11 @@ const ProfInfoHeader = ({ prof, distributions }: ProfInfoHeaderProps) => {
       <ProfNameSection>
         <ProfNameWrapper>
           <ProfName ratingBoxWidth={RATING_BOX_WIDTH}>{prof.name}</ProfName>
+          {prof.aliases.length > 0 && (
+            <div className="text-body text-light2 mt-xs">
+              Also known as {prof.aliases.map((a) => a.name).join(', ')}
+            </div>
+          )}
         </ProfNameWrapper>
       </ProfNameSection>
       <ProfDescriptionSection>

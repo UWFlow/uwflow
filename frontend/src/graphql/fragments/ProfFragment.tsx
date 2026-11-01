@@ -6,6 +6,9 @@ const ProfFragment = {
       id
       name
       code
+      aliases {
+        name
+      }
     }
   `,
   profCoursesTaught: gql`

@@ -297,7 +297,7 @@ const SearchBar = ({
   ) => (
     <SearchResult
       onClick={() => goToProf(prof.code)}
-      key={prof.code}
+      key={`${prof.code}:${prof.name}`}
       ref={ref}
       isLanding={isLanding}
     >

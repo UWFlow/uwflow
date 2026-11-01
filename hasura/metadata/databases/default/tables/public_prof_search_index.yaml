@@ -14,6 +14,7 @@ select_permissions:
         - liked
         - name
         - code
+        - aliases
       filter: {}
       allow_aggregations: true
   - role: user
@@ -28,5 +29,6 @@ select_permissions:
         - liked
         - name
         - code
+        - aliases
       filter: {}
       allow_aggregations: true

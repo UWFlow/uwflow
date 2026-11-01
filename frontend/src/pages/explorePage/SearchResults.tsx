@@ -167,18 +167,20 @@ const SearchResults = ({
       };
     });
 
-    const newProfs: ProfSearchResult[] = allProfs.map((result) => ({
-      id: result.prof_id ?? 0,
-      code_name: {
-        code: result.code ?? '',
-        name: result.name ?? '',
-      },
-      ratings: result.ratings,
-      liked: result.liked,
-      clear: result.clear,
-      engaging: result.engaging,
-      courses: new Set<string>(result.course_codes),
-    }));
+    const newProfs: ProfSearchResult[] = allProfs.flatMap((result) =>
+      [result.name ?? '', ...parseCodes(result.aliases)].map((name) => ({
+        id: result.prof_id ?? 0,
+        code_name: {
+          code: result.code ?? '',
+          name,
+        },
+        ratings: result.ratings,
+        liked: result.liked,
+        clear: result.clear,
+        engaging: result.engaging,
+        courses: new Set<string>(result.course_codes),
+      })),
+    );
 
     setCourses(newCourses);
     setProfs(newProfs);
