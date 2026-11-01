@@ -1,126 +1,60 @@
--- Names a prof is also known as. Search matches them and prof pages list them.
--- Filled by rename_prof and merge_prof.
+-- Other names a prof goes by. Search lists each as its own entry.
 CREATE TABLE prof_alias (
-  prof_id INT NOT NULL
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  name TEXT NOT NULL
-    CONSTRAINT prof_alias_name_length CHECK (LENGTH(name) <= 256),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  prof_id INT NOT NULL REFERENCES prof(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  name TEXT NOT NULL,
   PRIMARY KEY (prof_id, name)
 );
 
--- A prof whose name changed (e.g. Karen Yeats -> Rowan "Ren" Yeats) keeps its
--- row and code; the former name becomes an alias.
--- Idempotent, and works if the name was already changed by hand.
-CREATE FUNCTION rename_prof(prof_code TEXT, former_name TEXT, new_name TEXT)
-RETURNS VOID AS $$
-  DECLARE
-    keep_id INT;
-  BEGIN
-    SELECT id INTO keep_id FROM prof WHERE code = LOWER(prof_code);
-    IF keep_id IS NULL THEN
-      RAISE EXCEPTION 'rename_prof: no prof with code %', prof_code;
-    END IF;
-
-    UPDATE prof SET name = new_name WHERE id = keep_id AND name <> new_name;
-    DELETE FROM prof_alias WHERE prof_id = keep_id AND name = new_name;
-    INSERT INTO prof_alias(prof_id, name) VALUES (keep_id, former_name)
-    ON CONFLICT DO NOTHING;
-
-    REFRESH MATERIALIZED VIEW materialized.prof_search_index;
-  END;
-$$ LANGUAGE plpgsql;
-
--- Duplicate profs: when the same person shows up under two codes (e.g.
--- josh_neufeld and josh_d_neufeld), a maintainer calls merge_prof(from, into).
--- Both prof rows are kept. The merge is recorded in the prof_merge ledger, the
--- from prof's reviews and sections move to the into prof, and its names become
--- aliases of the into prof.
+-- Ledger of duplicate profs merged by merge_prof. Both prof rows are kept.
 CREATE TABLE prof_merge (
-  -- A prof can be merged away at most once
-  from_prof_id INT PRIMARY KEY
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  into_prof_id INT NOT NULL
-    REFERENCES prof(id)
-    ON UPDATE CASCADE ON DELETE RESTRICT,
-  -- Reviews moved by the merge, so it can be undone by hand
+  from_prof_id INT PRIMARY KEY REFERENCES prof(id) ON UPDATE CASCADE,
+  into_prof_id INT NOT NULL REFERENCES prof(id) ON UPDATE CASCADE,
+  -- reviews moved by the merge, so it can be undone
   review_ids INT[] NOT NULL,
   merged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT prof_merge_not_self CHECK (from_prof_id <> into_prof_id)
+  CHECK (from_prof_id <> into_prof_id)
 );
 
-CREATE INDEX prof_merge_into_prof_id_fkey ON prof_merge(into_prof_id);
+CREATE FUNCTION add_prof_alias(prof_code TEXT, alias TEXT)
+RETURNS VOID AS $$
+  INSERT INTO prof_alias(prof_id, name)
+  SELECT id, alias FROM prof WHERE code = prof_code AND name <> alias
+  ON CONFLICT DO NOTHING;
+  REFRESH MATERIALIZED VIEW materialized.prof_search_index;
+$$ LANGUAGE sql;
 
--- Idempotent: does nothing if from_code is already merged into into_code.
+-- Moves the from prof's reviews and sections to the into prof and makes its
+-- name an alias. The importer maps its code through prof_remap. Idempotent.
 CREATE FUNCTION merge_prof(from_code TEXT, into_code TEXT)
 RETURNS VOID AS $$
   DECLARE
-    keep_id INT;
-    drop_id INT;
+    drop_id INT := (SELECT id FROM prof WHERE code = from_code);
+    keep_id INT := (SELECT id FROM prof WHERE code = into_code);
     moved INT[];
   BEGIN
-    from_code := LOWER(from_code);
-    into_code := LOWER(into_code);
-
-    SELECT id INTO drop_id FROM prof WHERE code = from_code;
-    IF drop_id IS NULL THEN
-      RAISE EXCEPTION 'merge_prof: no prof with code %', from_code;
-    END IF;
-    SELECT id INTO keep_id FROM prof WHERE code = into_code;
-    IF keep_id IS NULL THEN
-      RAISE EXCEPTION 'merge_prof: no prof with code %', into_code;
-    END IF;
-    IF keep_id = drop_id THEN
-      RAISE EXCEPTION 'merge_prof: from and into code are both %', from_code;
-    END IF;
-
     IF EXISTS(SELECT FROM prof_merge WHERE from_prof_id = drop_id AND into_prof_id = keep_id) THEN
       RETURN;
     END IF;
-    IF EXISTS(SELECT FROM prof_merge WHERE from_prof_id = drop_id) THEN
-      RAISE EXCEPTION 'merge_prof: % is already merged into another prof', from_code;
-    END IF;
-    IF EXISTS(SELECT FROM prof_merge WHERE from_prof_id = keep_id) THEN
-      RAISE EXCEPTION 'merge_prof: % is merged into another prof, merge into that one', into_code;
-    END IF;
-    IF EXISTS(SELECT FROM prof_merge WHERE into_prof_id = drop_id) THEN
-      RAISE EXCEPTION 'merge_prof: other profs are merged into %', from_code;
-    END IF;
 
-    -- Moving reviews between profs during a merge must not look like an edit
+    -- Moving reviews must not look like an edit
     ALTER TABLE review DISABLE TRIGGER set_review_updated_at;
-    WITH m AS (
-      UPDATE review SET prof_id = keep_id WHERE prof_id = drop_id RETURNING id
-    )
-    SELECT COALESCE(ARRAY_AGG(id ORDER BY id), ARRAY[]::INT[]) INTO moved FROM m;
+    WITH m AS (UPDATE review SET prof_id = keep_id WHERE prof_id = drop_id RETURNING id)
+    SELECT COALESCE(ARRAY_AGG(id), '{}') INTO moved FROM m;
     ALTER TABLE review ENABLE TRIGGER set_review_updated_at;
 
     UPDATE section_meeting SET prof_id = keep_id WHERE prof_id = drop_id;
-    UPDATE prof_remap SET prof_id = keep_id WHERE prof_id = drop_id;
-
-    INSERT INTO prof_merge(from_prof_id, into_prof_id, review_ids)
-    VALUES (drop_id, keep_id, moved);
-
-    INSERT INTO prof_alias(prof_id, name)
-    SELECT keep_id, name FROM prof WHERE id = drop_id
-    UNION
-    SELECT keep_id, name FROM prof_alias WHERE prof_id = drop_id
-    EXCEPT
-    SELECT keep_id, name FROM prof WHERE id = keep_id
-    ON CONFLICT DO NOTHING;
+    INSERT INTO prof_merge VALUES (drop_id, keep_id, moved);
+    INSERT INTO prof_remap VALUES (from_code, keep_id) ON CONFLICT (code) DO UPDATE SET prof_id = keep_id;
 
     REFRESH MATERIALIZED VIEW materialized.prof_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_review_rating;
     REFRESH MATERIALIZED VIEW materialized.prof_teaches_course;
     REFRESH MATERIALIZED VIEW materialized.course_search_index;
-    REFRESH MATERIALIZED VIEW materialized.prof_search_index;
+    PERFORM add_prof_alias(into_code, (SELECT name FROM prof WHERE id = drop_id));
   END;
 $$ LANGUAGE plpgsql;
 
--- Recreate the search index: merged-away profs are left out, and aliases are
--- searchable and listed
+-- Recreate the search index with aliases and without merged-away profs
 DROP FUNCTION search_courses;
 DROP FUNCTION search_profs;
 DROP VIEW prof_search_index;
@@ -143,17 +77,13 @@ SELECT
     FILTER (WHERE materialized.prof_teaches_course.course_id IS NOT NULL)) course_id
     LEFT JOIN course on course.id = course_id),
     ARRAY[]::TEXT[])                          AS course_codes,
-  COALESCE((SELECT ARRAY_AGG(pa.name ORDER BY pa.name)
-    FROM prof_alias pa WHERE pa.prof_id = prof.id),
-    ARRAY[]::TEXT[])                          AS aliases,
-  to_tsvector('simple', prof.name) ||
-  to_tsvector('simple', COALESCE((SELECT STRING_AGG(pa.name, ' ')
-    FROM prof_alias pa WHERE pa.prof_id = prof.id), ''))
-                                              AS document
+  ARRAY(SELECT name FROM prof_alias WHERE prof_id = prof.id) AS aliases,
+  to_tsvector('simple', prof.name || ' ' || COALESCE((SELECT STRING_AGG(name, ' ')
+    FROM prof_alias WHERE prof_id = prof.id), '')) AS document
 FROM prof
   LEFT JOIN materialized.prof_teaches_course ON materialized.prof_teaches_course.prof_id = prof.id
   LEFT JOIN materialized.prof_rating ON materialized.prof_rating.prof_id = prof.id
-WHERE NOT EXISTS(SELECT FROM prof_merge WHERE from_prof_id = prof.id)
+WHERE prof.id NOT IN (SELECT from_prof_id FROM prof_merge)
 GROUP BY prof.id, ratings, liked, clear, engaging;
 
 CREATE INDEX idx_prof_search ON materialized.prof_search_index USING GIN(document);

@@ -41,16 +41,15 @@ const ProfInfoHeader = ({ prof, distributions }: ProfInfoHeaderProps) => {
       filled_count: 0,
       comment_count: 0,
     };
-  const aliases = prof.aliases.map((alias) => alias.name);
 
   return (
     <ProfInfoHeaderWrapper>
       <ProfNameSection>
         <ProfNameWrapper>
           <ProfName ratingBoxWidth={RATING_BOX_WIDTH}>{prof.name}</ProfName>
-          {aliases.length > 0 && (
+          {prof.aliases.length > 0 && (
             <div className="text-body text-light2 mt-xs">
-              Also known as {aliases.join(', ')}
+              Also known as {prof.aliases.map((a) => a.name).join(', ')}
             </div>
           )}
         </ProfNameWrapper>

@@ -33,7 +33,7 @@ const SearchProvider = ({ searchWorker, children }: SearchProviderProps) => {
   const [shouldReindex, setShouldReindex] = useState(false);
 
   useEffect(() => {
-    // Drop caches written before course and prof aliases were added to the dump
+    // Drop caches written before course aliases were added to the dump
     LEGACY_SEARCH_KEYS.forEach((key) => localStorage.removeItem(key));
 
     // Build indices

@@ -61,7 +61,7 @@ course-renames: ## Apply maintainer-declared course renames in hasura/course_ren
 	@docker exec -i postgres psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -p $(POSTGRES_PORT) < hasura/course_renames.sql
 	@echo "Course renames applied!"
 
-prof-aliases: ## Apply maintainer-declared prof renames and merges in hasura/prof_aliases.sql
+prof-aliases: ## Apply maintainer-declared prof aliases and merges in hasura/prof_aliases.sql
 	@echo "Applying prof aliases..."
 	@docker exec -i postgres psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -p $(POSTGRES_PORT) < hasura/prof_aliases.sql
 	@echo "Prof aliases applied!"

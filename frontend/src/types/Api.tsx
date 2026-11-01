@@ -64,7 +64,6 @@ export type SearchDataProf = {
   name: string;
   courses: string[];
   rating_count: number;
-  // Other names of this prof; missing from data cached by older clients
   aliases?: string[];
 };
 

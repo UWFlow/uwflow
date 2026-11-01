@@ -198,8 +198,7 @@ class SearchClient {
       });
     });
 
-    // Every name a prof goes by gets its own entry, all linking to the same
-    // prof page.
+    // Each name a prof goes by is its own entry linking to the same page
     const profs = (parsedSearchData.profs || []).flatMap(
       ({ aliases, ...prof }) =>
         [prof.name, ...(aliases || [])].map((name) => ({

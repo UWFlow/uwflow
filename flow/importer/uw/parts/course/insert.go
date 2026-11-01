@@ -331,7 +331,7 @@ INSERT INTO section_meeting(
   is_cancelled, is_closed, is_tba
 )
 SELECT
-  s.id, COALESCE(pr.prof_id, pm.into_prof_id, p.id),
+  s.id, COALESCE(pr.prof_id, p.id),
   d.location, d.start_seconds, d.end_seconds,
   d.start_date, d.end_date, d.days,
   d.is_cancelled, d.is_closed, d.is_tba
@@ -345,9 +345,6 @@ FROM work.section_meeting_delta d
     ON pr.code = d.prof_code
   LEFT JOIN prof p
     ON p.code = d.prof_code
-  -- a merged-away prof teaches as the prof it was merged into
-  LEFT JOIN prof_merge pm
-    ON pm.from_prof_id = p.id
 `
 
 func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error) {

@@ -99,17 +99,6 @@ const pickDisplayCode = (codes: string[], query: string) => {
   );
 };
 
-// A prof gets a row for each of its names that matches every search term,
-// like the backend's prefix search; otherwise one row under its current name.
-const pickProfNames = (names: string[], query: string) => {
-  const words = (name: string) => name.toLowerCase().match(/[a-z]+/g) ?? [];
-  const terms = words(query);
-  const matching = names.filter((name) =>
-    terms.every((term) => words(name).some((word) => word.startsWith(term))),
-  );
-  return terms.length > 0 && matching.length > 0 ? matching : names.slice(0, 1);
-};
-
 type SearchResultsProps = {
   query: string;
   filterState: SearchFilterState;
@@ -179,10 +168,7 @@ const SearchResults = ({
     });
 
     const newProfs: ProfSearchResult[] = allProfs.flatMap((result) =>
-      pickProfNames(
-        [result.name ?? '', ...parseCodes(result.aliases)],
-        query,
-      ).map((name) => ({
+      [result.name ?? '', ...parseCodes(result.aliases)].map((name) => ({
         id: result.prof_id ?? 0,
         code_name: {
           code: result.code ?? '',

@@ -16,7 +16,6 @@
 - "!include public_course_section.yaml"
 - "!include public_prof.yaml"
 - "!include public_prof_alias.yaml"
-- "!include public_prof_merge.yaml"
 - "!include public_prof_review_upvote.yaml"
 - "!include public_prof_search_index.yaml"
 - "!include public_prof_teaches_course.yaml"

@@ -148,7 +148,4 @@ Renames are declared in `course_renames.sql` as `SELECT merge_course('<old>', '<
 
 ## Prof aliases
 
-Search finds a prof under any of its names in `prof_alias`, and the prof page lists them as "also known as". Declare changes in `prof_aliases.sql` and apply them with `make prof-aliases`. Like course renames, re-run it in every environment after `hasura migrate apply`.
-
-- `SELECT rename_prof('<code>', '<former name>', '<new name>');` when a prof's name changed. The row and code stay, and the former name becomes an alias.
-- `SELECT merge_prof('<from>', '<into>');` when one person has two prof codes. Both rows are kept and the merge is recorded in the `prof_merge` ledger. The from prof's reviews and sections move to the into prof (the moved review ids are stored so a merge can be undone by hand), its names become aliases, its URL shows the into prof, and the importer sends its sections to the into prof.
+Search lists each of a prof's names as its own entry. Declare them in `prof_aliases.sql` and apply with `make prof-aliases` in every environment: `add_prof_alias('<code>', '<other name>')` for a renamed prof, or `merge_prof('<from>', '<into>')` for one person with two codes (recorded in the `prof_merge` ledger; reviews and sections move to the into prof).
