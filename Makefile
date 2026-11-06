@@ -40,9 +40,9 @@ setup-contrib: ## Initialize database from scratch using migrations and UW API (
 	@echo "Starting contributor setup..."
 	@bash script/setup-contrib.sh
 
-import-profs: ## Import some dummy prof data
-	@echo "Importing professor data from production..."
-	@bash script/import-profs.sh
+import-profs: ## Add dummy professors to the local database
+	@echo "Adding dummy professor data..."
+	@bash script/import-prof.sh
 
 import-course: ## Run UW course importer job (rebuilds importer service)
 	@echo "Rebuilding and running course import job..."
