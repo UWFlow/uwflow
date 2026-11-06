@@ -1,0 +1,4 @@
+-- Intentionally empty. Every object in up.sql existed before this migration
+-- ran: the indexes come from init, and production already held pgcrypto and
+-- the prof_rename rows. Dropping them on rollback would remove init's indexes
+-- from a rebuild and delete production data.
