@@ -9,178 +9,197 @@ and deployment configuration. A single branch or PR can update the entire stack.
 | `flow/` | Go API, email worker, and UW importer |
 | `hasura/` | Database migrations and GraphQL metadata |
 | `nginx/` | Production frontend and API reverse proxy |
-| `script/`, `staging/` | Build/deploy commands and staging infrastructure |
+| `script/`, `staging/` | Build/deploy scripts and staging infrastructure |
 
-## Frontend development
+Run `make help` to list every `make` target.
 
-Install the Bun version in `frontend/.bun-version`, then run from the
-repository root:
+---
+
+## Frontend
+
+### Frontend setup
+
+Do this once per clone.
+
+1. Install the Bun version in `frontend/.bun-version`.
+2. From the repository root, install dependencies and the Git hooks:
+
+   ```sh
+   make frontend-install
+   make hooks
+   ```
+
+Rerun `make frontend-install` whenever `frontend/bun.lock` changes.
+
+### Running the frontend
 
 ```sh
-make frontend-install
-make hooks
 make frontend-start
 ```
 
-The frontend runs at `http://localhost:3000`. Frontend-only commands do not need
-or load the backend `.env`. Put browser configuration overrides in
-`frontend/.env.local`, following `frontend/.env.sample`. Follow the backend setup
-below for local API/GraphQL services.
+The development server runs at `http://localhost:3000`.
 
-```sh
-make frontend-check     # lint, TypeScript, and unit tests
-make frontend-build     # production build without Sentry upload
-make frontend-generate  # requires a matching local Hasura schema
-make migration-test     # build/deployment command tests; no Docker required
-```
+### Frontend development commands
 
-The root Git hook runs non-mutating frontend lint when frontend files are staged.
-`make hooks` replaces this clone's `core.hooksPath`; it applies to linked worktrees
-sharing that Git configuration. Existing standalone frontend clones should be
-replaced by a fresh monorepo clone. See [frontend documentation](frontend/README.md).
+Use these while you work. None of them are required for onboarding.
 
-## Builds and deployment
+| Command | What it does |
+| --- | --- |
+| `make frontend-check` | Lint, TypeScript, and unit tests (run before opening a PR) |
+| `make frontend-lint` | Lint only, without changing files |
+| `make frontend-typecheck` | TypeScript only |
+| `make frontend-test` | Unit tests only |
+| `make frontend-build` | Production build, without uploading Sentry source maps |
+| `make frontend-generate` | Regenerate GraphQL types (needs the local backend running with a matching Hasura schema) |
 
-`./script/build.sh` builds all four application images; pass service names to build
-a subset, for example `./script/build.sh frontend`. After building, run
-`make frontend-container-test` for an isolated Nginx/routing smoke test (requires
-Docker and OpenSSL; uses temporary containers and mock upstreams). Images retain the
-`neuwflow/*` names and receive both a commit-SHA tag and `latest`. The unified
-CircleCI pipeline validates both components on every PR and publishes on `main`.
+### More frontend docs
 
-From the production checkout, use `./script/deploy.sh frontend` for a frontend-only
-release, or `./script/deploy.sh` for all services. Persist `UWFLOW_IMAGE_TAG` in the
-backend `.env` to pin application images to a published commit. Without a pin,
-Compose continues using `latest`. Pulling images does not update this checkout's
-Nginx, Compose, or Hasura files.
+See the [frontend README](frontend/README.md) for Vercel previews, and
+[frontend/docs](frontend/docs) for GraphQL codegen, modals, pages, search, and analytics.
 
-Vercel uses `frontend` as its project Root Directory. Its Git connection must point
-to `UWFlow/uwflow`. See the [migration and cutover runbook](docs/monorepo-migration.md)
-for the history-preserving merge requirement, CI/Vercel handoff, and rollback.
+---
 
-## Backend setup
+## Backend
 
-## Architecture
+### Architecture
 
-The UWFlow backend is composed of 5 components that will be explained in detail below.
-Each of these components runs as a separate Docker container, orchestrated by `docker-compose`.
+The backend has five components. Each runs as a separate Docker container,
+managed by `docker-compose`.
 
-1. **Postgres**: Our Postgres database stores all of the data for UWFlow.
+1. **Postgres** stores all of the data for UWFlow.
+2. **Hasura** is a GraphQL engine on top of Postgres. The frontend uses it for
+   ordinary CRUD operations. Hasura also enforces permissions, defines relationships
+   between tables, and manages database migrations. See the
+   [Hasura README](hasura/README.md) for details and for creating migrations.
+3. **API** (`flow/api`) is a Go server for operations that Hasura cannot handle alone:
+   authentication, transcript and calendar parsing, webcal generation, and search
+   data for frontend autocomplete.
+4. **UW Importer** (`flow/importer/uw`) is a scheduled job that imports courses,
+   instructors, and term schedules from the UW API.
+5. **Email** (`flow/email`) watches a queue table in Postgres and sends HTML emails
+   over Google SMTP.
 
-2. **Hasura**: Hasura is a GraphQL engine that sits on top of our Postgres database.
-  It provides a GraphQL API for our frontend to interact with and is generally used for CRUD operations.
-  We also use Hasura to enforce permissions and relationships between tables and manage DB migrations.
-  For more details on using Hasura and creating new DB migrations, see the [./hasura/README.md](Hasura README).
+In production, an Nginx reverse proxy routes `/graphql` to Hasura, `/api` to the
+API, and `/` to the frontend.
 
-3. **API**: Our API is a Go server that provides custom endpoints for our frontend to interact with.
-  It is generally used for more complex operations that cannot be done with Hasura alone.
-  This includes authentication, parsing for transcripts and calendars, webcal generation,
-  and dumping raw search data for the frontend to use for autocomplete.
-
-4. **UW Importer**: This is a cron job that runs on a schedule to import data from the UW API.
-  We use this to fetch updates for courses, instructors, and term schedules.
-
-5. **Email**: This is a service that watches a "queue" in our Postgres database for emails to send.
-  It sends emails by generating HTML documents and sending them using the Google SMTP service.
-
-In production, we run an Nginx reverse proxy in front of Hasura, the API, and the frontend
-to route requests to the correct service. Hasura is exposed via `/graphql`, the API via `/api`,
-and the frontend via `/`.
-
-## Requirements
-
-The following packages are required for core functionality:
+### Requirements
 
 - `docker`
 - `docker-compose`
+- Optional: [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install),
+  for the Hasura console and `make migrate`.
 
-The following packages are required by optional components:
+Package names vary across distributions. For example, Ubuntu calls `docker`
+`docker.io`. The backend is developed on Linux. macOS should work. Windows is
+not supported.
 
-- [`hasura-cli`](https://hasura.io/docs/latest/hasura-cli/install-hasura-cli/#install): Hasura web interface. 
+### Backend setup
 
-Exact package names may vary across distributions;
-for example, Ubuntu refers to `docker` as `docker.io`.
-The above list is intended as an unambiguous guideline for humans
-and is not necessarily consistent with any single distribution.
+Do this once, and again whenever you want to reset your local database.
 
-## First-time setup 
+> **Warning:** both setup commands below delete your local Postgres volume and
+> replace it.
 
-### Maintainers
+1. Install the [requirements](#requirements).
+2. Copy `.env.sample` to `.env` in the repository root. The sample values work for
+   local development, except:
+   - `UW_API_KEY_V3`: required to import course data. See
+     [how to obtain a key](flow/importer/uw/README.md).
+   - `POSTGRES_DUMP_PATH`: only needed if you set up from a dump (option B below).
+   - `POSTGRES_HOST`: keep `postgres` on Linux and macOS.
+3. Create the database using one of the options below.
 
-1. Ensure the required packages are installed (see above).
-2. Obtain a postgres dump: We have a pipeline to setup with a postgres dump file, this is great for testing your code with the latest data from prod. You will need to obtain it, for example, scp it from prod. 
-3. Copy `.env.sample` to `.env` and edit the latter (apply common sense) as needed. In particular:
-  - `POSTGRES_DUMP_PATH` should point to `pg_backup` obtained at the end of (2)
-  - `UW_API_KEY_V3` should be set as instructed in the
-    [uwapi-importer README](uwapi-importer/README.md)
-  - `POSTGRES_HOST` should be set to `postgres` on \*NIX systems
-    and `0.0.0.0` on Windows (which is incidentally otherwise unsupported)
-4. Run `make setup`, this will get your postgres volume ready. Whenever you want to update your local DB, setup your postgres dump file and rerun `make setup`
-
-### Contributors 
-
-1. Follow Step 1 and 3 as in the `Maintainers` section, except no need for postgres dump.
-
----
-**NOTE:** We noticed that UW API sometimes closes registration, if this happens to you, please download our [public pg dump](https://drive.google.com/file/d/1gwz2RcJ2D77f-i3XLEmftJnqt-Ng8EwX/view) (This contains some course data and fake professors data, and no reviews and user data on production). Then, you can ignore this section and follow the ``Maintainers`` setup as above, since you are going with the option of a dump file. 
-
-If this is not happening to you, please ignore the above note, and proceed to below:
-
----
-2. Run this:
+#### Option A: Build from the UW API (contributors)
 
 ```sh
 make setup-contrib
 ```
-It will create a postgres container for you, with desired schema and imports course data (it will take some time). It won't contain user data or review data as in prod.
 
-For professor data, as UW API is no longer providing this, the setup involves adding some dummy professors for your development purpose. If you want the prof data as in prod, you can manually call our prod's `graphql` endpoint to retrieve them.
+This creates a fresh Postgres database, applies the Hasura migrations, imports
+course data from the UW API, and adds dummy professors. It takes several minutes.
+The database has no users or reviews.
 
-## Development
-
-Make sure you have finished the above section first. 
-
-You can now start backend services locally, if you are working on the frontend, and just need the backend running but not making changes, you can choose to run it with images from Docker Hub: 
+#### Option B: Restore from a dump
 
 ```sh
-make start-public
-``` 
-
-If you are working with backend, run:
-
-```sh
-make start
-``` 
-
-Note `api` and `email` supports live reloading, supported by `Air`. `importer` does not support this, since it is a cron job. If you are working on it, after making your changes, run (depending on what you are working on): 
-
-```sh
-make import-course
-``` 
-
-or 
-
-```sh
-make import-vacuum
-```
-This will rebuild your importer using your local code, and then run the import jobs
-
-Hasura supports live reloading as well, due to its configuration.
-
-## Interacting with the backend
-
-When `docker-compose` is active, services may be accessed
-at their published ports, as declared in `docker-compose.yml`.
-
-To illustrate, the `postgres` service publishes port `5432`, so
-```sh
-psql -h localhost -p 5432 -U flow
-```
-will spawn a Postgres shell connected to the database container.
-If you do not happen to have `postgres-client` installed, this also works:
-```sh
-$ docker exec -it postgres sh
-(docker) # psql -U postgres flow 
+make setup
 ```
 
-There are other `make` commands available, use `make help` to explore them, or simply visit `Makefile`
+This restores the dump at `POSTGRES_DUMP_PATH`.
+
+- Maintainers can use a dump of production, for example copied from the production
+  server with `scp`, to test against the latest data.
+- Contributors can use the [public dump](https://drive.google.com/file/d/1gwz2RcJ2D77f-i3XLEmftJnqt-Ng8EwX/view)
+  instead of option A, for example when the UW API has closed registration and the
+  import fails. It contains course data and fake professors, but no users or reviews.
+
+### Running the backend
+
+Pick one:
+
+```sh
+make start-public   # frontend work: run the published images from Docker Hub
+make start          # backend work: build and run your local Go code
+```
+
+`make start` runs `api` and `email` with live reloading through Air. Hasura picks
+up migration and metadata changes from `hasura/` automatically.
+
+The importer does not reload, because it is a scheduled job. After changing it,
+rebuild it and run a job:
+
+```sh
+make import-course  # import courses, instructors, and schedules
+make import-vacuum  # run the term and course vacuum jobs
+```
+
+Stop everything with `make stop`.
+
+### Backend development commands
+
+| Command | What it does |
+| --- | --- |
+| `make test` | Run Go tests in the running `api` container |
+| `make build-test` | Check that the Go code compiles, in the running `api` container |
+| `make docker-build-test` | Dry run of the Docker Compose build |
+| `make migrate` | Apply Hasura migrations and metadata (needs `hasura-cli`) |
+| `make migrate-status` | Show Hasura migration status |
+| `make import-profs` | Add dummy professors (already done by `make setup-contrib`) |
+| `make course-renames` | Apply the course renames in `hasura/course_renames.sql` |
+| `make prof-aliases` | Apply the prof aliases and merges in `hasura/prof_aliases.sql` |
+| `make ps` | Show the status of all services |
+| `make logs` | Tail logs from all services. Use `logs-api`, `logs-hasura`, `logs-uw`, or `logs-email` for one service |
+
+You can also run Go commands directly from `flow/`.
+
+### Connecting to services
+
+While the backend runs, services listen on the ports in `.env`:
+
+| Service | Default address |
+| --- | --- |
+| API | `http://localhost:8081` |
+| Hasura GraphQL | `http://localhost:8080/v1/graphql` |
+| Postgres | `localhost:5432` |
+
+---
+
+## Builds and deployment (maintainers)
+
+Contributors do not need this section. CircleCI validates every PR and publishes
+images when changes merge to `main`.
+
+- `./script/build.sh` builds all four application images. Pass service names to
+  build a subset, for example `./script/build.sh frontend`. Images use the
+  `neuwflow/*` names and get both a commit-SHA tag and `latest`.
+- `make frontend-container-test` smoke-tests a built frontend image with Nginx and
+  disposable mock upstreams. It needs Docker and OpenSSL.
+- `make migration-test` tests the build and deploy scripts without Docker.
+- On the production checkout, `./script/deploy.sh` deploys all services, and
+  `./script/deploy.sh frontend` deploys only the frontend. Set `UWFLOW_IMAGE_TAG`
+  in `.env` to pin images to a published commit; otherwise Compose uses `latest`.
+  Pulling images does not update the checkout's Nginx, Compose, or Hasura files.
+- Vercel uses `frontend` as its project Root Directory, connected to `UWFlow/uwflow`.
+
+See the [migration and cutover runbook](docs/monorepo-migration.md) for the CI and
+Vercel handoff and for rollback.
