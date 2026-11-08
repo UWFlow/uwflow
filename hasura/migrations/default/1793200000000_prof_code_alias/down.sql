@@ -1,6 +1,25 @@
+CREATE TABLE prof_remap (
+  code TEXT PRIMARY KEY,
+  prof_id INT NOT NULL
+    REFERENCES prof(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO prof_remap(code, prof_id)
+SELECT code, prof_id FROM prof_alias WHERE code IS NOT NULL;
+
+ALTER TABLE prof_merge ADD COLUMN into_prof_id INT REFERENCES prof(id) ON UPDATE CASCADE;
+
+UPDATE prof_merge m SET into_prof_id = a.prof_id
+FROM prof_alias a WHERE a.code = m.from_code;
+
+ALTER TABLE prof_merge ALTER COLUMN into_prof_id SET NOT NULL;
+
 -- Merged profs get their rows back, still empty; their reviews stay merged
 INSERT INTO prof(id, name, code)
-SELECT from_prof_id, from_name, from_code FROM prof_merge;
+SELECT m.from_prof_id, a.name, m.from_code
+FROM prof_merge m JOIN prof_alias a ON a.code = m.from_code;
 
 CREATE OR REPLACE FUNCTION merge_prof(from_code TEXT, into_code TEXT)
 RETURNS VOID AS $$
@@ -35,7 +54,6 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE prof_merge
   ADD CONSTRAINT prof_merge_from_prof_id_fkey
     FOREIGN KEY (from_prof_id) REFERENCES prof(id) ON UPDATE CASCADE,
-  DROP COLUMN from_code,
-  DROP COLUMN from_name;
+  DROP COLUMN from_code;
 
 ALTER TABLE prof_alias DROP COLUMN code;

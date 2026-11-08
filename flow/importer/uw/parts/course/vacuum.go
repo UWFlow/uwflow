@@ -22,8 +22,8 @@ WHERE NOT EXISTS (
     SELECT FROM section_meeting
     WHERE prof_id = p.id
     UNION ALL
-    SELECT FROM prof_merge
-    WHERE into_prof_id = p.id
+    SELECT FROM prof_alias
+    WHERE prof_id = p.id
 );
 `
 

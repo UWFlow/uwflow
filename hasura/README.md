@@ -148,4 +148,4 @@ Renames are declared in `course_renames.sql` as `SELECT merge_course('<old>', '<
 
 ## Prof aliases
 
-Search lists each of a prof's names as its own entry. Declare them in `prof_aliases.sql` and apply with `make prof-aliases` in every environment: an insert into `prof_alias` for a renamed prof, or `merge_prof('<from>', '<into>')` for one person with two codes (reviews and sections move to the into prof, the from prof's row is deleted and recorded in the `prof_merge` ledger, and its name and code stay searchable and linkable through `prof_alias`).
+Search lists each of a prof's names as its own entry. Declare them in `prof_aliases.sql` and apply with `make prof-aliases` in every environment: an insert into `prof_alias` for a renamed prof, or `merge_prof('<from>', '<into>')` for one person with two codes (reviews and sections move to the into prof, the from prof's row is deleted its name and code stay searchable and linkable through `prof_alias`, and `prof_merge` keeps only what an undo needs).
