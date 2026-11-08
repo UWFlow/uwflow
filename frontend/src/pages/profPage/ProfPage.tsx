@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Redirect, useRouteMatch } from 'react-router-dom';
+import { useRouteMatch } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import {
   GetProfQuery,
@@ -10,7 +10,6 @@ import {
   ProfRatingFragment,
   ProfReviewDistributionFragment,
 } from 'generated/graphql';
-import { getProfPageRoute } from 'Routes';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import { DEFAULT_ERROR, NOT_FOUND } from 'constants/Messages';
@@ -86,26 +85,26 @@ export const ProfPage = () => {
     variables: { code: profCode },
   });
 
+  const prof = data?.prof[0] ?? data?.prof_alias[0]?.prof;
+
   return loading ? (
     <ProfPageWrapper>
       <LoadingSpinner />
     </ProfPageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.prof_merge.length > 0 ? (
-    <Redirect to={getProfPageRoute(data.prof_merge[0].into_prof.code)} />
-  ) : data.prof.length === 0 ? (
+  ) : !prof ? (
     <NotFoundPage text={NOT_FOUND.prof} />
   ) : (
     <ProfPageWrapper>
       <Helmet>
-        <title>{data.prof[0].name} - UW Flow</title>
+        <title>{prof.name} - UW Flow</title>
         <meta
           name="description"
-          content={`Professor ${data.prof[0].name} at the University of Waterloo.`}
+          content={`Professor ${prof.name} at the University of Waterloo.`}
         />
       </Helmet>
-      <ProfPageContent prof={data.prof[0]} />
+      <ProfPageContent prof={prof} />
     </ProfPageWrapper>
   );
 };

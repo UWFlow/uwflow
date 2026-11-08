@@ -10,10 +10,12 @@ export const GET_PROF = gql`
       ...ProfRating
       ...ProfReviewDistribution
     }
-    prof_merge(where: { from_prof: { code: { _eq: $code } } }) {
-      into_prof {
-        id
-        code
+    prof_alias(where: { code: { _eq: $code } }) {
+      prof {
+        ...ProfInfo
+        ...ProfCoursesTaught
+        ...ProfRating
+        ...ProfReviewDistribution
       }
     }
   }

@@ -65,6 +65,7 @@ export type SearchDataProf = {
   courses: string[];
   rating_count: number;
   aliases?: string[];
+  alias_codes?: string[];
 };
 
 export type SearchDataResponse = {

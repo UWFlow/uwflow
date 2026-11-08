@@ -20,7 +20,10 @@ export type IndexedCourse = Omit<SearchDataCourse, 'profs' | 'aliases'> & {
   otherCodes: string;
 };
 
-export type IndexedProf = Omit<SearchDataProf, 'courses' | 'aliases'> & {
+export type IndexedProf = Omit<
+  SearchDataProf,
+  'courses' | 'aliases' | 'alias_codes'
+> & {
   courses: string;
 };
 
@@ -198,12 +201,19 @@ class SearchClient {
       });
     });
 
-    // Each name a prof goes by is its own entry linking to the same page
+    // Each name a prof goes by is its own entry, linking to that name's code
     const profs = (parsedSearchData.profs || []).flatMap(
-      ({ aliases, ...prof }) =>
-        [prof.name, ...(aliases || [])].map((name) => ({
+      ({ aliases, alias_codes, ...prof }) =>
+        [
+          { name: prof.name, code: prof.code },
+          ...(aliases || []).map((name, i) => ({
+            name,
+            code: alias_codes?.[i] ?? prof.code,
+          })),
+        ].map(({ name, code }) => ({
           ...prof,
           name,
+          code,
           courses: prof.courses?.map(formatCourseCode).join(' ') ?? '',
         })),
     );

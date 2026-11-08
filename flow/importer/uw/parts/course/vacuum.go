@@ -23,7 +23,7 @@ WHERE NOT EXISTS (
     WHERE prof_id = p.id
     UNION ALL
     SELECT FROM prof_merge
-    WHERE p.id IN (from_prof_id, into_prof_id)
+    WHERE into_prof_id = p.id
 );
 `
 

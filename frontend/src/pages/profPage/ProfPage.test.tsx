@@ -51,32 +51,28 @@ describe('ProfPage', () => {
     act(() => root.unmount());
   });
 
-  it('redirects a merged prof code to the prof it was merged into', () => {
-    mockUseQuery.mockImplementation((_query, { variables }) => ({
+  it('shows the kept prof at a merged code without changing the URL', () => {
+    mockUseQuery.mockReturnValue({
       loading: false,
-      data:
-        variables.code === 'josh_neufeld'
-          ? {
-              prof: [prof],
-              prof_merge: [{ into_prof: { id: 8358, code: 'josh_d_neufeld' } }],
-            }
-          : { prof: [{ ...prof, id: 8358 }], prof_merge: [] },
-    }));
+      data: {
+        prof: [],
+        prof_alias: [{ prof: { ...prof, id: 8358, name: 'Josh D. Neufeld' } }],
+      },
+    });
 
     renderAt('/professor/josh_neufeld');
 
     expect(container.querySelector('output')?.textContent).toBe(
-      '/professor/josh_d_neufeld',
+      '/professor/josh_neufeld',
     );
-    expect(mockUseQuery).toHaveBeenLastCalledWith(expect.anything(), {
-      variables: { code: 'josh_d_neufeld' },
-    });
+    expect(container.textContent).toContain('prof header');
+    expect(container.textContent).not.toContain('not found');
   });
 
-  it('stays on the page for a prof that was not merged', () => {
+  it('shows a prof at its own code', () => {
     mockUseQuery.mockReturnValue({
       loading: false,
-      data: { prof: [prof], prof_merge: [] },
+      data: { prof: [prof], prof_alias: [] },
     });
 
     renderAt('/professor/josh_neufeld');

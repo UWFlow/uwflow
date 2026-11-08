@@ -393,13 +393,15 @@ func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error)
 
 const truncateProfQuery = `TRUNCATE work.prof_delta`
 
-// Profs have nothing to update: name and code are their identifiers
+// Profs have nothing to update: name and code are their identifiers.
+// Former codes of merged profs resolve through prof_remap and get no new row.
 const insertProfQuery = `
 INSERT INTO prof(name, code)
 SELECT d.name, d.code
 FROM work.prof_delta d
   LEFT JOIN prof p ON p.code = d.code
-WHERE p.id IS NULL
+  LEFT JOIN prof_remap r ON r.code = d.code
+WHERE p.id IS NULL AND r.code IS NULL
 `
 
 func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {
