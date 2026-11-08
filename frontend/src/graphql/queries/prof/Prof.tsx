@@ -9,9 +9,7 @@ export const GET_PROF = gql`
       ...ProfCoursesTaught
       ...ProfRating
       ...ProfReviewDistribution
-    }
-    prof_alias(where: { code: { _eq: $code } }) {
-      prof {
+      merged_into_prof {
         ...ProfInfo
         ...ProfCoursesTaught
         ...ProfRating

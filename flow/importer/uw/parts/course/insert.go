@@ -331,7 +331,7 @@ INSERT INTO section_meeting(
   is_cancelled, is_closed, is_tba
 )
 SELECT
-  s.id, COALESCE(pr.prof_id, p.id),
+  s.id, COALESCE(p.merged_into, p.id),
   d.location, d.start_seconds, d.end_seconds,
   d.start_date, d.end_date, d.days,
   d.is_cancelled, d.is_closed, d.is_tba
@@ -341,8 +341,6 @@ FROM work.section_meeting_delta d
     ON s.class_number = d.class_number
    AND s.term_id = d.term_id
   -- may not have a matching prof
-  LEFT JOIN prof_alias pr
-    ON pr.code = d.prof_code
   LEFT JOIN prof p
     ON p.code = d.prof_code
 `
@@ -393,15 +391,13 @@ func insertAllMeetings(conn *db.Conn, meetings []meeting) (*log.DbResult, error)
 
 const truncateProfQuery = `TRUNCATE work.prof_delta`
 
-// Profs have nothing to update: name and code are their identifiers.
-// Former codes of merged profs resolve through prof_alias and get no new row.
+// Profs have nothing to update: name and code are their identifiers
 const insertProfQuery = `
 INSERT INTO prof(name, code)
 SELECT d.name, d.code
 FROM work.prof_delta d
   LEFT JOIN prof p ON p.code = d.code
-  LEFT JOIN prof_alias a ON a.code = d.code
-WHERE p.id IS NULL AND a.code IS NULL
+WHERE p.id IS NULL
 `
 
 func insertAllProfs(conn *db.Conn, profs profMap) (*log.DbResult, error) {

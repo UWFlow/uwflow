@@ -9,7 +9,9 @@ jest.mock('@apollo/client', () => ({
   ...(jest.requireActual('@apollo/client') as object),
   useQuery: jest.fn(),
 }));
-jest.mock('pages/profPage/ProfInfoHeader', () => () => <div>prof header</div>);
+jest.mock('pages/profPage/ProfInfoHeader', () => ({ prof }: any) => (
+  <div>{prof.name}</div>
+));
 jest.mock('pages/profPage/ProfReviews', () => () => <div>prof reviews</div>);
 
 const mockUseQuery = useQuery as jest.Mock;
@@ -55,8 +57,12 @@ describe('ProfPage', () => {
     mockUseQuery.mockReturnValue({
       loading: false,
       data: {
-        prof: [],
-        prof_alias: [{ prof: { ...prof, id: 8358, name: 'Josh D. Neufeld' } }],
+        prof: [
+          {
+            ...prof,
+            merged_into_prof: { ...prof, id: 8358, name: 'Josh D. Neufeld' },
+          },
+        ],
       },
     });
 
@@ -65,14 +71,13 @@ describe('ProfPage', () => {
     expect(container.querySelector('output')?.textContent).toBe(
       '/professor/josh_neufeld',
     );
-    expect(container.textContent).toContain('prof header');
-    expect(container.textContent).not.toContain('not found');
+    expect(container.textContent).toContain('Josh D. Neufeld');
   });
 
   it('shows a prof at its own code', () => {
     mockUseQuery.mockReturnValue({
       loading: false,
-      data: { prof: [prof], prof_alias: [] },
+      data: { prof: [{ ...prof, merged_into_prof: null }] },
     });
 
     renderAt('/professor/josh_neufeld');
@@ -80,6 +85,6 @@ describe('ProfPage', () => {
     expect(container.querySelector('output')?.textContent).toBe(
       '/professor/josh_neufeld',
     );
-    expect(container.textContent).toContain('prof header');
+    expect(container.textContent).toContain('Josh Neufeld');
   });
 });

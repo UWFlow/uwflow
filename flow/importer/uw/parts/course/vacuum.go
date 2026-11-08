@@ -15,15 +15,15 @@ WHERE term_id < $1
 
 const deleteProfQuery = `
 DELETE FROM prof p
-WHERE NOT EXISTS (
+WHERE p.merged_into IS NULL AND NOT EXISTS (
     SELECT FROM review
     WHERE prof_id = p.id
     UNION ALL
     SELECT FROM section_meeting
     WHERE prof_id = p.id
     UNION ALL
-    SELECT FROM prof_alias
-    WHERE prof_id = p.id
+    SELECT FROM prof m
+    WHERE m.merged_into = p.id
 );
 `
 

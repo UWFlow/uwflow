@@ -85,7 +85,7 @@ export const ProfPage = () => {
     variables: { code: profCode },
   });
 
-  const prof = data?.prof[0] ?? data?.prof_alias[0]?.prof;
+  const prof = data?.prof[0]?.merged_into_prof ?? data?.prof[0];
 
   return loading ? (
     <ProfPageWrapper>

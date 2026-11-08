@@ -6,10 +6,10 @@ array_relationships:
     using:
       manual_configuration:
         column_mapping:
-          prof_id: prof_id
+          prof_id: merged_into
         insertion_order: null
         remote_table:
-          name: prof_alias
+          name: prof
           schema: public
 select_permissions:
   - role: anonymous

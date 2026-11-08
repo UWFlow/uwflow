@@ -170,10 +170,7 @@ const SearchResults = ({
     const newProfs: ProfSearchResult[] = allProfs.flatMap((result) =>
       [
         { name: result.name ?? '', code: result.code ?? '' },
-        ...result.alias_links.map((alias) => ({
-          name: alias.name,
-          code: alias.code ?? result.code ?? '',
-        })),
+        ...result.alias_links,
       ].map((code_name) => ({
         id: result.prof_id ?? 0,
         code_name,

@@ -49,12 +49,13 @@ const profQuery = `
 SELECT
   p.id, p.code, p.name, pr.filled_count AS review_count,
   COALESCE(ARRAY_AGG(c.code) FILTER (WHERE c.id IS NOT NULL), ARRAY[]::TEXT[]) AS courses,
-  ARRAY(SELECT name FROM prof_alias WHERE prof_id = p.id ORDER BY name) AS aliases,
-  ARRAY(SELECT COALESCE(a.code, p.code) FROM prof_alias a WHERE a.prof_id = p.id ORDER BY a.name) AS alias_codes
+  ARRAY(SELECT m.name FROM prof m WHERE m.merged_into = p.id ORDER BY m.name) AS aliases,
+  ARRAY(SELECT m.code FROM prof m WHERE m.merged_into = p.id ORDER BY m.name) AS alias_codes
 FROM prof p
  INNER JOIN aggregate.prof_rating pr ON pr.prof_id = p.id
   LEFT JOIN prof_teaches_course pc ON pc.prof_id = p.id
   LEFT JOIN course c ON c.id = pc.course_id
+WHERE p.merged_into IS NULL
 GROUP BY p.id, pr.filled_count
 `
 
