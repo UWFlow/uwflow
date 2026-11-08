@@ -9,6 +9,12 @@ export const GET_PROF = gql`
       ...ProfCoursesTaught
       ...ProfRating
       ...ProfReviewDistribution
+      merged_into_prof {
+        ...ProfInfo
+        ...ProfCoursesTaught
+        ...ProfRating
+        ...ProfReviewDistribution
+      }
     }
   }
   ${ProfFragment.profInfo}

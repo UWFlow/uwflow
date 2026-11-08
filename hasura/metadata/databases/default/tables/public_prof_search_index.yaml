@@ -1,6 +1,16 @@
 table:
   name: prof_search_index
   schema: public
+array_relationships:
+  - name: alias_links
+    using:
+      manual_configuration:
+        column_mapping:
+          prof_id: merged_into
+        insertion_order: null
+        remote_table:
+          name: prof
+          schema: public
 select_permissions:
   - role: anonymous
     permission:

@@ -1,5 +1,5 @@
 -- Run with `make prof-aliases` after migrations in each environment. Idempotent.
--- Renamed prof: INSERT INTO prof_alias SELECT id, '<other name>' FROM prof WHERE code = '<code>' ON CONFLICT DO NOTHING;
+-- Renamed prof: INSERT INTO prof(name, code, merged_into) SELECT '<other name>', '<other code>', id FROM prof WHERE code = '<code>' ON CONFLICT DO NOTHING;
 -- One person with two codes: SELECT merge_prof('<from code>', '<into code>');
 
 -- FLOW-102

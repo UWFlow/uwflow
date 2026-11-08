@@ -2,6 +2,9 @@ table:
   name: prof
   schema: public
 object_relationships:
+  - name: merged_into_prof
+    using:
+      foreign_key_constraint_on: merged_into
   - name: rating
     using:
       manual_configuration:
@@ -15,9 +18,9 @@ array_relationships:
   - name: aliases
     using:
       foreign_key_constraint_on:
-        column: prof_id
+        column: merged_into
         table:
-          name: prof_alias
+          name: prof
           schema: public
   - name: prof_clear_buckets
     using:

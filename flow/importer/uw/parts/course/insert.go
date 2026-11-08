@@ -331,7 +331,7 @@ INSERT INTO section_meeting(
   is_cancelled, is_closed, is_tba
 )
 SELECT
-  s.id, COALESCE(pr.prof_id, p.id),
+  s.id, COALESCE(p.merged_into, p.id),
   d.location, d.start_seconds, d.end_seconds,
   d.start_date, d.end_date, d.days,
   d.is_cancelled, d.is_closed, d.is_tba
@@ -341,8 +341,6 @@ FROM work.section_meeting_delta d
     ON s.class_number = d.class_number
    AND s.term_id = d.term_id
   -- may not have a matching prof
-  LEFT JOIN prof_remap pr
-    ON pr.code = d.prof_code
   LEFT JOIN prof p
     ON p.code = d.prof_code
 `

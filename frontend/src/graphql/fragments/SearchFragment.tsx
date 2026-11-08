@@ -26,7 +26,10 @@ const SearchFragment = {
       clear
       course_ids
       course_codes
-      aliases
+      alias_links {
+        name
+        code
+      }
       engaging
       liked
       ratings

@@ -210,10 +210,10 @@ export type ProfSearchFragment = {
   clear: any;
   course_ids: Array<number> | null;
   course_codes: Array<string> | null;
-  aliases: Array<string> | null;
   engaging: any;
   liked: any;
   ratings: any;
+  alias_links: Array<{ name: string; code: string }>;
 };
 
 export type UserInfoFragment = {
@@ -679,7 +679,14 @@ export type GetProfQueryVariables = Exact<{
 
 export type GetProfQuery = {
   prof: Array<
-    ProfInfoFragment &
+    {
+      merged_into_prof:
+        | (ProfInfoFragment &
+            ProfCoursesTaughtFragment &
+            ProfRatingFragment &
+            ProfReviewDistributionFragment)
+        | null;
+    } & ProfInfoFragment &
       ProfCoursesTaughtFragment &
       ProfRatingFragment &
       ProfReviewDistributionFragment
