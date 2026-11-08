@@ -56,6 +56,9 @@ export const GOOGLE_CALENDAR_URL = `https://calendar.google.com/calendar/r?cid=`
 /* User */
 export const USER_ACCOUNT_ENDPOINT = '/user';
 
+/* Professors */
+export const PROF_SUBMIT_ENDPOINT = '/prof/submit';
+
 /* Shared Classes */
 export const GROUP_BY_ID_ENDPOINT = (id: number) => `/group/${id}`;
 export const GROUP_INVITE_ENDPOINT = (id: number) => `/group/${id}/invite`;

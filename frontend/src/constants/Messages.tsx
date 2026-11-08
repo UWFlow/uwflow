@@ -29,6 +29,15 @@ export const RESET_PASSWORD_ERRORS: MessageObject = {
   invalid_reset_key: 'That reset code is invalid or has expired.',
 };
 
+export const PROF_SUBMISSION_ERRORS: MessageObject = {
+  invalid_prof_name: 'Please enter only the professor’s name.',
+  prof_already_exists:
+    'That professor is already on Flow. Try searching for their last name.',
+  too_many_prof_submissions:
+    'You’ve reached today’s limit. Please try again tomorrow.',
+  default: 'Something went wrong. Please try again.',
+};
+
 export const TRANSCRIPT_ERRORS: MessageObject = {
   file_too_big: 'Please upload a file smaller than 10 MB.',
   default_transcript:
