@@ -684,6 +684,7 @@ export type GetProfQuery = {
       ProfRatingFragment &
       ProfReviewDistributionFragment
   >;
+  prof_merge: Array<{ into_prof: { id: number; code: string } }>;
 };
 
 export type ProfReviewsQueryVariables = Exact<{

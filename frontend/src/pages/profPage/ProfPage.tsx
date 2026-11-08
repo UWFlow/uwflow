@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { useRouteMatch } from 'react-router-dom';
+import { Redirect, useRouteMatch } from 'react-router-dom';
 import { useQuery } from '@apollo/client';
 import {
   GetProfQuery,
@@ -10,6 +10,7 @@ import {
   ProfRatingFragment,
   ProfReviewDistributionFragment,
 } from 'generated/graphql';
+import { getProfPageRoute } from 'Routes';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import { DEFAULT_ERROR, NOT_FOUND } from 'constants/Messages';
@@ -91,6 +92,8 @@ export const ProfPage = () => {
     </ProfPageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
+  ) : data.prof_merge.length > 0 ? (
+    <Redirect to={getProfPageRoute(data.prof_merge[0].into_prof.code)} />
   ) : data.prof.length === 0 ? (
     <NotFoundPage text={NOT_FOUND.prof} />
   ) : (
