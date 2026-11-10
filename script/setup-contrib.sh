@@ -101,5 +101,5 @@ echo "Adding some prof data for development purpose."
 
 echo "============================================"
 echo "Setup complete!"
-echo "Run 'make start' to start all backend services."
+echo "Run 'make start' to start the backend and frontend."
 echo "============================================"

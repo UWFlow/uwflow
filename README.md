@@ -13,6 +13,21 @@ and deployment configuration. A single branch or PR can update the entire stack.
 
 Run `make help` to list every `make` target.
 
+## Running UWFlow locally
+
+After the one-time [frontend setup](#frontend-setup) and
+[backend setup](#backend-setup), start the whole stack with:
+
+```sh
+make start
+```
+
+This starts the backend containers in the background, then runs the frontend
+development server in the foreground at `http://localhost:3000`. Ctrl-C stops
+only the frontend; stop the backend with `make stop`.
+
+To run one half on its own, use `make frontend-start` or `make backend-start`.
+
 ---
 
 ## Frontend
@@ -32,6 +47,9 @@ Do this once per clone.
 Rerun `make frontend-install` whenever `frontend/bun.lock` changes.
 
 ### Running the frontend
+
+To run the frontend together with the backend, use `make start` (see
+[Running UWFlow locally](#running-uwflow-locally)). To run only the frontend:
 
 ```sh
 make frontend-start
@@ -138,12 +156,14 @@ This restores the dump at `POSTGRES_DUMP_PATH`.
 Pick one:
 
 ```sh
-make start-public   # frontend work: run the published images from Docker Hub
-make start          # backend work: build and run your local Go code
+make start          # backend and frontend dev server, from your local code
+make backend-start  # backend only, from your local Go code
+make start-public   # all services, including the frontend, from the published Docker Hub images
 ```
 
-`make start` runs `api` and `email` with live reloading through Air. Hasura picks
-up migration and metadata changes from `hasura/` automatically.
+`make start` and `make backend-start` run `api` and `email` with live reloading
+through Air. Hasura picks up migration and metadata changes from `hasura/`
+automatically.
 
 The importer does not reload, because it is a scheduled job. After changing it,
 rebuild it and run a job:
