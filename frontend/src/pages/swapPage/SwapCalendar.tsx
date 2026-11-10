@@ -606,7 +606,9 @@ const SwapCalendar = ({
             />
           </div>
 
-          <div className="flex w-[360px] shrink-0 flex-col gap-3">
+          {/* Pinned below the fixed navbar; the section list scrolls inside
+              it instead of running past the calendar. */}
+          <div className="sticky top-24 flex max-h-[calc(100vh-112px)] w-[360px] shrink-0 flex-col gap-3">
             <div className="flex min-w-0 items-center gap-1.5 rounded bg-white px-3 py-2.5 shadow-box">
               {selectedCourseCode ? (
                 <>
