@@ -62,6 +62,7 @@ import {
   ReviewTextArea,
   SliderOptionText,
 } from './styles/CourseReviewBox';
+import MissingProfForm from './MissingProfForm';
 
 interface CourseReviewBoxContentProps extends CourseReviewBoxProps {
   teaching: Record<string, ReviewProfsFragment['prof'][] | undefined>;
@@ -482,6 +483,7 @@ const CourseReviewBoxContent = ({
           searchable
         />
       </QuestionWrapper>
+      <MissingProfForm key={course.id} courseId={course.id} />
 
       <Collapsible
         open={selectedProf !== -1}
