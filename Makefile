@@ -1,8 +1,9 @@
-.PHONY: help start start-public stop setup setup-contrib import-profs import-course import-vacuum course-renames prof-aliases migrate test build-test docker-build-test logs clean
+.PHONY: help start backend-start start-public stop setup setup-contrib import-profs import-course import-vacuum course-renames prof-aliases migrate test build-test docker-build-test logs clean
 
-# Frontend-only commands must not load backend credentials.
+# Frontend-only commands must not load backend credentials. `start` delegates to
+# `backend-start`, which loads them, so the frontend dev server never sees them.
 .DEFAULT_GOAL := help
-ifneq ($(strip $(filter-out help frontend-% hooks migration-test,$(MAKECMDGOALS))),)
+ifneq ($(strip $(filter-out help start frontend-% hooks migration-test,$(MAKECMDGOALS))),)
 include .env
 export
 endif
@@ -17,7 +18,11 @@ help: ## Show this help message
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-start: ## Start all backend services in development mode (without frontend)
+start: ## Start the backend services, then the frontend dev server (Ctrl-C stops the frontend only)
+	@$(MAKE) --no-print-directory backend-start
+	@$(MAKE) --no-print-directory frontend-start
+
+backend-start: ## Start all backend services in development mode (without frontend)
 	@echo "Starting backend services in development mode..."
 	@$(DOCKER_COMPOSE) up -d api postgres hasura uw email
 
@@ -34,7 +39,7 @@ stop: ## Stop all running services
 setup: ## Initialize database with backup data (maintainers)
 	@echo "Starting setup..."
 	@bash script/start.sh
-	@echo "Setup complete! Run 'make start' to start services."
+	@echo "Setup complete! Run 'make start' to start the backend and frontend."
 
 setup-contrib: ## Initialize database from scratch using migrations and UW API (contributors)
 	@echo "Starting contributor setup..."

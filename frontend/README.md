@@ -5,7 +5,7 @@
 ## ⚙️ Frontend Setup ⚙
 
 From the monorepo root, run `make frontend-install`, `make hooks`, then
-`make frontend-start`. Alternatively, run `bun install --frozen-lockfile` and
+`make frontend-start` (or `make start` to also start the backend). Alternatively, run `bun install --frozen-lockfile` and
 `bun run start` from this `frontend/` directory. The server runs at
 [localhost:3000](http://localhost:3000).
 
