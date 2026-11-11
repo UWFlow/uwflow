@@ -18,120 +18,29 @@ Marcel Pinheiro
 09/09/2026 - 12/08/2026`;
 
 /**
- * The backend reports only a coarse enum for a failed schedule paste:
- * `empty_schedule` for anything with a term header but no class numbers, and a
- * bare `bad_request` when it could not find a term header at all. Those cases
- * are indistinguishable server side, so the client disambiguates them from the
- * pasted text.
+ * The backend says why a schedule paste failed (see `schedule.Parse` and
+ * `scheduleErrorEnum` in flow/api/parse), so each enum maps to one message.
  */
 describe('getScheduleError', () => {
-  // Quest renders this "Go To" nav entry on every page, including a My Class
-  // Schedule page for a term the user has no classes in.
-  const questNav = `Go To
-Course Selection (Undergrad only)
-Search for Classes
-Enroll`;
-
-  const emptyTermPaste = `${questNav}
-My Class Schedule
-Fall 2026 | Undergraduate | University of Waterloo
-You are not registered for classes in this term.`;
-
-  describe('empty_schedule', () => {
-    it('reports an empty term for a My Class Schedule paste with no enrolments', () => {
-      expect(getScheduleError('empty_schedule', emptyTermPaste)).toBe(
-        SCHEDULE_ERRORS.not_registered_schedule,
-      );
-    });
-
-    it('does not mistake the Go To nav link for the Course Selection page', () => {
-      expect(getScheduleError('empty_schedule', emptyTermPaste)).not.toBe(
-        SCHEDULE_ERRORS.course_selection_schedule,
-      );
-    });
-
-    it('hints at My Class Schedule when the Course Selection cart was pasted', () => {
-      const paste = `${questNav}
- \tCourse Selection\t \t \t|\t \t \tView My Course Selection\t
-Fall 2026 | Undergraduate | University of Waterloo
-ECE 105 - Classical Mechanics`;
-
-      expect(getScheduleError('empty_schedule', paste)).toBe(
-        SCHEDULE_ERRORS.course_selection_schedule,
-      );
-    });
-
-    it('matches the Course Selection page by its own heading', () => {
-      // Some pastes carry only the heading, without the tab bar.
-      const paste = `My Course Selection
-Groupbox
-Fall 2026
-Undergraduate
-Subject	Catalog	Description	Component	Priority	Campus`;
-
-      expect(getScheduleError('empty_schedule', paste)).toBe(
-        SCHEDULE_ERRORS.course_selection_schedule,
-      );
-    });
-
-    it('does not mistake the Enrollment Dates page for Course Selection', () => {
-      // "Course Selection Session" is a row label on Enrollment Dates.
-      const paste = `Enrollment Dates
-Fall 2026 | Undergraduate | University of Waterloo
-Open Enrollment Dates by Session
-Session	Begins On	Last Date to Enroll
-Regular Academic Session
-2026 July 29
-Course Selection Session
-2026 July 29`;
-
-      expect(getScheduleError('empty_schedule', paste)).toBe(
-        SCHEDULE_ERRORS.empty_schedule,
-      );
-    });
-
-    it('falls back to the generic empty-schedule message', () => {
-      expect(
-        getScheduleError('empty_schedule', 'Fall 2026 | Undergraduate'),
-      ).toBe(SCHEDULE_ERRORS.empty_schedule);
-    });
+  it.each([
+    'no_term_schedule',
+    'course_selection_schedule',
+    'not_registered_schedule',
+    'empty_schedule',
+    'old_schedule',
+  ])('shows the message for %s', (error) => {
+    expect(getScheduleError(error)).toBe(SCHEDULE_ERRORS[error]);
+    expect(getScheduleError(error)).not.toBe(SCHEDULE_ERRORS.default_schedule);
   });
 
-  describe('bad_request', () => {
-    it('explains the missing term header for an unrecognized paste', () => {
-      const paste = `AFM 462 - Topics: Taxation
-3422
-001
-LEC
-M 1:00PM - 2:50PM
-09/09/2026 - 12/08/2026`;
-
-      expect(getScheduleError('bad_request', paste)).toBe(
-        SCHEDULE_ERRORS.no_term_schedule,
-      );
-    });
-
-    it('recognizes a Quest class table copied without its term', () => {
-      expect(getScheduleError('bad_request', desktopClassTablePaste)).toBe(
-        SCHEDULE_ERRORS.class_table_schedule,
-      );
-    });
-
-    it('falls back to the generic message when a term header is present', () => {
-      expect(getScheduleError('bad_request', emptyTermPaste)).toBe(
-        SCHEDULE_ERRORS.default_schedule,
-      );
-    });
-  });
-
-  it('passes through enums that map directly to a message', () => {
-    expect(getScheduleError('old_schedule', emptyTermPaste)).toBe(
-      SCHEDULE_ERRORS.old_schedule,
+  it('falls back to the default message for bad_request', () => {
+    expect(getScheduleError('bad_request')).toBe(
+      SCHEDULE_ERRORS.default_schedule,
     );
   });
 
   it('falls back to the default message for an unknown enum', () => {
-    expect(getScheduleError('internal_error', emptyTermPaste)).toBe(
+    expect(getScheduleError('internal_error')).toBe(
       SCHEDULE_ERRORS.default_schedule,
     );
   });

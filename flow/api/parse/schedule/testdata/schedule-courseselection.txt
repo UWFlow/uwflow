@@ -1,0 +1,10 @@
+Go To
+Course Selection (Undergrad only)
+Search for Classes
+Enroll
+ 	Course Selection	 	 	|	 	 	View My Course Selection	 
+My Course Selection
+Fall 2026 | Undergraduate | University of Waterloo
+Subject	Catalog	Description	Component	Priority	Campus
+ECE	105	Classical Mechanics	LEC	1	UW U
+MATH	117	Calculus 1 for Engineering	LEC	2	UW U
