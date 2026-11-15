@@ -4,6 +4,8 @@ import {
   ProfReviewsWithUserDataQuery,
 } from 'generated/graphql';
 
+import { getUserVote } from 'utils/Review';
+
 export const UPDATE_REVIEW_DATA = 'update review data';
 
 export type ProfReviewsAction = {
@@ -42,12 +44,12 @@ const getReviewsByCourse = (data: any): any[] =>
     }
     courseObject.reviews.push({
       id: current.id,
-      upvotes: current.prof_review_rating
-        ? current.prof_review_rating.upvote_count
-        : 0,
-      upvote_users: current.prof_review_upvotes
-        ? current.prof_review_upvotes.map((vote: any) => Number(vote.user_id))
-        : [],
+      upvotes: current.prof_review_rating?.upvote_count ?? 0,
+      downvotes: current.prof_review_rating?.downvote_count ?? 0,
+      userVote: getUserVote(
+        current.prof_review_upvotes,
+        current.prof_review_downvotes,
+      ),
       review: current.prof_comment,
       author: current.author,
       user: current.user,

@@ -4,6 +4,8 @@ import {
   CourseReviewsWithUserDataQuery,
 } from 'generated/graphql';
 
+import { getUserVote } from 'utils/Review';
+
 export const UPDATE_REVIEW_DATA = 'update_review_data';
 
 export type CourseReviewsAction = {
@@ -23,7 +25,8 @@ const getReviewsByCourse = (data: any): any[] =>
     .filter((r: any) => r.course_comment)
     .map((r: any) => ({
       id: r.id,
-      upvotes: r.course_review_rating ? r.course_review_rating.upvote_count : 0,
+      upvotes: r.course_review_rating?.upvote_count ?? 0,
+      downvotes: r.course_review_rating?.downvote_count ?? 0,
       review: r.course_comment,
       author: r.author,
       created_at: r.created_at,
@@ -35,9 +38,7 @@ const getReviewsByCourse = (data: any): any[] =>
       },
       prof: r.prof ? r.prof.name : '',
       prof_code: r.prof ? r.prof.code : '',
-      upvote_users: r.course_review_upvotes
-        ? r.course_review_upvotes.map((vote: any) => Number(vote.user_id))
-        : [],
+      userVote: getUserVote(r.course_review_upvotes, r.course_review_downvotes),
       user: r.user,
     }));
 
@@ -72,12 +73,12 @@ const getReviewsByProf = (data: any): any[] =>
     }
     profObject.reviews.push({
       id: current.id,
-      upvotes: current.prof_review_rating
-        ? current.prof_review_rating.upvote_count
-        : 0,
-      upvote_users: current.prof_review_upvotes
-        ? current.prof_review_upvotes.map((vote: any) => Number(vote.user_id))
-        : [],
+      upvotes: current.prof_review_rating?.upvote_count ?? 0,
+      downvotes: current.prof_review_rating?.downvote_count ?? 0,
+      userVote: getUserVote(
+        current.prof_review_upvotes,
+        current.prof_review_downvotes,
+      ),
       review: current.prof_comment,
       author: current.author,
       user: current.user,

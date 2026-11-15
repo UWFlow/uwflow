@@ -1,5 +1,15 @@
 import moment from 'moment/moment';
 
+export type ReviewVote = 'up' | 'down' | null;
+
+// Hasura returns only the signed-in user's own vote rows.
+export const getUserVote = (
+  upvotes?: unknown[],
+  downvotes?: unknown[],
+): ReviewVote => (upvotes?.length ? 'up' : downvotes?.length ? 'down' : null);
+
+const getScore = (review: any): number => review.upvotes - review.downvotes;
+
 export const sortReviews = (reviews: any[], sortByTime: boolean): any[] => {
   return reviews.sort((a, b): any => {
     if (b.user) {
@@ -10,14 +20,15 @@ export const sortReviews = (reviews: any[], sortByTime: boolean): any[] => {
     }
 
     const timeDiff = moment(b.created_at).diff(moment(a.created_at));
+    const scoreDiff = getScore(b) - getScore(a);
     if (timeDiff === 0) {
-      return b.upvotes - a.upvotes;
+      return scoreDiff;
     }
-    if (b.upvotes === a.upvotes) {
+    if (scoreDiff === 0) {
       return timeDiff;
     }
 
-    return sortByTime ? timeDiff : b.upvotes - a.upvotes;
+    return sortByTime ? timeDiff : scoreDiff;
   });
 };
 
