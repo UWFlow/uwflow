@@ -39,3 +39,43 @@ export const DELETE_PROF_REVIEW_VOTE = gql`
     }
   }
 `;
+
+export const INSERT_COURSE_REVIEW_DOWNVOTE = gql`
+  mutation insertCourseReviewDownvote($user_id: Int, $review_id: Int) {
+    insert_course_review_downvote(
+      objects: { review_id: $review_id, user_id: $user_id }
+    ) {
+      affected_rows
+    }
+  }
+`;
+
+export const DELETE_COURSE_REVIEW_DOWNVOTE = gql`
+  mutation deleteCourseReviewDownvote($user_id: Int, $review_id: Int) {
+    delete_course_review_downvote(
+      where: { user_id: { _eq: $user_id }, review_id: { _eq: $review_id } }
+    ) {
+      affected_rows
+    }
+  }
+`;
+
+export const INSERT_PROF_REVIEW_DOWNVOTE = gql`
+  mutation insertProfReviewDownvote($user_id: Int, $review_id: Int) {
+    insert_prof_review_downvote(
+      objects: { review_id: $review_id, user_id: $user_id }
+    ) {
+      affected_rows
+    }
+  }
+`;
+
+export const DELETE_PROF_REVIEW_DOWNVOTE = gql`
+  mutation deleteProfReviewDownvote($user_id: Int, $review_id: Int) {
+    delete_prof_review_downvote(
+      where: { user_id: { _eq: $user_id }, review_id: { _eq: $review_id } }
+    ) {
+      affected_rows
+    }
+  }
+`;

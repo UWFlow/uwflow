@@ -1,24 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ThumbsUp } from 'react-feather';
+import { ThumbsDown, ThumbsUp } from 'react-feather';
 import { useSelector } from 'react-redux';
 import { useMutation } from '@apollo/client';
 import moment from 'moment/moment';
 import { getProfPageRoute } from 'Routes';
-import { useTheme } from 'styled-components';
 
 import { Button } from 'components/ui/button';
 import { AUTH_MODAL } from 'constants/Modal';
 import { getIsBrowserDesktop, RootState } from 'data/reducers/RootReducer';
 import {
+  DELETE_COURSE_REVIEW_DOWNVOTE,
   DELETE_COURSE_REVIEW_VOTE,
+  DELETE_PROF_REVIEW_DOWNVOTE,
   DELETE_PROF_REVIEW_VOTE,
+  INSERT_COURSE_REVIEW_DOWNVOTE,
   INSERT_COURSE_REVIEW_VOTE,
+  INSERT_PROF_REVIEW_DOWNVOTE,
   INSERT_PROF_REVIEW_VOTE,
 } from 'graphql/mutations/Upvote';
 import { REFETCH_COURSE_REVIEW_UPVOTE } from 'graphql/queries/course/CourseReview';
 import { REFETCH_PROF_REVIEW_UPVOTE } from 'graphql/queries/prof/ProfReview';
 import useModal from 'hooks/useModal';
+import { cn } from 'lib/utils';
 import { getKittenFromID } from 'utils/Kitten';
+import { ReviewVote } from 'utils/Review';
 
 import {
   ProfText,
@@ -26,14 +31,11 @@ import {
   ReviewMetricsBody,
   ReviewMetricsWrapper,
   ReviewPictureAndMetricsRow,
-  ReviewPictureAndUpvotesWrapper,
   ReviewTextWrapper,
-  ReviewUpvotes,
   ReviewWrapper,
   SingleMetricLabel,
   SingleMetricSquares,
   SingleMetricWrapper,
-  UpvoteNumber,
 } from './styles/Review';
 import Avatar from './Avatar';
 import { CircleRatings, ThumbsRatings } from './BubbleRatings';
@@ -81,14 +83,13 @@ type ReviewProps = {
 
 const Review = ({ review, isCourseReview }: ReviewProps) => {
   const [openModal] = useModal();
-  const theme = useTheme();
   const isLoggedIn = useSelector((state: RootState) => state.auth.loggedIn);
   const isBrowserDesktop = useSelector(getIsBrowserDesktop);
 
   const {
     id,
     upvotes,
-    upvote_users,
+    downvotes,
     review: reviewText,
     created_at,
     author,
@@ -121,35 +122,63 @@ const Review = ({ review, isCourseReview }: ReviewProps) => {
     },
   ];
 
-  const [userUpvoted, setUserUpvoted] = useState(
-    upvote_users.includes(Number(userId)),
-  );
-  const [insertReviewVote] = useMutation(
+  const [userVote, setUserVote] = useState<ReviewVote>(review.userVote);
+  const [insertUpvote] = useMutation(
     isCourseReview ? INSERT_COURSE_REVIEW_VOTE : INSERT_PROF_REVIEW_VOTE,
     { refetchQueries },
   );
-  const [deleteReviewVote] = useMutation(
+  const [deleteUpvote] = useMutation(
     isCourseReview ? DELETE_COURSE_REVIEW_VOTE : DELETE_PROF_REVIEW_VOTE,
     { refetchQueries },
   );
+  const [insertDownvote] = useMutation(
+    isCourseReview
+      ? INSERT_COURSE_REVIEW_DOWNVOTE
+      : INSERT_PROF_REVIEW_DOWNVOTE,
+    { refetchQueries },
+  );
+  const [deleteDownvote] = useMutation(
+    isCourseReview
+      ? DELETE_COURSE_REVIEW_DOWNVOTE
+      : DELETE_PROF_REVIEW_DOWNVOTE,
+    { refetchQueries },
+  );
 
-  const onClickUpvote = () => {
+  // Inserting a vote removes the opposite one in the database.
+  const onClickVote = (vote: 'up' | 'down') => {
     if (!isLoggedIn) {
       openModal(AUTH_MODAL);
       return;
     }
 
-    if (userUpvoted) {
-      deleteReviewVote({
-        variables: { review_id: review.id, user_id: userId },
-      });
+    const variables = { review_id: review.id, user_id: userId };
+    const [insertVote, deleteVote] =
+      vote === 'up'
+        ? [insertUpvote, deleteUpvote]
+        : [insertDownvote, deleteDownvote];
+    if (userVote === vote) {
+      deleteVote({ variables });
+      setUserVote(null);
     } else {
-      insertReviewVote({
-        variables: { review_id: review.id, user_id: userId },
-      });
+      insertVote({ variables });
+      setUserVote(vote);
     }
-    setUserUpvoted(!userUpvoted);
   };
+
+  const voteButtons = [
+    {
+      vote: 'up' as const,
+      Icon: ThumbsUp,
+      count: upvotes ?? 0,
+      label: 'This review was helpful',
+    },
+    {
+      vote: 'down' as const,
+      Icon: ThumbsDown,
+      count: downvotes ?? 0,
+      label: 'This review was not helpful',
+    },
+  ];
 
   const programText = author.program ? `${author.program} student ` : '';
   const authorText = author.full_name
@@ -214,26 +243,31 @@ const Review = ({ review, isCourseReview }: ReviewProps) => {
   return (
     <ReviewWrapper isUserReview={!!user}>
       <ReviewPictureAndMetricsRow>
-        <ReviewPictureAndUpvotesWrapper>
-          <Avatar src={userImage} alt="" className="tabletDown:mr-sm" />
-          <Tooltip
-            content={userUpvoted ? `Remove vote` : `This review was helpful`}
-          >
-            <ReviewUpvotes
-              data-for={id}
-              selected={userUpvoted}
-              onClick={onClickUpvote}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <ThumbsUp
-                color={userUpvoted ? 'white' : theme.dark3}
-                size={16}
-                strokeWidth={2}
-              />
-              <UpvoteNumber selected={userUpvoted}>{upvotes || 0}</UpvoteNumber>
-            </ReviewUpvotes>
-          </Tooltip>
-        </ReviewPictureAndUpvotesWrapper>
+        <div className="mb-xl flex items-center gap-sm tablet:mr-xl tablet:flex-col tablet:gap-0">
+          <Avatar src={userImage} alt="" />
+          <div className="flex gap-xs tablet:mt-sm">
+            {voteButtons.map(({ vote, Icon, count, label }) => {
+              const selected = userVote === vote;
+              return (
+                <Tooltip content={selected ? 'Remove vote' : label} key={vote}>
+                  <button
+                    aria-label={`${label} (${count})`}
+                    aria-pressed={selected}
+                    className={cn(
+                      'box-border flex h-8 cursor-pointer items-center justify-center gap-xs rounded-full border-2 border-solid border-light4 bg-light1 px-sm font-inter text-sm text-dark3 hover:brightness-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                      selected && 'bg-primary text-white',
+                    )}
+                    onClick={() => onClickVote(vote)}
+                    type="button"
+                  >
+                    <Icon aria-hidden="true" size={14} strokeWidth={2} />
+                    {count}
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </div>
         {isBrowserDesktop && reviewContent}
         <ReviewMetricsWrapper>
           <ReviewMetricsBody>

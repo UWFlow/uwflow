@@ -45,12 +45,26 @@ object_relationships:
           name: review_user_id
           schema: public
 array_relationships:
+  - name: course_review_downvotes
+    using:
+      foreign_key_constraint_on:
+        column: review_id
+        table:
+          name: course_review_downvote
+          schema: public
   - name: course_review_upvotes
     using:
       foreign_key_constraint_on:
         column: review_id
         table:
           name: course_review_upvote
+          schema: public
+  - name: prof_review_downvotes
+    using:
+      foreign_key_constraint_on:
+        column: review_id
+        table:
+          name: prof_review_downvote
           schema: public
   - name: prof_review_upvotes
     using:

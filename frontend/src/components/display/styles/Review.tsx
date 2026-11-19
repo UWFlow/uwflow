@@ -2,7 +2,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import breakpoint from 'styled-components-breakpoint';
 
-import { Body, Card, Hover, Link } from 'constants/Mixins';
+import { Body, Card, Link } from 'constants/Mixins';
 
 export const ReviewWrapper = styled.div<{ isUserReview: boolean }>`
   margin-bottom: 32px;
@@ -30,42 +30,7 @@ export const ReviewPictureAndMetricsRow = styled.div`
   width: 100%;
 `;
 
-export const ReviewPictureAndUpvotesWrapper = styled.div`
-  display: flex;
-  margin-bottom: 32px;
-
-  ${breakpoint('zero', 'tablet')`
-    align-items: center;
-  `}
-
-  ${breakpoint('tablet')`
-    margin-right: 32px;
-    position: relative;
-  `}
-`;
-
-export const ReviewUpvotes = styled.button<{ selected: boolean }>`
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  background-color: ${({ selected, theme }) =>
-    selected ? theme.primary : theme.light1};
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  border-radius: 20px 20px 20px 20px;
-  border: 2px solid ${({ theme }) => theme.light4};
-  cursor: pointer;
-  ${Hover()}
-
-  ${breakpoint('tablet')`
-    position: absolute;
-    top: 36px;
-    right: -16px;
-    cursor: pointer;
-  `}
-`;
+// The avatar and vote buttons are styled with Tailwind in Review.tsx.
 
 export const ReviewTextWrapper = styled.div`
   display: flex;
@@ -105,12 +70,6 @@ export const SingleMetricLabel = styled.td`
   color: ${({ theme }) => theme.dark2};
   padding-left: 8px;
   vertical-align: top;
-`;
-
-export const UpvoteNumber = styled.div<{ selected: boolean }>`
-  ${Body}
-  color: ${({ selected, theme }) => (selected ? 'white' : theme.dark3)};
-  margin-left: 4px;
 `;
 
 export const ProfText = styled(RouterLink)`

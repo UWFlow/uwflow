@@ -68,9 +68,11 @@ const ReviewFragment = {
       id
       course_review_rating {
         upvote_count
+        downvote_count
       }
       prof_review_rating {
         upvote_count
+        downvote_count
       }
     }
   `,
@@ -80,7 +82,13 @@ const ReviewFragment = {
       course_review_upvotes {
         user_id
       }
+      course_review_downvotes {
+        user_id
+      }
       prof_review_upvotes {
+        user_id
+      }
+      prof_review_downvotes {
         user_id
       }
       user {

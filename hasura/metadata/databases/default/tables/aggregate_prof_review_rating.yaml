@@ -7,6 +7,7 @@ select_permissions:
       columns:
         - review_id
         - upvote_count
+        - downvote_count
       filter: {}
       allow_aggregations: true
   - role: user
@@ -14,5 +15,6 @@ select_permissions:
       columns:
         - review_id
         - upvote_count
+        - downvote_count
       filter: {}
       allow_aggregations: true
