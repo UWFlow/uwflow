@@ -40,6 +40,12 @@ const (
 	EmptySchedule = "empty_schedule"
 	// Schedule is for a previous term
 	OldSchedule = "old_schedule"
+	// Schedule has no term header (e.g. "Fall 2026"), usually a partial copy
+	NoTermSchedule = "no_term_schedule"
+	// Paste is the Course Selection page rather than My Class Schedule
+	CourseSelectionSchedule = "course_selection_schedule"
+	// Quest reports that the user is not registered for classes in the term
+	NotRegisteredSchedule = "not_registered_schedule"
 
 	//// Transcript import
 	// Transcript contains no terms

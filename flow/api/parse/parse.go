@@ -3,6 +3,7 @@ package parse
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -189,6 +190,21 @@ func saveSchedule(tx *db.Tx, summary *schedule.Summary, userId int) (*scheduleRe
 	return &scheduleResponse{SectionsImported: len(summary.Classes), FailedClasses: failedClasses}, nil
 }
 
+// scheduleErrorEnum maps a schedule.Parse failure to the public error enum
+// that tells the user what was wrong with their paste, or "" if none applies.
+func scheduleErrorEnum(err error) string {
+	switch {
+	case errors.Is(err, schedule.ErrNoTerm):
+		return serde.NoTermSchedule
+	case errors.Is(err, schedule.ErrCourseSelection):
+		return serde.CourseSelectionSchedule
+	case errors.Is(err, schedule.ErrNotRegistered):
+		return serde.NotRegisteredSchedule
+	default:
+		return ""
+	}
+}
+
 type scheduleRequest struct {
 	Text string `json:"text"`
 }
@@ -207,7 +223,11 @@ func HandleSchedule(tx *db.Tx, r *http.Request) (interface{}, error) {
 
 	summary, err := schedule.Parse(req.Text)
 	if err != nil {
-		return nil, serde.WithStatus(http.StatusBadRequest, fmt.Errorf("parsing: %w", err))
+		err = fmt.Errorf("parsing: %w", err)
+		if enum := scheduleErrorEnum(err); enum != "" {
+			err = serde.WithEnum(enum, err)
+		}
+		return nil, serde.WithStatus(http.StatusBadRequest, err)
 	}
 
 	response, err := saveSchedule(tx, summary, userId)

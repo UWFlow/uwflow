@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -36,6 +37,33 @@ var (
 	classroomRegexp = regexp.MustCompile(`(?m)^([A-Z0-9]*[A-Z][A-Z0-9]*\s+\d+|TBA|ONLN - Online)$`)
 )
 
+var (
+	// ErrNoTerm means the paste has no term header such as "Fall 2026".
+	ErrNoTerm = errors.New("term not found")
+	// ErrCourseSelection means the paste is the Course Selection page
+	// rather than My Class Schedule.
+	ErrCourseSelection = errors.New("pasted course selection page")
+	// ErrNotRegistered means Quest says the user has no classes in the term.
+	ErrNotRegistered = errors.New("not registered for classes in term")
+)
+
+// The patterns below match Quest's page copy, which UW can reword at any time
+// and which differs between the undergrad and grad views. They were tuned
+// against 883 captured pastes on 2026-07-27 (commit 6702312), a snapshot of
+// one term's Quest rather than a contract. They only run on pastes with no
+// class numbers, so a stale pattern degrades to empty_schedule, never to a bad
+// import. If one misfires, delete that case rather than hand-tuning it: a
+// generic message beats a confidently wrong one.
+var (
+	// Quest prints this on My Class Schedule when the term has no enrolments.
+	notRegisteredRegexp = regexp.MustCompile(`(?i)you are not registered for classes in this term`)
+
+	// Match the Course Selection page by its own name ("View My Course Selection"
+	// tab, "My Course Selection" heading). Plain "Course Selection" also appears
+	// in the Quest nav on every page and on the Enrollment Dates page.
+	courseSelectionRegexp = regexp.MustCompile(`(?i)my course selection`)
+)
+
 type match struct {
 	pos int
 	val string
@@ -44,7 +72,7 @@ type match struct {
 func extractTerm(text string) (int, error) {
 	submatches := termRegexp.FindStringSubmatchIndex(text)
 	if submatches == nil {
-		return 0, fmt.Errorf("term id not found")
+		return 0, ErrNoTerm
 	}
 	season := text[submatches[2]:submatches[3]]
 	year := text[submatches[4]:submatches[5]]
@@ -92,6 +120,17 @@ func Parse(text string) (*Summary, error) {
 	classrooms, err := extractClassrooms(text)
 	if err != nil {
 		return nil, fmt.Errorf("extracting classrooms: %w", err)
+	}
+
+	// With no class numbers there is nothing to import. Say why when Quest
+	// tells us; otherwise return the empty summary for the caller to reject.
+	if len(classNumbers) == 0 {
+		if notRegisteredRegexp.MatchString(text) {
+			return nil, ErrNotRegistered
+		}
+		if courseSelectionRegexp.MatchString(text) {
+			return nil, ErrCourseSelection
+		}
 	}
 
 	var classes []Class
