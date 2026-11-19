@@ -23,6 +23,7 @@ RUN --mount=type=secret,id=sentry_auth_token,required=false \
         bun scripts/build.js; \
     fi
 
-FROM nginx:alpine
+# Pinned: nginx < 1.31.9 is affected by the 2026-11 HTTP/2 CVEs (CVE-2026-123007, -123633).
+FROM nginx:1.31.9-alpine
 
 COPY --from=builder /work/build /build
