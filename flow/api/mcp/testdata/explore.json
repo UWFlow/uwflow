@@ -1,0 +1,18 @@
+{
+  "courses": [
+    {"course_id": 1424, "name": "Algorithms", "code": "cs341", "aliases": [], "useful": 0.97, "terms": [1269, 1271], "terms_with_seats": [1269],
+     "terms_with_online_sections": [], "ratings": 772, "prof_ids": [7], "liked": 0.865, "easy": 0.52, "has_prereqs": true},
+    {"course_id": 1600, "name": "Algorithms and Data Structures", "code": "ece250", "aliases": "{msci250}", "useful": 0.9, "terms": [1271], "terms_with_seats": [1271],
+     "terms_with_online_sections": [1271], "ratings": 252, "prof_ids": [], "liked": 0.81, "easy": 0.6, "has_prereqs": true},
+    {"course_id": 1700, "name": "Advanced Algorithms", "code": "cs966", "aliases": [], "useful": null, "terms": [1271], "terms_with_seats": [],
+     "terms_with_online_sections": [], "ratings": 3, "prof_ids": [], "liked": null, "easy": null, "has_prereqs": false}
+  ],
+  "profs": [
+    {"prof_id": 7, "name": "Jane Doe", "code": "jane_doe", "clear": 0.75, "course_ids": [1424, 1300], "course_codes": ["cs341", "cs240"],
+     "alias_links": [{"name": "Jane D. Doe", "code": "jane_d_doe"}], "engaging": 0.5, "liked": 0.9, "ratings": 40},
+    {"prof_id": 8, "name": "Sam Lee", "code": "sam_lee", "clear": null, "course_ids": [1424], "course_codes": ["cs341"],
+     "alias_links": [], "engaging": null, "liked": null, "ratings": 4},
+    {"prof_id": 10, "name": "Codeless Prof", "code": null, "clear": null, "course_ids": [], "course_codes": [],
+     "alias_links": [], "engaging": null, "liked": null, "ratings": 50}
+  ]
+}

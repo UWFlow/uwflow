@@ -1,0 +1,20 @@
+[
+  {"id": 11, "created_at": "2026-10-05T19:41:41.200998+00:00", "updated_at": "2026-10-05T19:41:41.200998+00:00", "public": false,
+   "liked": 0, "course_comment": "Exam was hard.", "course_easy": 1, "course_useful": 4, "prof_engaging": 3, "prof_comment": "Clear lectures.", "prof_clear": 4,
+   "author": {"full_name": null, "picture_url": null, "program": "Software Engineering"},
+   "course_id": 1424, "course": {"id": 1424, "code": "cs341", "name": "Algorithms", "profs_teaching": [], "rating": {"liked": 0.865}},
+   "prof_id": 7, "prof": {"id": 7, "name": "Jane Doe", "code": "jane_doe", "picture_url": null, "rating": {"liked": 0.9}},
+   "course_review_rating": {"upvote_count": 1}, "prof_review_rating": {"upvote_count": 0}},
+  {"id": 12, "created_at": "2026-09-27T19:38:18+00:00", "updated_at": "2026-09-27T19:38:18+00:00", "public": true,
+   "liked": 1, "course_comment": "Great course.", "course_easy": 3, "course_useful": 4, "prof_engaging": null, "prof_comment": null, "prof_clear": null,
+   "author": {"full_name": "Jane Student", "picture_url": null, "program": "Computer Science"},
+   "course_id": 1424, "course": {"id": 1424, "code": "cs341", "name": "Algorithms", "profs_teaching": [], "rating": {"liked": 0.865}},
+   "prof_id": 8, "prof": {"id": 8, "name": "Sam Lee", "code": "sam_lee", "picture_url": null, "rating": {"liked": null}},
+   "course_review_rating": {"upvote_count": 9}, "prof_review_rating": null},
+  {"id": 13, "created_at": "2010-03-01T00:00:00+00:00", "updated_at": "2010-03-01T00:00:00+00:00", "public": false,
+   "liked": null, "course_comment": null, "course_easy": null, "course_useful": null, "prof_engaging": 1, "prof_comment": "Old prof review.", "prof_clear": 0,
+   "author": null,
+   "course_id": 1424, "course": {"id": 1424, "code": "cs341", "name": "Algorithms", "profs_teaching": [], "rating": {"liked": 0.865}},
+   "prof_id": 7, "prof": {"id": 7, "name": "Jane Doe", "code": "jane_doe", "picture_url": null, "rating": {"liked": 0.9}},
+   "course_review_rating": null, "prof_review_rating": {"upvote_count": 3}}
+]

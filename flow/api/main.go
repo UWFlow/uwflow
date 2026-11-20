@@ -13,6 +13,7 @@ import (
 	"flow/api/data"
 	"flow/api/env"
 	"flow/api/group"
+	"flow/api/mcp"
 	"flow/api/middleware"
 	"flow/api/parse"
 	"flow/api/serde"
@@ -112,6 +113,10 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 		"/group/invite/{secret}/accept",
 		serde.WithDbResponse(conn, group.AcceptEmailInvite, "accept emailed group invite"),
 	)
+
+	// Public and unauthenticated, so concurrency is capped: excess requests
+	// wait briefly in the backlog, then get 429.
+	router.With(chi_middleware.ThrottleBacklog(8, 32, 5*time.Second)).Handle("/mcp", mcp.Handler())
 
 	return router
 }

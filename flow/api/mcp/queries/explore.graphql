@@ -1,0 +1,45 @@
+# Copied verbatim from frontend/src/graphql/queries/explore/Explore.tsx (EXPLORE_QUERY)
+# and its fragments. Keep in step with the frontend.
+
+query explore($query: String, $code_only: Boolean) {
+  search_courses(args: { query: $query, code_only: $code_only }) {
+    ...CourseSearch
+  }
+  search_profs(args: { query: $query, code_only: $code_only }) {
+    ...ProfSearch
+  }
+}
+
+# frontend/src/graphql/fragments/SearchFragment.tsx (courseSearch)
+fragment CourseSearch on course_search_index {
+  course_id
+  name
+  code
+  aliases
+  useful
+  terms
+  terms_with_seats
+  terms_with_online_sections
+  ratings
+  prof_ids
+  liked
+  easy
+  has_prereqs
+}
+
+# frontend/src/graphql/fragments/SearchFragment.tsx (profSearch)
+fragment ProfSearch on prof_search_index {
+  prof_id
+  name
+  code
+  clear
+  course_ids
+  course_codes
+  alias_links {
+    name
+    code
+  }
+  engaging
+  liked
+  ratings
+}

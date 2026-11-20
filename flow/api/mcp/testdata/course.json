@@ -1,0 +1,47 @@
+{
+  "id": 1424,
+  "code": "cs341",
+  "name": "Algorithms",
+  "description": "The study of efficient algorithms and effective algorithm design techniques.",
+  "aliases": [{"code": "cs341old"}],
+  "profs_teaching": [
+    {"prof": {"id": 7, "code": "jane_doe", "name": "Jane Doe", "rating": {"liked": 0.9, "comment_count": 2}}},
+    {"prof": {"id": 8, "code": "sam_lee", "name": "Sam Lee", "rating": {"liked": null, "comment_count": 4}}},
+    {"prof": {"id": 9, "code": null, "name": "No Code", "rating": null}}
+  ],
+  "sections": [
+    {
+      "id": 1, "enrollment_capacity": 90, "enrollment_total": 90, "class_number": 5001,
+      "section_name": "LEC 001", "term_id": 1271, "updated_at": "2026-11-19T10:00:00+00:00",
+      "meetings": [
+        {"days": ["T", "Th"], "start_date": "2027-01-05", "end_date": "2027-04-05", "start_seconds": 30600, "end_seconds": 35400,
+         "location": null, "prof": {"id": 7, "code": "jane_doe", "name": "Jane Doe"}, "is_closed": false, "is_cancelled": false, "is_tba": false}
+      ],
+      "exams": []
+    },
+    {
+      "id": 2, "enrollment_capacity": 40, "enrollment_total": 12, "class_number": 5002,
+      "section_name": "TUT 101", "term_id": 1271, "updated_at": "2026-11-19T10:00:00+00:00",
+      "meetings": [
+        {"days": ["F"], "start_date": "2027-01-05", "end_date": "2027-04-05", "start_seconds": 37800, "end_seconds": 40800,
+         "location": null, "prof": null, "is_closed": false, "is_cancelled": true, "is_tba": false}
+      ],
+      "exams": []
+    },
+    {
+      "id": 3, "enrollment_capacity": 120, "enrollment_total": 101, "class_number": 4001,
+      "section_name": "LEC 001", "term_id": 1269, "updated_at": "2026-09-02T10:00:00+00:00",
+      "meetings": [], "exams": []
+    }
+  ],
+  "antireqs": "CS 240E",
+  "prereqs": "CS240 or CS240E; MATH239 or MATH249",
+  "coreqs": null,
+  "postrequisites": [
+    {"postrequisite": {"id": 1500, "code": "cs466", "name": "Algorithm Design and Analysis"}},
+    {"postrequisite": null}
+  ],
+  "rating": {"liked": 0.86528497409326424870, "easy": 0.51652542372881355000, "useful": 0.97357382550335570000, "filled_count": 772, "comment_count": 109},
+  "course_useful_buckets": [{"value": 4, "count": 500}, {"value": 3, "count": 200}, {"value": null, "count": 9}],
+  "course_easy_buckets": [{"value": 2, "count": 300}, {"value": 0, "count": 20}]
+}
