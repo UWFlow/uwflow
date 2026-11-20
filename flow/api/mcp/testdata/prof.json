@@ -1,0 +1,8 @@
+{
+  "id": 7, "name": "Jane Doe", "code": "jane_doe",
+  "aliases": [{"name": "Jane D. Doe"}],
+  "prof_courses": [{"course": {"id": 1424, "code": "cs341"}}, {"course": {"id": 1300, "code": "cs240"}}],
+  "rating": {"liked": 0.9, "clear": 0.75, "engaging": 0.5, "filled_count": 40, "comment_count": 12},
+  "prof_engaging_buckets": [{"value": 2, "count": 10}],
+  "prof_clear_buckets": [{"value": 3, "count": 8}, {"value": 4, "count": 2}]
+}

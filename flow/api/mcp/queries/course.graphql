@@ -1,0 +1,122 @@
+# Copied verbatim from frontend/src/graphql/queries/course/Course.tsx (GET_COURSE)
+# and its fragments. Keep in step with the frontend.
+
+query getCourse($code: String) {
+  course(where: { code: { _eq: $code } }) {
+    ...CourseInfo
+    ...CourseSchedule
+    ...CourseRequirements
+    ...CourseRating
+    ...CourseReviewDistribution
+  }
+  course_alias(where: { code: { _eq: $code } }) {
+    course {
+      ...CourseInfo
+      ...CourseSchedule
+      ...CourseRequirements
+      ...CourseRating
+      ...CourseReviewDistribution
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/CourseFragment.tsx (courseInfo)
+fragment CourseInfo on course {
+  id
+  code
+  name
+  description
+  aliases {
+    code
+  }
+  profs_teaching {
+    prof {
+      id
+      code
+      name
+      rating {
+        liked
+        comment_count
+      }
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/CourseFragment.tsx (courseSchedule)
+fragment CourseSchedule on course {
+  id
+  sections {
+    id
+    enrollment_capacity
+    enrollment_total
+    class_number
+    section_name
+    term_id
+    updated_at
+    meetings {
+      days
+      start_date
+      end_date
+      start_seconds
+      end_seconds
+      location
+      prof {
+        id
+        code
+        name
+      }
+      is_closed
+      is_cancelled
+      is_tba
+    }
+    exams {
+      date
+      day
+      end_seconds
+      is_tba
+      location
+      section_id
+      start_seconds
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/CourseFragment.tsx (courseRequirements)
+fragment CourseRequirements on course {
+  id
+  antireqs
+  prereqs
+  coreqs
+  postrequisites {
+    postrequisite {
+      id
+      code
+      name
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/CourseFragment.tsx (courseRating)
+fragment CourseRating on course {
+  id
+  rating {
+    liked
+    easy
+    useful
+    filled_count
+    comment_count
+  }
+}
+
+# frontend/src/graphql/fragments/CourseFragment.tsx (courseReviewDistribution)
+fragment CourseReviewDistribution on course {
+  id
+  course_useful_buckets {
+    value
+    count
+  }
+  course_easy_buckets {
+    value
+    count
+  }
+}

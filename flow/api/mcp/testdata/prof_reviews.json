@@ -1,0 +1,20 @@
+[
+  {"id": 21, "created_at": "2026-10-01T12:00:00+00:00", "updated_at": "2026-10-01T12:00:00+00:00", "public": true,
+   "liked": 1, "course_comment": null, "course_easy": null, "course_useful": null, "prof_engaging": 4, "prof_comment": "Fantastic in CS 240.", "prof_clear": 4,
+   "author": {"full_name": "Alex Kim", "picture_url": null, "program": null},
+   "course_id": 1300, "course": {"id": 1300, "code": "cs240", "name": "Data Structures", "profs_teaching": [], "rating": {"liked": 0.7}},
+   "prof_id": 7, "prof": {"id": 7, "name": "Jane Doe", "code": "jane_doe", "picture_url": null, "rating": {"liked": 0.9}},
+   "course_review_rating": null, "prof_review_rating": {"upvote_count": 2}},
+  {"id": 22, "created_at": "2026-08-01T12:00:00+00:00", "updated_at": "2026-08-01T12:00:00+00:00", "public": false,
+   "liked": 1, "course_comment": null, "course_easy": null, "course_useful": null, "prof_engaging": 2, "prof_comment": "Fine in CS 341.", "prof_clear": 3,
+   "author": {"full_name": null, "picture_url": null, "program": "Mathematics"},
+   "course_id": 1424, "course": {"id": 1424, "code": "cs341", "name": "Algorithms", "profs_teaching": [], "rating": {"liked": 0.865}},
+   "prof_id": 7, "prof": {"id": 7, "name": "Jane Doe", "code": "jane_doe", "picture_url": null, "rating": {"liked": 0.9}},
+   "course_review_rating": null, "prof_review_rating": {"upvote_count": 0}},
+  {"id": 23, "created_at": "2026-07-01T12:00:00+00:00", "updated_at": "2026-07-01T12:00:00+00:00", "public": false,
+   "liked": 0, "course_comment": null, "course_easy": null, "course_useful": null, "prof_engaging": 0, "prof_comment": "Hard to follow in CS 341.", "prof_clear": 1,
+   "author": {"full_name": null, "picture_url": null, "program": null},
+   "course_id": 1424, "course": {"id": 1424, "code": "cs341", "name": "Algorithms", "profs_teaching": [], "rating": {"liked": 0.865}},
+   "prof_id": 7, "prof": {"id": 7, "name": "Jane Doe", "code": "jane_doe", "picture_url": null, "rating": {"liked": 0.9}},
+   "course_review_rating": null, "prof_review_rating": {"upvote_count": 5}}
+]
