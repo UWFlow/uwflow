@@ -170,14 +170,16 @@ export type ReviewUpdateInfoFragment = {
 
 export type ReviewVoteCountsFragment = {
   id: number;
-  course_review_rating: { upvote_count: any } | null;
-  prof_review_rating: { upvote_count: any } | null;
+  course_review_rating: { upvote_count: any; downvote_count: any } | null;
+  prof_review_rating: { upvote_count: any; downvote_count: any } | null;
 };
 
 export type UserReviewFieldsFragment = {
   id: number;
   course_review_upvotes: Array<{ user_id: number | null }>;
+  course_review_downvotes: Array<{ user_id: number }>;
   prof_review_upvotes: Array<{ user_id: number | null }>;
+  prof_review_downvotes: Array<{ user_id: number }>;
   user: { user_id: number | null } | null;
 };
 
@@ -475,6 +477,42 @@ export type Delete_Prof_Review_VoteMutationVariables = Exact<{
 
 export type Delete_Prof_Review_VoteMutation = {
   delete_prof_review_upvote: { affected_rows: number } | null;
+};
+
+export type InsertCourseReviewDownvoteMutationVariables = Exact<{
+  user_id?: number | null | undefined;
+  review_id?: number | null | undefined;
+}>;
+
+export type InsertCourseReviewDownvoteMutation = {
+  insert_course_review_downvote: { affected_rows: number } | null;
+};
+
+export type DeleteCourseReviewDownvoteMutationVariables = Exact<{
+  user_id?: number | null | undefined;
+  review_id?: number | null | undefined;
+}>;
+
+export type DeleteCourseReviewDownvoteMutation = {
+  delete_course_review_downvote: { affected_rows: number } | null;
+};
+
+export type InsertProfReviewDownvoteMutationVariables = Exact<{
+  user_id?: number | null | undefined;
+  review_id?: number | null | undefined;
+}>;
+
+export type InsertProfReviewDownvoteMutation = {
+  insert_prof_review_downvote: { affected_rows: number } | null;
+};
+
+export type DeleteProfReviewDownvoteMutationVariables = Exact<{
+  user_id?: number | null | undefined;
+  review_id?: number | null | undefined;
+}>;
+
+export type DeleteProfReviewDownvoteMutation = {
+  delete_prof_review_downvote: { affected_rows: number } | null;
 };
 
 export type GetCourseQueryVariables = Exact<{
