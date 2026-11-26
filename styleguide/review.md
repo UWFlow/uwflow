@@ -40,6 +40,7 @@ Apply these checks to every PR, then use the [backend](backend/review.md) and
 
 ## PR descriptions
 
+- Fill in the [PR template](../.github/pull_request_template.md). Delete bullets that do not apply.
 - Use bullets only. Lead with the concrete problem and resulting behavior.
 - Include relevant test results and material rollout limits. Keep the description proportional to the change.
 - Omit headings, chronological work logs, and repeated implementation detail.
