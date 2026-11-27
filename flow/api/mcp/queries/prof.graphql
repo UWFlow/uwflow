@@ -1,0 +1,63 @@
+# Copied verbatim from frontend/src/graphql/queries/prof/Prof.tsx (GET_PROF)
+# and its fragments. Keep in step with the frontend.
+
+query getProf($code: String) {
+  prof(where: { code: { _eq: $code } }) {
+    ...ProfInfo
+    ...ProfCoursesTaught
+    ...ProfRating
+    ...ProfReviewDistribution
+    merged_into_prof {
+      ...ProfInfo
+      ...ProfCoursesTaught
+      ...ProfRating
+      ...ProfReviewDistribution
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/ProfFragment.tsx (profInfo)
+fragment ProfInfo on prof {
+  id
+  name
+  code
+  aliases {
+    name
+  }
+}
+
+# frontend/src/graphql/fragments/ProfFragment.tsx (profCoursesTaught)
+fragment ProfCoursesTaught on prof {
+  id
+  prof_courses {
+    course {
+      id
+      code
+    }
+  }
+}
+
+# frontend/src/graphql/fragments/ProfFragment.tsx (profRating)
+fragment ProfRating on prof {
+  id
+  rating {
+    liked
+    clear
+    engaging
+    filled_count
+    comment_count
+  }
+}
+
+# frontend/src/graphql/fragments/ProfFragment.tsx (profReviewDistribution)
+fragment ProfReviewDistribution on prof {
+  id
+  prof_engaging_buckets {
+    value
+    count
+  }
+  prof_clear_buckets {
+    value
+    count
+  }
+}
