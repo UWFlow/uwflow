@@ -45,6 +45,14 @@ const (
 	// Transcript contains no terms
 	EmptyTranscript = "empty_transcript"
 
+	//// Prof submission
+	// Submitted name is empty, too long, or contains characters not found in names
+	InvalidProfName = "invalid_prof_name"
+	// A prof with this exact name is already on Flow
+	ProfAlreadyExists = "prof_already_exists"
+	// User has reached the daily submission limit
+	TooManyProfSubmissions = "too_many_prof_submissions"
+
 	//// Fallbacks
 	// These do not map exactly to 400 and 500 status codes respectively:
 	// - BadRequest represents all otherwise unidentified client errors

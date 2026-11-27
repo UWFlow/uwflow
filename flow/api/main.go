@@ -15,6 +15,7 @@ import (
 	"flow/api/group"
 	"flow/api/middleware"
 	"flow/api/parse"
+	"flow/api/prof"
 	"flow/api/serde"
 
 	"flow/common/db"
@@ -88,6 +89,11 @@ func setupRouter(conn *db.Conn) *chi.Mux {
 	router.Get(
 		"/data/search",
 		serde.WithDbResponse(conn, data.HandleSearch, "search data dump"),
+	)
+
+	router.Post(
+		"/prof/submit",
+		serde.WithDbDirect(conn, prof.Submit, "prof submission"),
 	)
 
 	router.Get(
