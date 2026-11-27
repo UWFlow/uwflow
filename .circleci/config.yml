@@ -56,6 +56,10 @@ jobs:
           command: |
             if [ "$CIRCLE_BRANCH" != main ]; then
               unset SENTRY_AUTH_TOKEN
+            elif [ -z "${REACT_APP_POSTHOG_KEY:-}" ]; then
+              # Without the key, analytics silently no-ops in production.
+              echo "REACT_APP_POSTHOG_KEY is not set in CircleCI; refusing to build a production frontend without analytics." >&2
+              exit 1
             fi
             IMAGE_TAG="$CIRCLE_SHA1" ./script/build.sh frontend
       - run:
