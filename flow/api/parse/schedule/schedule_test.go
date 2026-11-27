@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -95,5 +96,50 @@ func TestParseSchedule(t *testing.T) {
 				t.Fatalf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestParseScheduleErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		want error
+	}{
+		// Only the class table was copied, so there is no term header.
+		{"noterm", ErrNoTerm},
+		// My Class Schedule for a term with no enrolments.
+		{"notregistered", ErrNotRegistered},
+		// The Course Selection cart instead of My Class Schedule.
+		{"courseselection", ErrCourseSelection},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := fmt.Sprintf("testdata/schedule-%s.txt", tt.name)
+			bytes, err := ioutil.ReadFile(path)
+			if err != nil {
+				t.Fatalf("opening testdata: %v", err)
+			}
+			got, err := Parse(string(bytes))
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("got (%v, %v), want error %v", got, err, tt.want)
+			}
+		})
+	}
+}
+
+// A page that mentions "Course Selection" only in the Quest nav or as a
+// session name is not the Course Selection page. It parses to an empty
+// schedule, which the handler reports as empty_schedule.
+func TestParseScheduleEmptyNotCourseSelection(t *testing.T) {
+	bytes, err := ioutil.ReadFile("testdata/schedule-enrollmentdates.txt")
+	if err != nil {
+		t.Fatalf("opening testdata: %v", err)
+	}
+	got, err := Parse(string(bytes))
+	if err != nil {
+		t.Fatalf("parsing: %v", err)
+	}
+	want := &Summary{TermId: 1269}
+	if !cmp.Equal(want, got) {
+		t.Fatalf("mismatch (-want +got):\n%s", cmp.Diff(want, got))
 	}
 }
